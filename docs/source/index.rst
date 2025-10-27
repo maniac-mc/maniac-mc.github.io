@@ -58,14 +58,14 @@ LAMMPS-style topology files.
   change, and :math:`\beta = 1 / (k_\mathrm{B} T)`, and where :math:`\mu_A` and
   :math:`\mu_B` are the chemical potentials of types A and B.
 
-Why the Name **ManiaC**?
+Why the name **MANIAC**?
 ------------------------
 
-The name **ManiaC** is an homage to the original MANIAC computer (Mathematical
+The name **MANIAC**, or **MANIAC-MC**, is an homage to the original MANIAC computer (Mathematical
 Analyzer, Numerical Integrator, and Computer), built in the early 1950s at Los
 Alamos National Laboratory. This pioneering machine was among the first to perform
 Monte Carlo simulations for statistical physics and nuclear research. The
-capitalized *MC* in **ManiaC** reflects its core use of Monte Carlo methods.
+**MC** in **MANIAC** reflects its core use of Monte Carlo methods.
 
 LAMMPS compatibility
 --------------------
