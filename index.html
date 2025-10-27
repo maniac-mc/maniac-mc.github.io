@@ -237,15 +237,64 @@
         <article role="main" id="furo-main-content">
           <section id="maniac-documentation">
 <h1>MANIAC documentation<a class="headerlink" href="#maniac-documentation" title="Link to this heading">¶</a></h1>
-<p>MANIAC is a lightweight Monte Carlo simulation code written in Fortran,
-designed for GCMC and adsorption studies. It reads basic LAMMPS-style topology
-files and supports the following Monte Carlo moves:</p>
-<ul class="simple">
-<li><p>Translation</p></li>
-<li><p>Rotation</p></li>
-<li><p>Insertion</p></li>
-<li><p>Deletion</p></li>
-<li><p>Swap</p></li>
+<p><strong>MANIAC</strong> is a lightweight Monte Carlo simulation code written in modern Fortran.
+It is designed for grand canonical Monte Carlo (GCMC) simulations used for constant
+chemical potential calculations, particularly useful in adsorption studies. The main
+difference between MANIAC and other Monte Carlo codes is that it reads basic
+LAMMPS-style topology files.</p>
+<p><strong>MANIAC</strong> supports the following Monte Carlo moves:</p>
+<ul>
+<li><p><strong>Translation -</strong> A molecule is randomly selected, and a translational move of
+random distance (shorter than a specified maximum value) and random direction is
+attempted. The move is accepted according to the Metropolis criterion:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p_{\rm accept} = \min \left( 1, \mathrm{e}^{-\beta \Delta U} \right)\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\Delta U\)</span> is the change in potential energy due to the move and
+<span class="math notranslate nohighlight">\(\beta = 1 / (k_\mathrm{B} T)\)</span>.</p>
+</li>
+<li><p><strong>Rotation -</strong> A molecule is randomly chosen, and a random rotational move around
+a randomly selected axis is attempted, within a defined maximum rotation angle.
+The move is accepted using the same Metropolis criterion:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p_{\rm accept} = \min \left( 1, \mathrm{e}^{-\beta \Delta U} \right)\]</div>
+</div>
+</li>
+<li><p><strong>Insertion -</strong> A new molecule is randomly inserted into the simulation box at a
+random position and orientation. The move is accepted according to the grand
+canonical acceptance criterion:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p_{\rm accept} = \min \left( 1, \frac{V}{\Lambda^3 (N+1)}
+\mathrm{e}^{\beta \mu} \mathrm{e}^{-\beta \Delta U} \right)\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(V\)</span> is the box volume, <span class="math notranslate nohighlight">\(\Lambda\)</span> is the thermal wavelength,
+<span class="math notranslate nohighlight">\(N\)</span> is the number of molecules before insertion, <span class="math notranslate nohighlight">\(\mu\)</span> is the
+chemical potential of the reservoir, and <span class="math notranslate nohighlight">\(\Delta U\)</span> is the energy change.</p>
+</li>
+<li><p><strong>Deletion -</strong> An existing molecule is randomly selected and removed from the
+system. The acceptance probability is:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p_{\rm accept} = \min \left( 1, \frac{\Lambda^3 N}{V}
+\mathrm{e}^{-\beta \mu} \mathrm{e}^{-\beta \Delta U} \right).\]</div>
+</div>
+</li>
+<li><p><strong>Swap -</strong> A molecule of type A is randomly selected and replaced with a molecule
+of type B at the same position with a random orientation. In the semi-grand canonical
+ensemble, the acceptance criterion for swapping type A to B is:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[p_{\rm accept} = \min \left( 1, \frac{N_A}{N_B + 1}
+\mathrm{e}^{-\beta (\Delta U + \mu_A - \mu_B)} \right)\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(N_A\)</span> is the number of molecules of type A before the swap,
+<span class="math notranslate nohighlight">\(N_B\)</span> is the number of molecules of type B, <span class="math notranslate nohighlight">\(\Delta U\)</span> is the energy
+change, and <span class="math notranslate nohighlight">\(\beta = 1 / (k_\mathrm{B} T)\)</span>, and where <span class="math notranslate nohighlight">\(\mu_A\)</span> and
+<span class="math notranslate nohighlight">\(\mu_B\)</span> are the chemical potentials of types A and B.</p>
+</li>
 </ul>
 <section id="why-maniac">
 <h2>Why MANIAC?<a class="headerlink" href="#why-maniac" title="Link to this heading">¶</a></h2>
@@ -256,7 +305,7 @@ statistical physics and nuclear research.</p>
 </section>
 <section id="lammps-compatibility">
 <h2>LAMMPS compatibility<a class="headerlink" href="#lammps-compatibility" title="Link to this heading">¶</a></h2>
-<p>MANIAC uses the same <cite>.data</cite> file format as LAMMPS for molecular
+<p><strong>MANIAC</strong> uses the same <cite>.data</cite> file format as LAMMPS for molecular
 topology. MANIAC assumes that the real units system is used, and that
 a pair style of the family <cite>lj/cut/coul/long</cite> is used.</p>
 <div class="toctree-wrapper compound">
@@ -327,5 +376,6 @@ a pair style of the family <cite>lj/cut/coul/long</cite> is used.</p>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>
