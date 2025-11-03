@@ -29,6 +29,34 @@ Computer) was built in the early 1950s at Los Alamos National Laboratory. It
 was one of the first machines used to perform Monte Carlo simulations in
 statistical physics and nuclear research.
 
+## Compile
+
+To build MANIAC from source, you will need the following tools installed:
+
+```bash
+sudo apt update
+sudo apt install gfortran make makedepf90
+```
+
+Then compile the project by running:
+
+```bash
+./build.sh
+```
+
+This will:
+
+- Generate the Fortran version module from the template.
+- Clean previous build artifacts.
+- Rebuild the dependency file using makedepf90.
+- Compile all Fortran source files with gfortran.
+
+The resulting executable will be located at:
+
+```bash
+build/maniac
+```
+
 ## LAMMPS compatibility
 
 MANIAC uses the same `.data` file format as LAMMPS for molecular
