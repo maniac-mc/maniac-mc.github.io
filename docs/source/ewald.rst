@@ -17,7 +17,7 @@ The Ewald method splits the Coulomb potential into two components:
    precomputed structure factors and k-vectors.
 
 A self-interaction correction ensures that each particle does not
-spuriously interact with its own periodic images.
+interact with its own periodic images.
 
 Short range
 ###########
@@ -38,8 +38,7 @@ by summing over all unique atom pairs within the molecule:
 
    E_\text{real} = \sum_{i<j} q_i q_j \frac{\text{erfc}(\alpha r_{ij})}{r_{ij}}
 
-Self-interactions (when :math:`i=j`) are excluded to prevent spurious
-contributions.
+Self-interactions (when :math:`i=j`) are excluded to prevent unrealistic contributions.
 
 Long-range
 ----------
@@ -71,7 +70,7 @@ Self-interaction correction
 --------------------------
 
 Each charge interacts with its periodic images, including itself. This
-spurious self-energy is subtracted:
+unrealistic self-energy is subtracted:
 
 .. math::
 
