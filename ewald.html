@@ -251,7 +251,7 @@ directly between particles.</p></li>
 precomputed structure factors and k-vectors.</p></li>
 </ol>
 <p>A self-interaction correction ensures that each particle does not
-spuriously interact with its own periodic images.</p>
+interact with its own periodic images.</p>
 <section id="short-range">
 <h3>Short range<a class="headerlink" href="#short-range" title="Link to this heading">¶</a></h3>
 <p>The short-range (real-space) contribution for a pair of charges <span class="math notranslate nohighlight">\(q_i\)</span> and
@@ -267,8 +267,7 @@ by summing over all unique atom pairs within the molecule:</p>
 <div class="math notranslate nohighlight">
 \[E_\text{real} = \sum_{i&lt;j} q_i q_j \frac{\text{erfc}(\alpha r_{ij})}{r_{ij}}\]</div>
 </div>
-<p>Self-interactions (when <span class="math notranslate nohighlight">\(i=j\)</span>) are excluded to prevent spurious
-contributions.</p>
+<p>Self-interactions (when <span class="math notranslate nohighlight">\(i=j\)</span>) are excluded to prevent unrealistic contributions.</p>
 </section>
 </section>
 <section id="long-range">
@@ -297,7 +296,7 @@ looping over all atoms for each k-vector.</p>
 <section id="self-interaction-correction">
 <h2>Self-interaction correction<a class="headerlink" href="#self-interaction-correction" title="Link to this heading">¶</a></h2>
 <p>Each charge interacts with its periodic images, including itself. This
-spurious self-energy is subtracted:</p>
+unrealistic self-energy is subtracted:</p>
 <div class="math-wrapper docutils container">
 <div class="math notranslate nohighlight">
 \[E_\text{self} = - \frac{\alpha}{\sqrt{\pi}} \sum_i q_i^2\]</div>
