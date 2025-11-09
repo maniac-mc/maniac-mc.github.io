@@ -65,12 +65,19 @@ a pair style of the family `lj/cut/coul/long` is used.
 
 ## Build the documentation
 
-To build the documentation locally, navigate to the `docs` directory and run:
+To build the documentation locally, install doxygen:
+
+```bash
+sudo apt install doxygen
+sudo apt install python3-sphinx
+pip install furo
+```
+
+Then, navigate to the `docs` directory and run:
 
 ```bash
 cd docs
-doxygen doxyfile      # Generates XML and HTML documentation
-make html             # Builds the HTML documentation
+./build.sh
 ```
 
 This will create the complete documentation in the `build/html` folder, that can
