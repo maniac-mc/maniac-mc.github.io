@@ -11,6 +11,8 @@ module montecarlo_module
     use write_utils             ! Utilities for writing formatted output or logs
     use constants               ! Defines physical and simulation constants
 
+    use molecule_swap
+
     use, intrinsic :: iso_fortran_env, only: real64 ! Ensures consistent 64-bit real precision
 
     implicit none
@@ -57,9 +59,14 @@ contains
                     ! Case 2: Rotation move
                     call Rotation(residue_type, molecule_index)
 
+                else if (random_draw <= proba%rotation+proba%translation+proba%swap) then
+
+                    ! Case 3: Swap move
+                    call SwapMolecules(residue_type, molecule_index)
+
                 else ! Insertion/deletion move
 
-                    ! Case 3: Insertion or deletion move
+                    ! Case ': Insertion or deletion move
                     if (rand_uniform() <= PROB_CREATE_DELETE) then
 
                         ! Attempt to create a molecule of species residue_type
