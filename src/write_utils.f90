@@ -145,7 +145,7 @@ contains
         ! ------------------------------------------------------
         do resi = 1, nb%type_residue
 
-            if (primary%num_residues(resi) /= 0 .and. input%is_active(resi) == 1) then
+            if (input%is_active(resi) == 1) then
                 ! Construct the filename for this residue
                 filename = TRIM(output_path) // 'number_' // TRIM(res%names_1d(resi)) // '.dat'
 
