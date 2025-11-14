@@ -259,6 +259,7 @@ contains
         allocate(reservoir%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
         allocate(reservoir%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_residue))
         allocate(reservoir%num_residues(nb%type_residue))
+        allocate(res%mass_residue(nb%type_residue))
 
         ! Allocate parameter arrays
         allocate(coeff%sigma(nb%type_residue, nb%type_residue,&

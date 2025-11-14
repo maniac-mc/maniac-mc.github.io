@@ -588,22 +588,74 @@ contains
 
     end subroutine RejectCreationMove
 
+    !------------------------------------------------------------------------------
+    ! Subroutine: CalculateExcessMu
+    !
+    ! Purpose:
+    !   Compute the excess chemical potential (μ_ex) for each residue type
+    !   using Widom particle insertion method, and optionally the ideal chemical
+    !   potential (μ_ideal) for reporting purposes.
+    !
+    ! Formulas:
+    !   1. Excess chemical potential (Widom):
+    !        μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
+    !          - <exp(-β ΔU)> = average Boltzmann weight from Widom sampling
+    !          - k_B: Boltzmann constant in kcal/mol/K
+    !          - T: temperature in Kelvin
+    !
+    !   2. Ideal chemical potential:
+    !        μ_ideal = k_B * T * ln(ρ * Λ^3)
+    !          - ρ = N / V = number density (molecules/m^3)
+    !          - Λ = hbar / sqrt(2 * π * m * k_B * T) = thermal de Broglie wavelength (m)
+    !          - m: mass per molecule in kg
+    !------------------------------------------------------------------------------
     subroutine CalculateExcessMu()
 
         implicit none
 
         ! Local variables
-        integer :: type_residue
-        real(real64) :: avg_weight
+        integer :: type_residue     ! Residue type index
+        integer :: N                ! Number of molecules of current residue
+        real(real64) :: avg_weight  ! Average Boltzmann weight for Widom sampling
+        real(real64) :: mu_ideal    ! Ideal chemical potential (kcal/mol)
+        real(real64) :: m           ! Mass per molecule (kg)
+        real(real64) :: Lambda      ! Thermal de Broglie wavelength (m)
+        real(real64) :: T           ! Temperature (K)
+        real(real64) :: V           ! Simulation box volume (m^3)
+        real(real64) :: rho         ! Number density (molecules/m^3)
 
+        ! Loop over all residue types
         do type_residue = 1, nb%type_residue
             if (widom_stat%sample(type_residue) > 0) then
 
-                ! Average Boltzmann factor
+                ! ----------------------------------------------------------------
+                ! 1. Compute average Boltzmann factor from Widom sampling
+                !    <exp(-β ΔU)> = sum_weights / N_samples
+                ! ----------------------------------------------------------------
                 avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
 
-                ! Excess chemical potential
+                ! ----------------------------------------------------------------
+                ! 2. Compute excess chemical potential (kcal/mol)
+                !    μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
+                ! ----------------------------------------------------------------
                 widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temp_K * log(avg_weight) ! kcal/mol
+
+                ! ----------------------------------------------------------------
+                ! 3. Compute ideal gas chemical potential (kcal/mol)
+                !    μ_ideal = k_B * T * ln(ρ * Λ^3)
+                ! ----------------------------------------------------------------
+                T = input%temp_K                                  ! Temperature (K)
+                m = res%mass_residue(type_residue) / 1000.0_real64 / NA  ! Mass per molecule (kg)
+                Lambda = HBAR / sqrt(TWOPI * m * KB_JK * T)      ! Thermal de Broglie wavelength (m)
+
+                N = primary%num_residues(type_residue)           ! Number of molecules
+                V = primary%volume * A3_TO_M3                     ! Box volume (m^3)
+                rho = real(N, kind=real64) / V                   ! Number density (molecules/m^3)
+
+                mu_ideal = KB_kcalmol * T * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
+
+                widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
+
             end if
         end do
 

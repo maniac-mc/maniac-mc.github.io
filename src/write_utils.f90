@@ -104,7 +104,6 @@ contains
         character(len=:), allocatable :: filename
         integer :: resi
         integer :: type_residue
-        logical :: file_exists
 
         real(real64) :: e_recip_coulomb_kcalmol
         real(real64) :: e_non_coulomb_kcalmol
@@ -190,29 +189,35 @@ contains
         close(UNIT_MOVES)
 
         !=========================================================
-        ! Write widom_RESNAME.dat
+        ! Write widom_RESNAME.dat including total chemical potential
         !=========================================================
         if (proba%widom > 0) then
 
+            ! Compute excess and ideal chemical potentials
             call CalculateExcessMu()
 
             do type_residue = 1, nb%type_residue
 
                 if (input%is_active(type_residue) > 0) then
 
+                    ! Construct file name
                     filename = trim(output_path)//'widom_'//trim(res%names_1d(type_residue))//'.dat'
 
-                    ! Use SAME STATUS logic as the other files
+                    ! Open file in append mode
                     open(UNIT=UNIT_WIDOM, FILE=filename, STATUS=file_status, &
                         ACTION='write', POSITION='APPEND')
 
+                    ! Write header only at the first block
                     if (current_block == 0) then
-                        write(UNIT_WIDOM,'(A)') '# Block   Excess_Mu_kcalmol   Widom_Samples'
+                        write(UNIT_WIDOM,'(A)') '# Block   Excess_Mu_kcalmol   Total_Mu_kcalmol   Widom_Samples'
                     end if
 
-                    write(UNIT_WIDOM,'(I10,1X,F16.6,1X,I12)') current_block, &
-                        widom_stat%mu_ex(type_residue), widom_stat%sample(type_residue)
+                    ! Write data line: block, excess mu, total mu, number of samples
+                    write(UNIT_WIDOM,'(I10,1X,F16.6,1X,F16.6,1X,I12)') current_block, &
+                        widom_stat%mu_ex(type_residue), widom_stat%mu_tot(type_residue), &
+                        widom_stat%sample(type_residue)
 
+                    ! Close file
                     close(UNIT_WIDOM)
 
                 end if

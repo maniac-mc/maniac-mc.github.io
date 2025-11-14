@@ -136,6 +136,7 @@ module simulation_state
 
     ! Residues information
     type :: type_residue
+        real(real64), dimension(:), allocatable :: mass_residue        ! Array of mass of residue
         real(real64), dimension(:), allocatable :: masses_1d           ! Array of atoms masses
         character(len=10), dimension(:), allocatable :: names_1d       ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: names_2d    ! Site names for each residue
@@ -153,6 +154,7 @@ module simulation_state
     type :: type_widom
         real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
         real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
+        real(real64), dimension(:), allocatable :: mu_tot    ! Total chemical potential
         integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
     end type type_widom
     type(type_widom) :: widom_stat

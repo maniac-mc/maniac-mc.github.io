@@ -146,6 +146,8 @@ contains
                     call BoxLine(trim(line), BOX_WIDTH)
                     write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", widom_stat%mu_ex(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
+                    write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", widom_stat%mu_tot(type_residue)
+                    call BoxLine(trim(line), BOX_WIDTH)
                 end if
             end do
         end if
