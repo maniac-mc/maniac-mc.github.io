@@ -36,6 +36,7 @@ module simulation_state
         real(real64) :: rotation                ! Probability of attempting a rotation move
         real(real64) :: insertion_deletion      ! Probability of attempting an insertion/deletion
         real(real64) :: swap                    ! Probability of attempting a swap move
+        real(real64) :: widom                   ! Probability of attempting a widom move
     end type proba_type
     type(proba_type) :: proba
 

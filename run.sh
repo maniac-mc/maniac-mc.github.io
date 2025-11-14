@@ -1,13 +1,20 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="H2O-gas-energy"
+case="WIDOM"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"
 base_reservoir="mc-topology/molecule-reservoir"
+base_widom="mc-topology/testcase-widom"
 
 case "$case" in
+  "WIDOM")
+    folder="$base_widom/ZIF8-MET"
+    input="$folder/input.maniac"
+    data="$folder/topology.data"
+    inc="$folder/parameters.inc"
+    ;;
   "SLIT")
     folder="$base_adsorption/SLIT"
     input="$folder/input.maniac"

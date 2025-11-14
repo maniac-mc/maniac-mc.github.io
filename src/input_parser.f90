@@ -322,7 +322,7 @@ contains
         logical :: has_cutoff, has_tolerance
         logical :: has_translation_step, has_rotation_step, has_recalibrate
         logical :: has_translation_proba, has_rotation_proba
-        logical :: has_insertdel_proba, has_swap_proba
+        logical :: has_insertdel_proba, has_swap_proba, has_widom_proba
 
         has_nb_block = .false.
         has_nb_step = .false.
@@ -337,6 +337,7 @@ contains
         has_rotation_proba = .false.
         has_insertdel_proba = .false.
         has_swap_proba = .false.
+        has_widom_proba = .false.
 
         ! Initialize state
         in_residue_block = .false.
@@ -450,6 +451,14 @@ contains
                     "Invalid swap_proba: must be in [0,1]"
                 proba%swap = val_real
                 has_swap_proba = .true.
+
+            case ("widom_proba")
+                read(rest_line, *, iostat=ios) val_real
+                if (ios /= 0) error stop "Error reading widom_proba"
+                if (val_real < 0.0_real64 .or. val_real > 1.0_real64) error stop &
+                    "Invalid widom_proba: must be in [0,1]"
+                proba%widom = val_real
+                has_widom_proba = .true.
 
             case ("begin_residue")
                 in_residue_block = .true.
@@ -584,13 +593,22 @@ contains
         if (.not. has_rotation_proba) proba%rotation = zero
         if (.not. has_translation_proba) proba%translation = zero
         if (.not. has_swap_proba) proba%swap = zero
+        if (.not. has_widom_proba) proba%widom = zero
 
         ! === Sum of enabled probabilities ===
-        sum_proba = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap
+        sum_proba = proba%translation + &
+            proba%rotation + &
+            proba%insertion_deletion + &
+            proba%swap + &
+            proba%widom
 
         ! === Check for impossible case ===
         if (sum_proba < error) then
             call AbortRun("Invalid move probabilities: all enabled moves have zero probability", 1)
+        end if
+
+        if (has_widom_proba .and. has_insertdel_proba) then
+            call AbortRun("Cannot enable both Widom insertions and physical insertion/deletion moves", 1)
         end if
 
         ! Use provided seed, or generate a new one
