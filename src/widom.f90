@@ -49,7 +49,6 @@ contains
 
         real(real64) :: deltaU, weight, T
 
-
         call CheckMoleculeIndex(molecule_index, NB_MAX_MOLECULE)
 
         ! Count trial move (success + fail)
@@ -72,6 +71,9 @@ contains
         ! Compute new energy
         call ComputeNewEnergy(residue_type, molecule_index, new, is_creation = is_creation)
 
+        ! Compute acceptance probability for the move
+        write(*,*) "probability", mc_acceptance_probability(old, new, residue_type, TYPE_CREATION)
+
         ! Reject systematically
         call RejectCreationMove(residue_type, molecule_index)
 
@@ -79,9 +81,14 @@ contains
         deltaU = new%total - old%total ! In K units
         T = input%temp_K ! In K units
 
+        if (new%total < old%total) then
+            write(*,*) "WIDOM", deltaU, new%total, old%total, T
+            stop 99
+        end if
+
         weight = exp(-deltaU / T)
 
-        widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + 1
+        widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + weight
         widom_stat%sample(residue_type) = widom_stat%sample(residue_type) + 1
 
     end subroutine WidomTest

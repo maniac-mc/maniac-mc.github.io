@@ -4,6 +4,7 @@ module write_utils
     use parameters
     use geometry_utils
     use simulation_state
+    use monte_carlo_utils
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
@@ -184,6 +185,11 @@ contains
             counter%trial_deletions, counter%deletions, &
             counter%trial_rotations, counter%deletions
         close(UNIT_MOVES)
+
+        ! Widom insert
+        if (proba%widom > 0) then
+            call CalculateExcessMu()
+        end if
 
     end subroutine WriteEnergyAndCount
 

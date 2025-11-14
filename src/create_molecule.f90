@@ -76,6 +76,10 @@ contains
         ! Compute acceptance probability for the move
         probability = mc_acceptance_probability(old, new, residue_type, TYPE_CREATION)
 
+        if (probability > 1e-5) then
+            write(*,*) probability, old%total, new%total
+        end if
+
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
             call AcceptCreationMove(residue_type, rand_mol_index, old, new)

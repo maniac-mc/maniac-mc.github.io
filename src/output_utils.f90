@@ -174,7 +174,7 @@ contains
     ! Notes:
     !   - Energies are converted to kcal/mol for reporting.
     !------------------------------------------------------------------------------
-    subroutine PrintStatus()
+    subroutine PrintStatus_old()
 
         implicit none
 
@@ -234,6 +234,112 @@ contains
             counter%creations, counter%trial_creations, &
             counter%deletions, counter%trial_deletions
         call LogMessage(formatted_msg)
+
+    end subroutine PrintStatus_old
+
+    subroutine PrintStatus()
+
+        implicit none
+
+        integer :: nb_type_residue
+        character(len=64)  :: tmp
+        character(len=1024) :: header_msg
+        character(len=1024) :: move_msg
+        character(len=256) :: numeric_msg
+
+        real(real64) :: e_tot_kcalmol, e_coul_kcalmol, e_long_kcalmol
+        real(real64) :: e_recip_coulomb_kcalmol, e_non_coulomb_kcalmol
+        real(real64) :: e_coulomb_kcalmol, e_ewald_self_kcalmol, e_intra_coulomb_kcalmol
+        real(real64) :: e_total_kcalmol
+
+        ! Blank line before status
+        call LogMessage("")
+
+        ! -----------------------
+        ! Active molecule summary
+        ! -----------------------
+        header_msg = "  Energy report | Active molecules: "
+        do nb_type_residue = 1, nb%type_residue
+            if (primary%num_residues(nb_type_residue) /= 0 .and. input%is_active(nb_type_residue) == 1) then
+                write(tmp,'(A,"=",I0)') trim(res%names_1d(nb_type_residue)), primary%num_residues(nb_type_residue)
+                if (len_trim(header_msg) > 0) then
+                    header_msg = trim(header_msg)//" "//trim(tmp)
+                else
+                    header_msg = trim(tmp)
+                end if
+            end if
+        end do
+        call LogMessage(header_msg)
+
+        ! -----------------------
+        ! Convert energies to kcal/mol
+        ! -----------------------
+        e_recip_coulomb_kcalmol = energy%recip_coulomb * KB_kcalmol
+        e_non_coulomb_kcalmol   = energy%non_coulomb * KB_kcalmol
+        e_coulomb_kcalmol       = energy%coulomb * KB_kcalmol
+        e_ewald_self_kcalmol    = energy%ewald_self * KB_kcalmol
+        e_intra_coulomb_kcalmol = energy%intra_coulomb * KB_kcalmol
+        e_total_kcalmol         = energy%total * KB_kcalmol
+
+        ! Composite energies
+        e_tot_kcalmol  = e_non_coulomb_kcalmol + e_recip_coulomb_kcalmol + e_coulomb_kcalmol + &
+                        e_ewald_self_kcalmol + e_intra_coulomb_kcalmol
+        e_coul_kcalmol = e_coulomb_kcalmol + e_intra_coulomb_kcalmol
+        e_long_kcalmol = e_recip_coulomb_kcalmol + e_ewald_self_kcalmol
+
+        ! -----------------------
+        ! Print header for energy and MC moves
+        ! -----------------------
+        write(header_msg,'(A10,1X,A14,1X,A14,1X,A14,1X,A14,2X,A10,2X,A10,2X,A20)') &
+            'Step','TotEng','E_vdwl','E_coul','E_long','TransStep','RotAngle','MC (acc/trial)'
+        call LogMessage(header_msg)
+
+        ! -----------------------
+        ! Build dynamic MC move statistics into move_msg
+        ! -----------------------
+        move_msg = ""
+
+        if (proba%translation > 0) then
+            write(tmp,'("T(",I0,"/",I0,")")') counter%translations, counter%trial_translations
+            move_msg = trim(move_msg)//" "//trim(tmp)
+        end if
+
+        if (proba%rotation > 0) then
+            write(tmp,'("R(",I0,"/",I0,")")') counter%rotations, counter%trial_rotations
+            move_msg = trim(move_msg)//" "//trim(tmp)
+        end if
+
+        if (proba%insertion_deletion > 0) then
+            write(tmp,'("C(",I0,"/",I0,")")') counter%creations, counter%trial_creations
+            move_msg = trim(move_msg)//" "//trim(tmp)
+            write(tmp,'("D(",I0,"/",I0,")")') counter%deletions, counter%trial_deletions
+            move_msg = trim(move_msg)//" "//trim(tmp)
+        end if
+
+        if (proba%swap > 0) then
+            write(tmp,'("S(",I0,"/",I0,")")') counter%swaps, counter%trial_swaps
+            move_msg = trim(move_msg)//" "//trim(tmp)
+        end if
+
+        if (proba%widom > 0) then
+            write(tmp,'("W(",I0,")")') counter%trial_widom
+            move_msg = trim(move_msg)//" "//trim(tmp)
+        end if
+
+        ! -----------------------
+        ! Build the complete single-line status (numbers + MC moves)
+        ! -----------------------
+        write(numeric_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4)') &
+            current_block, e_tot_kcalmol, e_non_coulomb_kcalmol, e_coul_kcalmol, e_long_kcalmol, &
+            input%translation_step, input%rotation_step_angle
+
+        ! Append MC move string to the same line
+        if (len_trim(move_msg) > 0) then
+            numeric_msg = trim(numeric_msg) // "  " // trim(move_msg)
+        endif
+
+        ! Print final combined line
+        call LogMessage(numeric_msg)
 
     end subroutine PrintStatus
 

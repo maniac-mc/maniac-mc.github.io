@@ -491,6 +491,7 @@ contains
         integer, intent(in) :: mol_index      ! Index of the molecule
         real(real64), intent(in), optional :: com_old(3) ! Previous COM (translation)
         real(real64), intent(in), optional :: site_offset_old(:, :) ! Previous site offsets (rotation)
+
         ! Local variable
         integer :: natoms
 
@@ -607,6 +608,7 @@ contains
                 ! Print results
                 print *, "Residue type:", type_residue
                 print *, "  Widom trials:", widom_stat%sample(type_residue)
+                print *, "  Widom weight:", widom_stat%weight(type_residue)
                 print *, "  Average Boltzmann weight:", avg_weight
                 print *, "-----------------------------------------------"
 

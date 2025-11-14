@@ -217,15 +217,15 @@ contains
         end do
 
         ! Make sure that box size were provided
-        if (abs(box%bounds(1,1)) < 1.0e-11_real64 .or. abs(box%bounds(1,2)) < 1.0e-11_real64) then
+        if (abs(box%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%bounds(1,2)) < 1.0e-11_real64) then
             call AbortRun("ParseLAMMPSBox: xlo xhi not found in input file!")
         end if
 
-        if (abs(box%bounds(2,1)) < 1.0e-11_real64 .or. abs(box%bounds(2,2)) < 1.0e-11_real64) then
+        if (abs(box%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%bounds(2,2)) < 1.0e-11_real64) then
             call AbortRun("ParseLAMMPSBox: ylo yhi not found in input file!")
         end if
 
-        if (abs(box%bounds(3,1)) < 1.0e-11_real64 .or. abs(box%bounds(3,2)) < 1.0e-11_real64) then
+        if (abs(box%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%bounds(3,2)) < 1.0e-11_real64) then
             call AbortRun("ParseLAMMPSBox: zlo zhi not found in input file!")
         end if
 
