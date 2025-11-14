@@ -604,14 +604,6 @@ contains
 
                 ! Excess chemical potential
                 widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temp_K * log(avg_weight) ! kcal/mol
-
-                ! Print results
-                print *, "Residue type:", type_residue
-                print *, "  Widom trials:", widom_stat%sample(type_residue)
-                print *, "  Widom weight:", widom_stat%weight(type_residue)
-                print *, "  Average Boltzmann weight:", avg_weight
-                print *, "-----------------------------------------------"
-
             end if
         end do
 

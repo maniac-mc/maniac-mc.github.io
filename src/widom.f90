@@ -71,20 +71,12 @@ contains
         ! Compute new energy
         call ComputeNewEnergy(residue_type, molecule_index, new, is_creation = is_creation)
 
-        ! Compute acceptance probability for the move
-        write(*,*) "probability", mc_acceptance_probability(old, new, residue_type, TYPE_CREATION)
-
         ! Reject systematically
         call RejectCreationMove(residue_type, molecule_index)
 
         ! Bolzmann weight 
         deltaU = new%total - old%total ! In K units
         T = input%temp_K ! In K units
-
-        if (new%total < old%total) then
-            write(*,*) "WIDOM", deltaU, new%total, old%total, T
-            stop 99
-        end if
 
         weight = exp(-deltaU / T)
 

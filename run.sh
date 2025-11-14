@@ -14,6 +14,7 @@ case "$case" in
     input="$folder/input.maniac"
     data="$folder/topology.data"
     inc="$folder/parameters.inc"
+    res="$base_reservoir/CH4O/topology.data"
     ;;
   "SLIT")
     folder="$base_adsorption/SLIT"

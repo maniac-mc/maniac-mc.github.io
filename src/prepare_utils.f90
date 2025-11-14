@@ -253,8 +253,8 @@ contains
             allocate(widom_stat%weight(nb%type_residue))
             allocate(widom_stat%sample(nb%type_residue))
             allocate(widom_stat%mu_ex(nb%type_residue))
-            widom_stat%weight(nb%type_residue) = 0
-            widom_stat%sample(nb%type_residue) = 0
+            widom_stat%weight(:) = 0
+            widom_stat%sample(:) = 0
         end if
 
     end subroutine AllocateArray
