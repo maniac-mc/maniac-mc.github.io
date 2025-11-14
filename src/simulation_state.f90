@@ -21,12 +21,12 @@ module simulation_state
         integer :: translations = 0          ! Counter for translational Monte Carlo moves
         integer :: creations = 0             ! Counter for creation moves
         integer :: deletions = 0             ! Counter for deletion moves
-        integer :: swap = 0                  ! Counter for swap moves
+        integer :: swaps = 0                 ! Counter for swap moves
         integer :: trial_translations = 0    ! Counter for trial translation moves
         integer :: trial_rotations = 0       ! Counter for trial rotation moves
         integer :: trial_creations = 0       ! Counter for trial rotation moves
         integer :: trial_deletions = 0       ! Counter for trial deletion moves
-        integer :: trial_swap = 0            ! Counter for swap moves
+        integer :: trial_swaps = 0           ! Counter for swap moves
         integer :: trial_widom = 0           ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
@@ -152,6 +152,7 @@ module simulation_state
     ! Widom statistic
     type :: type_widom
         real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
+        real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
         integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
     end type type_widom
     type(type_widom) :: widom_stat

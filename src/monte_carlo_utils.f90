@@ -587,4 +587,33 @@ contains
 
     end subroutine RejectCreationMove
 
+    subroutine CalculateExcessMu()
+
+        implicit none
+
+        ! Local variables
+        integer :: type_residue
+        real(real64) :: avg_weight
+
+        do type_residue = 1, nb%type_residue
+            if (widom_stat%sample(type_residue) > 0) then
+
+                ! Average Boltzmann factor
+                avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
+
+                ! Excess chemical potential
+                widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temp_K * log(avg_weight) ! kcal/mol
+
+                ! Print results
+                print *, "Residue type:", type_residue
+                print *, "  Widom trials:", widom_stat%sample(type_residue)
+                print *, "  Average Boltzmann weight:", avg_weight
+                print *, "-----------------------------------------------"
+
+            end if
+        end do
+
+    end subroutine CalculateExcessMu
+
+
 end module monte_carlo_utils

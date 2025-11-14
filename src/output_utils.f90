@@ -98,6 +98,7 @@ contains
 
         implicit none
 
+        integer :: type_residue
         character(len=256) :: line
 
         ! Blank line before footer
@@ -111,21 +112,43 @@ contains
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
 
         ! Summary statistics (Trial / Accepted moves)
-        write(line,'(A,I8,A,I8)') "  Translations (Trial/Accepted): ", &
-            counter%trial_translations, " / ", counter%translations
-        call BoxLine(trim(line), BOX_WIDTH)
+        if (proba%translation > 0) then
+            write(line,'(A,I8,A,I8)') "  Translations (Trial/Accepted): ", &
+                counter%trial_translations, " / ", counter%translations
+            call BoxLine(trim(line), BOX_WIDTH)
+        end if
 
-        write(line,'(A,I8,A,I8)') "  Rotations    (Trial/Accepted): ", &
-            counter%trial_rotations, " / ", counter%rotations
-        call BoxLine(trim(line), BOX_WIDTH)
+        if (proba%rotation > 0) then
+            write(line,'(A,I8,A,I8)') "  Rotations    (Trial/Accepted): ", &
+                counter%trial_rotations, " / ", counter%rotations
+            call BoxLine(trim(line), BOX_WIDTH)
+        end if
 
-        write(line,'(A,I8,A,I8)') "  Creations    (Trial/Accepted): ", &
-            counter%trial_creations, " / ", counter%creations
-        call BoxLine(trim(line), BOX_WIDTH)
+        if (proba%insertion_deletion > 0) then
+            write(line,'(A,I8,A,I8)') "  Creations    (Trial/Accepted): ", &
+                counter%trial_creations, " / ", counter%creations
+            call BoxLine(trim(line), BOX_WIDTH)
+            write(line,'(A,I8,A,I8)') "  Deletions    (Trial/Accepted): ", &
+                counter%trial_deletions, " / ", counter%deletions
+            call BoxLine(trim(line), BOX_WIDTH)
+        end if
 
-        write(line,'(A,I8,A,I8)') "  Deletions    (Trial/Accepted): ", &
-            counter%trial_deletions, " / ", counter%deletions
-        call BoxLine(trim(line), BOX_WIDTH)
+        if (proba%swap > 0) then
+            write(line,'(A,I8,A,I8)') "  Swap         (Trial/Accepted): ", &
+                counter%trial_swaps, " / ", counter%swaps
+            call BoxLine(trim(line), BOX_WIDTH)
+        end if
+
+        if (proba%widom > 0) then
+            do type_residue = 1, nb%type_residue
+                if (widom_stat%sample(type_residue) > 0) then
+                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", widom_stat%sample(type_residue)
+                    call BoxLine(trim(line), BOX_WIDTH)
+                    write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", widom_stat%mu_ex(type_residue)
+                    call BoxLine(trim(line), BOX_WIDTH)
+                end if
+            end do
+        end if
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
 

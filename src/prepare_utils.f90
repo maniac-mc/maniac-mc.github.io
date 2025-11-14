@@ -252,6 +252,7 @@ contains
         if (proba%widom > 0) then
             allocate(widom_stat%weight(nb%type_residue))
             allocate(widom_stat%sample(nb%type_residue))
+            allocate(widom_stat%mu_ex(nb%type_residue))
         end if
 
     end subroutine AllocateArray

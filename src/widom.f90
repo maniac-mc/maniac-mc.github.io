@@ -76,8 +76,8 @@ contains
         call RejectCreationMove(residue_type, molecule_index)
 
         ! Bolzmann weight 
-        deltaU = new%total - old%total ! In kB*T units
-        T = input%temp_K ! In kB*T units
+        deltaU = new%total - old%total ! In K units
+        T = input%temp_K ! In K units
 
         weight = exp(-deltaU / T)
 
