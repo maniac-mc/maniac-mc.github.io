@@ -64,21 +64,31 @@ contains
                     ! Case 3: Swap move
                     call SwapMolecules(residue_type, molecule_index)
 
-                else ! Insertion/deletion move
+                else ! Insertion/deletion move or widom
 
-                    ! Case ': Insertion or deletion move
-                    if (rand_uniform() <= PROB_CREATE_DELETE) then
+                    ! Insertion or deletion (GCMC)
+                    if (proba%insertion_deletion > 0) then
 
-                        ! Attempt to create a molecule of species residue_type
-                        molecule_index = primary%num_residues(residue_type) + 1
-                        call CreateMolecule(residue_type, molecule_index)
+                        ! Case ': Insertion or deletion move
+                        if (rand_uniform() <= PROB_CREATE_DELETE) then
 
-                    else
+                            ! Attempt to create a molecule of species residue_type
+                            molecule_index = primary%num_residues(residue_type) + 1
+                            call CreateMolecule(residue_type, molecule_index)
 
-                        ! Attempt to delete a randomly chosen molecule of species residue_type
-                        call DeleteMolecule(residue_type, molecule_index)
+                        else
+
+                            ! Attempt to delete a randomly chosen molecule of species residue_type
+                            call DeleteMolecule(residue_type, molecule_index)
+
+                        end if
+
+                    else ! Widom
+
+                        call WidomTest(residue_type)
 
                     end if
+
                 end if
 
              end do

@@ -95,7 +95,7 @@ contains
         real(real64) :: scale_factor  ! Factor used to rescale probabilities so they sum to 1.0
 
         ! Compute total probability
-        proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap
+        proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap + proba%widom
 
         ! Rescale if not exactly 1.0
         if (abs(proba_total - one) > error) then
@@ -104,11 +104,12 @@ contains
             proba%rotation = proba%rotation * scale_factor
             proba%insertion_deletion = proba%insertion_deletion * scale_factor
             proba%swap = proba%swap * scale_factor
+            proba%widom = proba%widom * scale_factor
             call WarnUser("Move probabilities rescaled to sum to 1.0")
         end if
 
         ! Recompute total to validate
-        proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap
+        proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap + proba%widom
 
         ! Abort if proba invalid
         if (abs(proba_total - one) > error) then
@@ -314,7 +315,7 @@ contains
         integer :: n_ids                       ! Counter for number of IDs parsed (e.g., types/names)
         integer :: len_rest                    ! Length of rest_line
         real(real64) :: val_real               ! Real value read from input
-        real(real64) :: sum_proba              ! Sum of move probabilities for normalization
+        real(real64) :: proba_total            ! Sum of move probabilities for normalization
         logical :: in_residue_block            ! Flag indicating parsing inside a residue block
         logical :: val_bool                     ! Logical value read from input
         integer :: val                         ! Temporary integer for parsing site/type IDs
@@ -596,18 +597,18 @@ contains
         if (.not. has_widom_proba) proba%widom = zero
 
         ! === Sum of enabled probabilities ===
-        sum_proba = proba%translation + &
+        proba_total = proba%translation + &
             proba%rotation + &
             proba%insertion_deletion + &
             proba%swap + &
             proba%widom
 
         ! === Check for impossible case ===
-        if (sum_proba < error) then
+        if (proba_total < error) then
             call AbortRun("Invalid move probabilities: all enabled moves have zero probability", 1)
         end if
 
-        if (has_widom_proba .and. has_insertdel_proba) then
+        if (proba%widom > 0 .and. proba%insertion_deletion > 0) then
             call AbortRun("Cannot enable both Widom insertions and physical insertion/deletion moves", 1)
         end if
 
