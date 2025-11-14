@@ -185,10 +185,13 @@ contains
 
         implicit none
 
+        ! Input arguments
         type(energy_state), intent(in) :: old   ! Previous energy states
         type(energy_state), intent(in) :: new   ! New energy states
         integer, intent(in) :: move_type        ! MC move type: TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, TYPE_ROTATION
         integer, intent(in) :: residue_type     ! Index of the residue type
+        
+        ! Local variables
         real(real64) :: probability             ! Calculated acceptance probability (0 <= P <= 1)
         real(real64) :: N                       ! Number of residues of this type (local copy)
         real(real64) :: V                       ! Simulation box volume (local copy)
@@ -225,7 +228,7 @@ contains
 
     end function mc_acceptance_probability
 
-    function mc_acceptance_probability_swap(old, new, type_old, type_new) result(probability)
+    function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
         implicit none
 
@@ -243,7 +246,6 @@ contains
         real(real64) :: delta_e                 ! Energy difference
         real(real64) :: phi_old, phi_new        ! Fugacities of species
         real(real64) :: T                       ! Temperature in units of kB*T
-        real(real64), parameter :: one = 1.0_real64
         real(real64) :: combinatorial           ! Prefactor N_A / (N_B + 1)
 
         N_new = primary%num_residues(type_new)
@@ -265,7 +267,7 @@ contains
         ! Swap acceptance probability
         probability = min(one, (phi_new / phi_old) * combinatorial * exp(-delta_e / T))
 
-    end function mc_acceptance_probability_swap
+    end function swap_acceptance_probability
 
     !---------------------------------------------------------------------------
     ! Purpose:
