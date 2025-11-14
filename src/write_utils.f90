@@ -185,7 +185,7 @@ contains
             counter%trial_translations, counter%translations, &
             counter%trial_creations, counter%creations, &
             counter%trial_deletions, counter%deletions, &
-            counter%trial_rotations, counter%deletions
+            counter%trial_rotations, counter%rotations
         close(UNIT_MOVES)
 
         !=========================================================
