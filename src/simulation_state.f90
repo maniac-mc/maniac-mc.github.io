@@ -27,6 +27,7 @@ module simulation_state
         integer :: trial_creations = 0       ! Counter for trial rotation moves
         integer :: trial_deletions = 0       ! Counter for trial deletion moves
         integer :: trial_swap = 0            ! Counter for swap moves
+        integer :: trial_widom = 0           ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
 
@@ -147,6 +148,13 @@ module simulation_state
         real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
     end type type_residue
     type(type_residue) :: res
+
+    ! Widom statistic
+    type :: type_widom
+        real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
+        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
+    end type type_widom
+    type(type_widom) :: widom_stat
 
     ! Interaction arrays
     type :: type_coeff

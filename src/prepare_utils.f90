@@ -248,6 +248,12 @@ contains
         ! Allocate kvectors
         allocate(ewald%kvectors(ewald%num_kvectors))
 
+        ! Allocate widom
+        if (proba%widom > 0) then
+            allocate(widom_stat%weight(nb%type_residue))
+            allocate(widom_stat%sample(nb%type_residue))
+        end if
+
     end subroutine AllocateArray
 
 end module prepare_utils

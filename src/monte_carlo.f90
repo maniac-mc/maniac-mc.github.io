@@ -6,12 +6,12 @@ module montecarlo_module
     use molecule_deletion       ! Provides routines to remove molecules from the system
     use molecule_rotation       ! Provides routines to perform rotational moves on molecules
     use simulation_state        ! Stores and manages the current state of the simulation
+    use molecule_swap           ! Provides routines to swap molecules
     use output_utils            ! Handles updating files and printing simulation status
     use random_utils            ! Provides random number generation routines
     use write_utils             ! Utilities for writing formatted output or logs
     use constants               ! Defines physical and simulation constants
-
-    use molecule_swap
+    use widom                   ! Provides routines for widom insertion
 
     use, intrinsic :: iso_fortran_env, only: real64 ! Ensures consistent 64-bit real precision
 
@@ -85,7 +85,8 @@ contains
 
                     else ! Widom
 
-                        call WidomTest(residue_type)
+                        molecule_index = primary%num_residues(residue_type) + 1
+                        call WidomTest(residue_type, molecule_index)
 
                     end if
 

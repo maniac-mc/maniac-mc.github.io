@@ -511,4 +511,80 @@ contains
 
     end subroutine RejectMoleculeMove
 
+    !---------------------------------------------------------------------------
+    ! Subroutine: InsertAndOrientMolecule
+    !
+    ! Purpose:
+    !   Generates a random position for the new molecule and copies/orients
+    !   its atomic geometry. Can take geometry from a reservoir or apply
+    !   a random rotation if no reservoir exists.
+    !
+    !---------------------------------------------------------------------------
+    subroutine InsertAndOrientMolecule(residue_type, molecule_index, rand_mol_index)
+
+        implicit none
+
+        ! Input arguments
+        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: molecule_index   ! Molecule ID
+        integer, intent(out) :: rand_mol_index  ! Randomly selected molecule index from the reservoir
+        ! Local variables
+        logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
+        real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
+        real(real64) :: trial_pos(3)            ! Random numbers for initial molecule position in the box
+
+        ! Generate a random position in the simulation box
+        call random_number(trial_pos) ! Random numbers in [0,1)
+        primary%mol_com(:, residue_type, molecule_index) = primary%bounds(:,1) &
+            + matmul(primary%matrix, trial_pos)
+
+        ! Copy geometry from reservoir or rotate if no reservoir
+        if (has_reservoir) then
+
+            ! Pick a random (and existing) molecule in the reservoir
+            call random_number(random_nmb) ! generates random_nmb in [0,1)
+            rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1 ! random integer in [1, N]
+
+            ! Copy site offsets from the chosen molecule
+            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+
+        else
+
+            ! Copy site offsets from the first molecule
+            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                primary%site_offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
+
+            ! Rotate the new molecule randomly (using full 360° rotation)
+            full_rotation = .true.
+            call ApplyRandomRotation(residue_type, molecule_index, full_rotation)
+
+        end if
+
+    end subroutine InsertAndOrientMolecule
+
+    !---------------------------------------------------------------------------
+    ! Subroutine: RejectCreationMove
+    !
+    ! Purpose:
+    !   Restores molecule and atom counts, and resets Fourier states if a
+    !   creation move is rejected.
+    !
+    !---------------------------------------------------------------------------
+    subroutine RejectCreationMove(residue_type, molecule_index)
+
+        implicit none
+
+        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: molecule_index   ! Molecule ID
+
+        ! Restore previous residue/atom numbers
+        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
+        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
+
+        ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
+        call RestoreSingleMolFourier(residue_type, molecule_index)
+
+    end subroutine RejectCreationMove
+
 end module monte_carlo_utils
