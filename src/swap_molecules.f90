@@ -60,7 +60,7 @@ contains
         if (primary%num_residues(residue_type_bis)==0) return ! #todo : Is this really necessary ?
 
         ! Count trial move (success + fail)
-        counter%trial_swap = counter%trial_swap + 1
+        counter%trial_swaps = counter%trial_swaps + 1
 
         ! Pick a molecule ID for the second type
         molecule_index_bis = primary%num_residues(residue_type_bis) + 1
@@ -152,7 +152,7 @@ contains
         energy%total            = energy%total          + new%total         - old%total 
 
         ! Count successful move
-        counter%swap = counter%swap + 1
+        counter%swaps = counter%swaps + 1
 
     end subroutine AcceptSwapMove
 

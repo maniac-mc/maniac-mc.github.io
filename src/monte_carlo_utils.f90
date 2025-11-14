@@ -491,6 +491,7 @@ contains
         integer, intent(in) :: mol_index      ! Index of the molecule
         real(real64), intent(in), optional :: com_old(3) ! Previous COM (translation)
         real(real64), intent(in), optional :: site_offset_old(:, :) ! Previous site offsets (rotation)
+
         ! Local variable
         integer :: natoms
 
@@ -510,5 +511,155 @@ contains
         call RestoreSingleMolFourier(res_type, mol_index)
 
     end subroutine RejectMoleculeMove
+
+    !---------------------------------------------------------------------------
+    ! Subroutine: InsertAndOrientMolecule
+    !
+    ! Purpose:
+    !   Generates a random position for the new molecule and copies/orients
+    !   its atomic geometry. Can take geometry from a reservoir or apply
+    !   a random rotation if no reservoir exists.
+    !
+    !---------------------------------------------------------------------------
+    subroutine InsertAndOrientMolecule(residue_type, molecule_index, rand_mol_index)
+
+        implicit none
+
+        ! Input arguments
+        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: molecule_index   ! Molecule ID
+        integer, intent(out) :: rand_mol_index  ! Randomly selected molecule index from the reservoir
+        ! Local variables
+        logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
+        real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
+        real(real64) :: trial_pos(3)            ! Random numbers for initial molecule position in the box
+
+        ! Generate a random position in the simulation box
+        call random_number(trial_pos) ! Random numbers in [0,1)
+        primary%mol_com(:, residue_type, molecule_index) = primary%bounds(:,1) &
+            + matmul(primary%matrix, trial_pos)
+
+        ! Copy geometry from reservoir or rotate if no reservoir
+        if (has_reservoir) then
+
+            ! Pick a random (and existing) molecule in the reservoir
+            call random_number(random_nmb) ! generates random_nmb in [0,1)
+            rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1 ! random integer in [1, N]
+
+            ! Copy site offsets from the chosen molecule
+            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+
+        else
+
+            ! Copy site offsets from the first molecule
+            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                primary%site_offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
+
+            ! Rotate the new molecule randomly (using full 360° rotation)
+            full_rotation = .true.
+            call ApplyRandomRotation(residue_type, molecule_index, full_rotation)
+
+        end if
+
+    end subroutine InsertAndOrientMolecule
+
+    !---------------------------------------------------------------------------
+    ! Subroutine: RejectCreationMove
+    !
+    ! Purpose:
+    !   Restores molecule and atom counts, and resets Fourier states if a
+    !   creation move is rejected.
+    !
+    !---------------------------------------------------------------------------
+    subroutine RejectCreationMove(residue_type, molecule_index)
+
+        implicit none
+
+        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: molecule_index   ! Molecule ID
+
+        ! Restore previous residue/atom numbers
+        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
+        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
+
+        ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
+        call RestoreSingleMolFourier(residue_type, molecule_index)
+
+    end subroutine RejectCreationMove
+
+    !------------------------------------------------------------------------------
+    ! Subroutine: CalculateExcessMu
+    !
+    ! Purpose:
+    !   Compute the excess chemical potential (μ_ex) for each residue type
+    !   using Widom particle insertion method, and optionally the ideal chemical
+    !   potential (μ_ideal) for reporting purposes.
+    !
+    ! Formulas:
+    !   1. Excess chemical potential (Widom):
+    !        μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
+    !          - <exp(-β ΔU)> = average Boltzmann weight from Widom sampling
+    !          - k_B: Boltzmann constant in kcal/mol/K
+    !          - T: temperature in Kelvin
+    !
+    !   2. Ideal chemical potential:
+    !        μ_ideal = k_B * T * ln(ρ * Λ^3)
+    !          - ρ = N / V = number density (molecules/m^3)
+    !          - Λ = hbar / sqrt(2 * π * m * k_B * T) = thermal de Broglie wavelength (m)
+    !          - m: mass per molecule in kg
+    !------------------------------------------------------------------------------
+    subroutine CalculateExcessMu()
+
+        implicit none
+
+        ! Local variables
+        integer :: type_residue     ! Residue type index
+        integer :: N                ! Number of molecules of current residue
+        real(real64) :: avg_weight  ! Average Boltzmann weight for Widom sampling
+        real(real64) :: mu_ideal    ! Ideal chemical potential (kcal/mol)
+        real(real64) :: m           ! Mass per molecule (kg)
+        real(real64) :: Lambda      ! Thermal de Broglie wavelength (m)
+        real(real64) :: T           ! Temperature (K)
+        real(real64) :: V           ! Simulation box volume (m^3)
+        real(real64) :: rho         ! Number density (molecules/m^3)
+
+        ! Loop over all residue types
+        do type_residue = 1, nb%type_residue
+            if (widom_stat%sample(type_residue) > 0) then
+
+                ! ----------------------------------------------------------------
+                ! 1. Compute average Boltzmann factor from Widom sampling
+                !    <exp(-β ΔU)> = sum_weights / N_samples
+                ! ----------------------------------------------------------------
+                avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
+
+                ! ----------------------------------------------------------------
+                ! 2. Compute excess chemical potential (kcal/mol)
+                !    μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
+                ! ----------------------------------------------------------------
+                widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temp_K * log(avg_weight) ! kcal/mol
+
+                ! ----------------------------------------------------------------
+                ! 3. Compute ideal gas chemical potential (kcal/mol)
+                !    μ_ideal = k_B * T * ln(ρ * Λ^3)
+                ! ----------------------------------------------------------------
+                T = input%temp_K                                  ! Temperature (K)
+                m = res%mass_residue(type_residue) / 1000.0_real64 / NA  ! Mass per molecule (kg)
+                Lambda = HBAR / sqrt(TWOPI * m * KB_JK * T)      ! Thermal de Broglie wavelength (m)
+
+                N = primary%num_residues(type_residue)           ! Number of molecules
+                V = primary%volume * A3_TO_M3                     ! Box volume (m^3)
+                rho = real(N, kind=real64) / V                   ! Number density (molecules/m^3)
+
+                mu_ideal = KB_kcalmol * T * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
+
+                widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
+
+            end if
+        end do
+
+    end subroutine CalculateExcessMu
+
 
 end module monte_carlo_utils

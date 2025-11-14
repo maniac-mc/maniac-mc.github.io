@@ -44,6 +44,25 @@ contains
 
     end subroutine ComputeCOM
 
+    function ComputeMass(nb_atoms, mass) result(total_mass)
+
+        use, intrinsic :: iso_fortran_env, only: real64
+        implicit none
+
+        integer, intent(in)           :: nb_atoms
+        real(real64), intent(in)      :: mass(nb_atoms)
+
+        real(real64) :: total_mass
+        integer      :: i
+
+        total_mass = zero
+
+        do i = 1, nb_atoms
+            total_mass = total_mass + mass(i)
+        end do
+
+    end function ComputeMass
+
     ! Read header info (e.g., number of atoms, atom types) from LAMMPS data file
     subroutine ReadLMPHeaderInfo(INFILE, box)
 
@@ -217,15 +236,15 @@ contains
         end do
 
         ! Make sure that box size were provided
-        if (abs(box%bounds(1,1)) < 1.0e-11_real64 .or. abs(box%bounds(1,2)) < 1.0e-11_real64) then
+        if (abs(box%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%bounds(1,2)) < 1.0e-11_real64) then
             call AbortRun("ParseLAMMPSBox: xlo xhi not found in input file!")
         end if
 
-        if (abs(box%bounds(2,1)) < 1.0e-11_real64 .or. abs(box%bounds(2,2)) < 1.0e-11_real64) then
+        if (abs(box%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%bounds(2,2)) < 1.0e-11_real64) then
             call AbortRun("ParseLAMMPSBox: ylo yhi not found in input file!")
         end if
 
-        if (abs(box%bounds(3,1)) < 1.0e-11_real64 .or. abs(box%bounds(3,2)) < 1.0e-11_real64) then
+        if (abs(box%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%bounds(3,2)) < 1.0e-11_real64) then
             call AbortRun("ParseLAMMPSBox: zlo zhi not found in input file!")
         end if
 

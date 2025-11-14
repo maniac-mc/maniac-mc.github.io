@@ -4,6 +4,7 @@ module write_utils
     use parameters
     use geometry_utils
     use simulation_state
+    use monte_carlo_utils
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
@@ -38,7 +39,7 @@ contains
         end if
 
         ! Open file for writing
-        open(UNIT=UNIT_LMP, FILE=TRIM(output_path) // lammpstrj_filename, &
+        open(UNIT=UNIT_LMP, FILE=trim(output_path) // lammpstrj_filename, &
             STATUS='UNKNOWN', ACTION='write', POSITION=file_position)
 
         ! Write LAMMPS-style header
@@ -98,9 +99,11 @@ contains
         integer :: UNIT_ENERGY = 18
         integer :: UNIT_COUNT  = 19
         integer :: UNIT_MOVES  = 20
+        integer :: UNIT_WIDOM = 21
         character(len=8) :: file_status
         character(len=:), allocatable :: filename
         integer :: resi
+        integer :: type_residue
 
         real(real64) :: e_recip_coulomb_kcalmol
         real(real64) :: e_non_coulomb_kcalmol
@@ -129,7 +132,7 @@ contains
         ! ------------------------------------------------------
         ! Write to energy.dat
         ! ------------------------------------------------------
-        open(UNIT=UNIT_ENERGY, FILE=TRIM(output_path) // 'energy.dat', &
+        open(UNIT=UNIT_ENERGY, FILE=trim(output_path) // 'energy.dat', &
             STATUS=file_status, ACTION='write', POSITION='APPEND')
         if (current_block == 0) then
             write(UNIT_ENERGY, '(A)') '#    block        total        recipCoulomb' // &
@@ -147,7 +150,7 @@ contains
 
             if (input%is_active(resi) == 1) then
                 ! Construct the filename for this residue
-                filename = TRIM(output_path) // 'number_' // TRIM(res%names_1d(resi)) // '.dat'
+                filename = trim(output_path) // 'number_' // trim(res%names_1d(resi)) // '.dat'
 
                 ! Open file for append (create if not exists)
                 open(UNIT=UNIT_COUNT, FILE=filename, STATUS=file_status, ACTION='write', POSITION='APPEND')
@@ -168,7 +171,7 @@ contains
         ! ------------------------------------------------------
         ! Write to moves.dat
         ! ------------------------------------------------------
-        open(UNIT=UNIT_MOVES, FILE=TRIM(output_path) // 'moves.dat', &
+        open(UNIT=UNIT_MOVES, FILE=trim(output_path) // 'moves.dat', &
             STATUS=file_status, ACTION='write', POSITION='APPEND')
         if (current_block == 0) then
             write(UNIT_MOVES, '(A)') &
@@ -184,6 +187,44 @@ contains
             counter%trial_deletions, counter%deletions, &
             counter%trial_rotations, counter%deletions
         close(UNIT_MOVES)
+
+        !=========================================================
+        ! Write widom_RESNAME.dat including total chemical potential
+        !=========================================================
+        if (proba%widom > 0) then
+
+            ! Compute excess and ideal chemical potentials
+            call CalculateExcessMu()
+
+            do type_residue = 1, nb%type_residue
+
+                if (input%is_active(type_residue) > 0) then
+
+                    ! Construct file name
+                    filename = trim(output_path)//'widom_'//trim(res%names_1d(type_residue))//'.dat'
+
+                    ! Open file in append mode
+                    open(UNIT=UNIT_WIDOM, FILE=filename, STATUS=file_status, &
+                        ACTION='write', POSITION='APPEND')
+
+                    ! Write header only at the first block
+                    if (current_block == 0) then
+                        write(UNIT_WIDOM,'(A)') '# Block   Excess_Mu_kcalmol   Total_Mu_kcalmol   Widom_Samples'
+                    end if
+
+                    ! Write data line: block, excess mu, total mu, number of samples
+                    write(UNIT_WIDOM,'(I10,1X,F16.6,1X,F16.6,1X,I12)') current_block, &
+                        widom_stat%mu_ex(type_residue), widom_stat%mu_tot(type_residue), &
+                        widom_stat%sample(type_residue)
+
+                    ! Close file
+                    close(UNIT_WIDOM)
+
+                end if
+
+            end do
+
+        end if
 
     end subroutine WriteEnergyAndCount
 
@@ -247,7 +288,7 @@ contains
         box%num_impropers = cpt_improper
 
         ! Open file
-        open(UNIT=UNIT_DATA, FILE=TRIM(output_path) // data_filename, STATUS='REPLACE', ACTION='write')
+        open(UNIT=UNIT_DATA, FILE=trim(output_path) // data_filename, STATUS='REPLACE', ACTION='write')
 
         write(UNIT_DATA, *) "! LAMMPS data file (atom_style full)"
         write(UNIT_DATA, *) box%num_atoms, " atoms"

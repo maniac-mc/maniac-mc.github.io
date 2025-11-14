@@ -1397,6 +1397,7 @@ contains
         real(real64), dimension(3) :: com, original_com
         integer :: dim                      ! Dimension index (x, y, z)
         integer :: nb_res                   ! Number of molecules of this type
+        real(real64) :: total_mass
 
         ! Temporary arrays (assumed declared module-wide or can be moved here)
         real(real64), allocatable :: tmp_atom_masses_1d(:)
@@ -1458,6 +1459,9 @@ contains
                     call ComputeCOM(tmp_atom_x_1d, tmp_atom_y_1d, tmp_atom_z_1d, &
                                     nb%atom_in_residue(i), tmp_atom_masses_1d, &
                                     com(1), com(2), com(3))
+
+                    total_mass = ComputeMass(nb%atom_in_residue(i), tmp_atom_masses_1d)
+                    res%mass_residue(i) = total_mass 
 
                     ! Save original CoM before applying periodic boundary conditions
                     original_com = com ! Save the CoM
