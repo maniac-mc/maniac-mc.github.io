@@ -60,7 +60,6 @@ contains
         ! Energy of the previous configuration
         is_deletion = .true.
         call ComputeOldEnergy(residue_type, molecule_index, old, is_deletion = is_deletion)
-
         call SaveMoleculeState(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
 
         ! Record the index of the last molecule
