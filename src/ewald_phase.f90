@@ -392,7 +392,6 @@ contains
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
 
-
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
             atom = primary%mol_com(:, res_type, mol_index) + &

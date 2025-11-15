@@ -21,7 +21,7 @@ module parameters
     real(real64), parameter :: PROB_CREATE_DELETE = 0.5d0    ! Probability for insertion/deletion
     integer, parameter :: MIN_TRIALS_FOR_RECALIBRATION = 500 ! Minimum trials before recalibrating step sizes
 
-    ! Parameters controlling the outputs
+    ! Parameters controlling the printed outputs
     integer, parameter :: BOX_WIDTH = 78
 
     ! Parameters for unit conversion
@@ -38,7 +38,7 @@ module parameters
     integer, parameter :: TYPE_ROTATION = 4 ! Move type: molecular rotation
 
     ! In module parameters
-    integer, parameter :: TABULATED_POINTS = 5000  ! Default number of points in tabulated functions
-    logical, parameter :: use_table = .false.        ! To fix: make it an input parameter for user
+    integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions
+    logical, parameter :: use_table = .false. ! #TODO: make it an input parameter for user
 
 end module parameters
