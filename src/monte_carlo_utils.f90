@@ -646,7 +646,7 @@ contains
                 ! ----------------------------------------------------------------
                 T = input%temp_K                                  ! Temperature (K)
                 m = res%mass_residue(type_residue) / 1000.0_real64 / NA  ! Mass per molecule (kg)
-                Lambda = HBAR / sqrt(TWOPI * m * KB_JK * T)      ! Thermal de Broglie wavelength (m)
+                Lambda = Hplank / sqrt(TWOPI * m * KB_JK * T)     ! Thermal de Broglie wavelength (m)
 
                 N = primary%num_residues(type_residue)           ! Number of molecules
                 V = primary%volume * A3_TO_M3                     ! Box volume (m^3)

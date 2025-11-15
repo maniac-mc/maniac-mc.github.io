@@ -18,6 +18,7 @@ module constants
     real(real64), parameter :: three = 3.0_real64       ! Three in real64
     real(real64), parameter :: four = 4.0_real64        ! Four in real64
     real(real64), parameter :: error = 1.0D-10          ! Small number for error calculation
+    real(real64), parameter :: Hplank = 6.62607015D-34  ! Planck constant (J s)
     real(real64), parameter :: HBAR = 1.05457182D-34    ! hbar (m^2 kg / s)
     real(real64), parameter :: NA = 6.022e23            ! Na (mol-1)
 end module constants
