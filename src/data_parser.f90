@@ -61,7 +61,7 @@ contains
         else
             has_reservoir = .true.
             call ReadLMPData(res_file, reservoir, .false.)
-            call CheckConsistency()   ! Ensure reservoir is consistent with primary
+            call AssertMassConsistency() ! Ensure masses in reservoir are consistent with primary
         end if
 
     end subroutine ReadSystemData
@@ -148,7 +148,7 @@ contains
         call DetectMolecules(box)
         call RepairActiveMolecules(box)
         call TransformCoordinate(box)
-        call CheckMolecule(box)
+        call ValidateMoleculeGeometry(box)
 
         ! === Step 7: Detect bond, angle, dihedral, improper per residue ===
         call DetectBondPerResidue(box)
