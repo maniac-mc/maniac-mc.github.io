@@ -572,7 +572,7 @@ contains
         ! Validate fugacity for active residues
         do val_int = 1, nb%type_residue
             if (input%is_active(val_int) == 1) then
-                if (input%fugacity(val_int) < 0.0_real64) then
+                if (input%fugacity(val_int) < zero) then
                     call AbortRun("Fugacity not provided or invalid for active residue: " &
                         // trim(res%names_1d(val_int)))
                 end if
