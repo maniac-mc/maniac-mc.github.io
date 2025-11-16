@@ -27,13 +27,31 @@ jobs:
       - name: Run build.sh
         run: ./build.sh
 
+      # Install a pre-built LAMMPS binary usable for your writer tests
+      - name: Install LAMMPS
+        run: sudo apt-get update && sudo apt-get install -y lammps
+
+      # Run writer tests
+      - name: Run writer tests
+        working-directory: tests/writers
+        env:
+          LMP: lmp
+        run: ./run-test.sh
+
+      # Run reader tests
       - name: Run reader tests
         working-directory: tests/readers/data
         run: ./run-test.sh
 
+      # Run integration tests
       - name: Run all integration tests
         run: |
           for testdir in tests/integration/energy/*; do
             echo "Running test in $testdir"
             (cd "$testdir" && ./run-test.sh)
           done
+
+      # Run unit tests
+      - name: Run all unit tests
+        working-directory: tests/units
+        run: ./run-test.sh

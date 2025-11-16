@@ -1,0 +1,28 @@
+# LAMMPS input file
+# Rigid frame and rigid TIP4P molecule with explicit 4-th point
+
+units real
+boundary p p p
+atom_style full
+bond_style harmonic
+angle_style harmonic
+pair_style lj/cut/coul/long 17
+kspace_style ewald 1.0e-5
+kspace_modify kmax/ewald 17 17 17 gewald 0.1622
+special_bonds lj 0.0 0.0 0.5 coul 0.0 0.0 0.833
+
+read_data outputs/topology.data
+change_box all x final -50 50 y final -50 50 z final -50 50
+
+include ../../../mc-topology/testcase-adsorption/H2O/parameters.inc
+group H2O type 1 2 3
+
+thermo_style custom step temp pe evdwl ecoul elong
+
+thermo 1
+
+fix mynvt H2O rigid/nvt molecule temp 300.0 300.0 100.0
+
+dump mydmp all atom 1 dump.lammpstrj
+
+run 100
