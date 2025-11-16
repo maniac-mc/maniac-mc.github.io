@@ -77,9 +77,6 @@ contains
                 if (ios /= 0) then
                     call AbortRun("Failed to read pair_coeff value", 1)
                 end if
-
-                ! Convert epsilon from kcal/mol to Kelvin
-                epsilon = epsilon / KB_kcalmol
             end select
 
             do i = 1, nb%type_residue
@@ -139,7 +136,7 @@ contains
                     do l = 1, nb%atom_in_residue(j)
 
                         ! Detect cross coefficients that are zeros
-                        if ((abs(coeff%epsilon(i,j,k,l)) < 1.0e-6_real64) .and. abs(coeff%sigma(i,j,k,l)) < 1.0e-6_real64) then
+                        if ((abs(coeff%epsilon(i,j,k,l)) < error) .and. abs(coeff%sigma(i,j,k,l)) < error) then
 
                             ! Detect direct coefficients
                             type_i = primary%atom_types(i, k)
@@ -150,7 +147,7 @@ contains
                             epsilon = sqrt(coeff%epsilon(i, i, k, k) * coeff%epsilon(j, j, l, l))
 
                             ! If direct coefficients are both positive, then record cross coefficients and print warning
-                            if ((sigma > 1.0e-6_real64) .and. (epsilon > 1.0e-6_real64)) then
+                            if ((sigma > error) .and. (epsilon > error)) then
                                 if (.not. warned(type_i, type_j) .and. .not. warned(type_j, type_i)) then
 
                                     ! Print the "rule enforcement" warning only once globally
@@ -161,18 +158,20 @@ contains
 
                                     if (type_i < type_j) then
                                         write(formatted_msg,'("",I3," -",I3," : ",F8.4," Å ",F8.4," kcal/mol")') &
-                                            type_i, type_j, sigma, epsilon * KB_kcalmol
+                                            type_i, type_j, sigma, epsilon
                                     else
                                         write(formatted_msg,'("",I3," -",I3," : ",F8.4," Å ",F8.4," kcal/mol")') &
-                                            type_j, type_i, sigma, epsilon * KB_kcalmol
+                                            type_j, type_i, sigma, epsilon
                                     end if
                                     call LogMessage(formatted_msg)
 
                                     warned(type_i, type_j) = .true.
                                     warned(type_j, type_i) = .true.
                                 end if
+
                                 coeff%sigma(i,j,k,l) = sigma
                                 coeff%epsilon(i,j,k,l) = epsilon
+                                
                             end if
                         end if
                     end do

@@ -181,15 +181,9 @@ contains
         implicit none
 
         integer :: nb_type_residue
-        real(real64) :: e_tot_kcalmol
-        real(real64) :: e_coul_kcalmol
-        real(real64) :: e_long_kcalmol
-        real(real64) :: e_recip_coulomb_kcalmol
-        real(real64) :: e_non_coulomb_kcalmol
-        real(real64) :: e_coulomb_kcalmol
-        real(real64) :: e_ewald_self_kcalmol
-        real(real64) :: e_intra_coulomb_kcalmol
-        real(real64) :: e_total_kcalmol
+        real(real64) :: e_tot
+        real(real64) :: e_coul
+        real(real64) :: e_long
         character(len=64) :: tmp
         character(LEN=1024) :: formatted_msg
 
@@ -208,19 +202,11 @@ contains
         end do
         call LogMessage(formatted_msg)
 
-        ! Convert energies in kcal/mol
-        e_recip_coulomb_kcalmol = energy%recip_coulomb * KB_kcalmol
-        e_non_coulomb_kcalmol = energy%non_coulomb * KB_kcalmol
-        e_coulomb_kcalmol = energy%coulomb * KB_kcalmol
-        e_ewald_self_kcalmol = energy%ewald_self * KB_kcalmol
-        e_intra_coulomb_kcalmol = energy%intra_coulomb * KB_kcalmol
-        e_total_kcalmol = energy%total * KB_kcalmol
-
         ! Compute total energies
-        e_tot_kcalmol = e_non_coulomb_kcalmol + e_recip_coulomb_kcalmol + e_coulomb_kcalmol + &
-                e_ewald_self_kcalmol + e_intra_coulomb_kcalmol
-        e_coul_kcalmol = e_coulomb_kcalmol + e_intra_coulomb_kcalmol
-        e_long_kcalmol = e_recip_coulomb_kcalmol + e_ewald_self_kcalmol
+        e_tot = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
+                energy%ewald_self +  energy%intra_coulomb
+        e_coul = energy%coulomb +  energy%intra_coulomb
+        e_long = energy%recip_coulomb + energy%ewald_self
 
         write(formatted_msg,'(A10,1X,A14,1X,A14,1X,A14,1X,A14,2X,A10,2X,A10,2X,A20)') &
             'Step','TotEng','E_vdwl','E_coul','E_long','TransStep','RotAngle','MC (acc/trial)'
@@ -229,7 +215,7 @@ contains
 
         write(formatted_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4,2X,'// &
                             ' "T(",I0,"/",I0,") R(",I0,"/",I0,") C(",I0,"/",I0,") D(",I0,"/",I0,")")') &
-            current_block, e_tot_kcalmol, e_non_coulomb_kcalmol, e_coul_kcalmol, e_long_kcalmol, &
+            current_block, e_tot, energy%non_coulomb, e_coul, e_long, &
             input%translation_step, input%rotation_step_angle, &
             counter%translations, counter%trial_translations, &
             counter%rotations, counter%trial_rotations, &
@@ -249,10 +235,7 @@ contains
         character(len=1024) :: move_msg
         character(len=256) :: numeric_msg
 
-        real(real64) :: e_tot_kcalmol, e_coul_kcalmol, e_long_kcalmol
-        real(real64) :: e_recip_coulomb_kcalmol, e_non_coulomb_kcalmol
-        real(real64) :: e_coulomb_kcalmol, e_ewald_self_kcalmol, e_intra_coulomb_kcalmol
-        real(real64) :: e_total_kcalmol
+        real(real64) :: e_tot, e_coul, e_long
 
         ! Blank line before status
         call LogMessage("")
@@ -273,21 +256,11 @@ contains
         end do
         call LogMessage(header_msg)
 
-        ! -----------------------
-        ! Convert energies to kcal/mol
-        ! -----------------------
-        e_recip_coulomb_kcalmol = energy%recip_coulomb * KB_kcalmol
-        e_non_coulomb_kcalmol   = energy%non_coulomb * KB_kcalmol
-        e_coulomb_kcalmol       = energy%coulomb * KB_kcalmol
-        e_ewald_self_kcalmol    = energy%ewald_self * KB_kcalmol
-        e_intra_coulomb_kcalmol = energy%intra_coulomb * KB_kcalmol
-        e_total_kcalmol         = energy%total * KB_kcalmol
-
         ! Composite energies
-        e_tot_kcalmol  = e_non_coulomb_kcalmol + e_recip_coulomb_kcalmol + e_coulomb_kcalmol + &
-                        e_ewald_self_kcalmol + e_intra_coulomb_kcalmol
-        e_coul_kcalmol = e_coulomb_kcalmol + e_intra_coulomb_kcalmol
-        e_long_kcalmol = e_recip_coulomb_kcalmol + e_ewald_self_kcalmol
+        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
+                        energy%ewald_self +  energy%intra_coulomb
+        e_coul = energy%coulomb +  energy%intra_coulomb
+        e_long = energy%recip_coulomb + energy%ewald_self
 
         ! -----------------------
         ! Print header for energy and MC moves
@@ -332,7 +305,7 @@ contains
         ! Build the complete single-line status (numbers + MC moves)
         ! -----------------------
         write(numeric_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4)') &
-            current_block, e_tot_kcalmol, e_non_coulomb_kcalmol, e_coul_kcalmol, e_long_kcalmol, &
+            current_block, e_tot, energy%non_coulomb, e_coul, e_long, &
             input%translation_step, input%rotation_step_angle
 
         ! Append MC move string to the same line
@@ -356,24 +329,13 @@ contains
         real(real64) :: e_tot          ! Total energy for reporting (computed)
         real(real64) :: e_coul         ! Coulombic energy including intra-molecular interactions
         real(real64) :: e_long         ! Long-range Coulombic energy (reciprocal + self)
-        real(real64) :: e_recip ! Reciprocal-space Coulombic energy
-        real(real64) :: e_non_coulomb  ! Non-Coulombic energy (van der Waals, etc.)
-        real(real64) :: e_coulomb       ! Direct-space Coulombic energy
-        real(real64) :: e_self    ! Ewald self-energy correction
-        real(real64) :: e_intra ! Intra-molecular Coulombic energy
         character(LEN=1024) :: formatted_msg   ! Formatted message for logging
 
-        ! Convert energies to kcal/mol
-        e_recip   = energy%recip_coulomb * KB_kcalmol
-        e_non_coulomb     = energy%non_coulomb * KB_kcalmol
-        e_coulomb = energy%coulomb * KB_kcalmol
-        e_self    = energy%ewald_self * KB_kcalmol
-        e_intra   = energy%intra_coulomb * KB_kcalmol
 
         ! Compute combined components
-        e_tot  = e_non_coulomb + e_recip + e_coulomb + e_self + e_intra
-        e_coul = e_coulomb + e_intra
-        e_long = e_recip + e_self
+        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + energy%ewald_self + energy%intra_coulomb ! In kcal/mol
+        e_coul = energy%coulomb + energy%intra_coulomb ! In kcal/mol
+        e_long = energy%recip_coulomb + energy%ewald_self ! In kcal/mol
 
         ! Blank line before box
         call LogMessage("")
@@ -390,7 +352,7 @@ contains
 
         ! Energies line
         write(formatted_msg,'(I10,1X,F15.6,1X,F15.6,1X,F15.6,1X,F15.6)') &
-            current_block, e_tot, e_non_coulomb, e_coul, e_long
+            current_block, e_tot, energy%non_coulomb, e_coul, e_long
         call BoxLine(trim(formatted_msg), BOX_WIDTH)
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
@@ -457,7 +419,7 @@ contains
                                             n_pairs = n_pairs + 1         ! Increment pair counter
                                             pair1(n_pairs) = it1          ! Store first atom type
                                             pair2(n_pairs) = it2          ! Store second atom type
-                                            epsilons(n_pairs) = coeff%epsilon(i,k,m,n) * KB_kcalmol ! Store epsilon in kcal/mol
+                                            epsilons(n_pairs) = coeff%epsilon(i,k,m,n)              ! Store epsilon in kcal/mol
                                             sigmas(n_pairs) = coeff%sigma(i,k,m,n)                  ! Store sigma in Å
                                             printed(it1, it2) = .true.    ! Mark pair as recorded
                                             printed(it2, it1) = .true.    ! Mark symmetric pair as recorded
