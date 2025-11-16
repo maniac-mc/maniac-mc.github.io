@@ -64,7 +64,7 @@ contains
 
         ! Compute Metropolis acceptance probability
         ! probability = min(1, exp(-(new - old)/kT))
-        probability = mc_acceptance_probability(old, new, residue_type, TYPE_TRANSLATION)
+        probability = compute_acceptance_probability(old, new, residue_type, TYPE_TRANSLATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then

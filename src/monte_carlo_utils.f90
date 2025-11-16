@@ -183,7 +183,7 @@ contains
     end function PickRandomResidueType
 
     !----------------------------------------------------------------------
-    ! PickRandomMoleculeIndex: randomly selects a molecule index within a given
+    ! PickRandomMoleculeIndex: randomly select a molecule index within a given
     ! residue type. Returns 0 if there are no molecules of that type.
     !----------------------------------------------------------------------
     function PickRandomMoleculeIndex(residue_count_for_type) result(molecule_index)
@@ -192,10 +192,19 @@ contains
         integer :: molecule_index
 
         if (residue_count_for_type == 0) then
+
             molecule_index = 0
+        
         else
-            molecule_index = INT(rand_uniform() * residue_count_for_type) + 1
-            if (molecule_index > residue_count_for_type) molecule_index = residue_count_for_type
+        
+            molecule_index = int(rand_uniform() * residue_count_for_type) + 1
+
+            if (molecule_index > residue_count_for_type) then
+            
+                molecule_index = residue_count_for_type
+            
+            end if
+
         end if
 
     end function PickRandomMoleculeIndex
@@ -218,7 +227,7 @@ contains
     !   * Deletion:   min(1, ((N+1) / (φ V)) * exp(-β ΔE))
     !   * Translation/Rotation:  min(1, exp(-β ΔE))
     !----------------------------------------------------------------------
-    function mc_acceptance_probability(old, new, residue_type, move_type) result(probability)
+    function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
         implicit none
 
@@ -262,11 +271,11 @@ contains
 
             case default
 
-                call AbortRun("Unknown move_type in mc_acceptance_probability!", 1)
+                call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
 
         end select
 
-    end function mc_acceptance_probability
+    end function compute_acceptance_probability
 
     !----------------------------------------------------------------------
     ! Compute the Metropolis acceptance probability for a residue-type swap.

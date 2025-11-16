@@ -74,7 +74,7 @@ contains
         call ComputeNewEnergy(residue_type, molecule_index, new, is_creation = is_creation)
 
         ! Compute acceptance probability for the move
-        probability = mc_acceptance_probability(old, new, residue_type, TYPE_CREATION)
+        probability = compute_acceptance_probability(old, new, residue_type, TYPE_CREATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
