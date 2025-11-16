@@ -32,9 +32,10 @@ contains
         implicit none
 
         ! Input arguments
-        integer, intent(in) :: res_type       ! Index of the residue type
-        integer, intent(in) :: mol_index     ! Index of the molecule
+        integer, intent(in) :: res_type           ! Index of the residue type
+        integer, intent(in) :: mol_index          ! Index of the molecule
         logical, intent(in), optional :: full_rotation ! Flag for full or small-step rotation
+
         ! Local variables
         integer :: rotation_axis                  ! Chosen rotation axis (1=X, 2=Y, 3=Z)
         integer :: n_atoms                        ! Number of atoms in residue
@@ -72,6 +73,7 @@ contains
 
         ! Input variables
         logical, intent(in) :: use_full_rotation
+
         ! Output variables
         real(real64) :: theta
 
@@ -91,11 +93,13 @@ contains
 
     end function ChooseRotationAngle
 
-    !> Adjusts the Monte Carlo translation and rotation step sizes dynamically
-    !! This subroutine recalibrates the translational and rotational move steps
-    !! based on the observed acceptance ratios of recent MC trials. If the
-    !! acceptance is too high, the step size is increased (up to a defined maximum).
-    !! If the acceptance is too low, the step size is decreased (down to a defined minimum).
+    !----------------------------------------------------------------------
+    ! Adjusts the Monte Carlo translation and rotation step sizes dynamically
+    ! This subroutine recalibrates the translational and rotational move steps
+    ! based on the observed acceptance ratios of recent MC trials. If the
+    ! acceptance is too high, the step size is increased (up to a defined maximum).
+    ! If the acceptance is too low, the step size is decreased (down to a defined minimum).
+    !----------------------------------------------------------------------
     subroutine AdjustMoveStepSizes()
 
         implicit none
@@ -210,18 +214,21 @@ contains
         integer, intent(in) :: residue_type     ! Index of the residue type
         
         ! Local variables
-        real(real64) :: probability             ! Calculated acceptance probability (0 <= P <= 1)
         real(real64) :: N                       ! Number of residues of this type (local copy)
         real(real64) :: V                       ! Simulation box volume (local copy)
         real(real64) :: phi                     ! Fugacity of the residue type (local copy)
         real(real64) :: T                       ! Temperature in units of kB*T (optional local copy for clarity)
         real(real64) :: delta_e                 ! Energy difference ΔE between trial and current state
+        real(real64) :: beta                    ! 1/kB T
 
-        N   = real(primary%num_residues(residue_type))
+        ! Return value
+        real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
+
+        N   = real(primary%num_residues(residue_type), real64)
         V   = primary%volume                    ! Angstrom^3
-        phi = input%fugacity(residue_type)      ! Angstrom^-3
+        phi = input%fugacity(residue_type)      ! Fugacity in Angstrom^-3
         T = input%temp_K                        ! Kelvin
-        beta = 1/(KB_kcalmol*T)                 ! kcal/mol
+        beta = 1/(KB_kcalmol*T)                 ! 1/(kcal/mol)
         delta_e = new%total - old%total         ! kcal/mol
 
         ! Compute factor based on move type
@@ -246,6 +253,26 @@ contains
 
     end function mc_acceptance_probability
 
+    !----------------------------------------------------------------------
+    ! Compute the Metropolis acceptance probability for a residue-type swap.
+    !
+    ! This routine evaluates the acceptance probability for replacing a
+    ! molecule of type_old with one of type_new in a grand-canonical or
+    ! semi-grand Monte Carlo simulation.  The expression uses:
+    !
+    !   - ΔE  = new%total - old%total          (energy difference)
+    !   - β   = 1 / (kB * T)                   (inverse temperature)
+    !   - φ   = fugacity of each residue type
+    !   - N   = current number of residues of each type
+    !
+    ! Swap move acceptance rule:
+    !
+    !   P = min(1,
+    !           (φ_new / φ_old)
+    !         * (N_old / (N_new + 1))
+    !         * exp(-β ΔE) )
+    !
+    !---------------------------------------------------------------------- 
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
         implicit none
@@ -255,35 +282,27 @@ contains
         type(energy_state), intent(in) :: new   ! Energy of system with new molecule
         integer, intent(in) :: type_old         ! Residue type being removed
         integer, intent(in) :: type_new         ! Residue type being inserted
+
+        ! Local valriables
+        real(real64) :: delta_e                 ! Energy difference
+        real(real64) :: phi_old, phi_new        ! Fugacities of species
+        real(real64) :: T                       ! Temperature in units of kB*T
+        real(real64) :: beta                    ! 1/kB T
         integer :: N_old, N_new                 ! Number of molecule per types
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        ! Locals
-        real(real64) :: delta_e                 ! Energy difference
-        real(real64) :: phi_old, phi_new        ! Fugacities of species
-        real(real64) :: T                       ! Temperature in units of kB*T
-        real(real64) :: combinatorial           ! Prefactor N_A / (N_B + 1)
-
-        N_new = primary%num_residues(type_new)
-        N_old = primary%num_residues(type_old)
-
-        ! Compute energy difference
-        delta_e = new%total - old%total
-
-        ! Fugacities
-        phi_old = input%fugacity(type_old)
-        phi_new = input%fugacity(type_new)
-
-        ! Temperature
-        T = input%temp_K
-
-        ! combinatorial factor N_A / (N_B + 1)
-        combinatorial = real(N_old, real64) / real(N_new + one, real64)
+        N_new = real(primary%num_residues(type_new), real64)
+        N_old = real(primary%num_residues(type_old), real64)
+        phi_old = input%fugacity(type_old)      ! Fugacity in Angstrom^-3
+        phi_new = input%fugacity(type_new)      ! Fugacity in Angstrom^-3
+        T = input%temp_K                        ! Kelvin
+        beta = 1/(KB_kcalmol*T)                 ! 1/(kcal/mol)
+        delta_e = new%total - old%total         ! kcal/mol
 
         ! Swap acceptance probability
-        probability = min(one, (phi_new / phi_old) * combinatorial * exp(-delta_e / T))
+        probability = min(one, (phi_new / phi_old) * (N_old / (N_new + one)) * exp(-beta * delta_e))
 
     end function swap_acceptance_probability
 
@@ -302,6 +321,7 @@ contains
         type(energy_state), intent(out) :: new      ! New energy states
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
+
         ! Local variables
         logical :: creation_flag
         logical :: deletion_flag
@@ -310,31 +330,44 @@ contains
         deletion_flag = present_or_false(is_deletion)
 
         if (creation_flag) then
-            ! Recompute Fourier terms for the moved molecule
+        
+            ! Note: In creation scenario, compute all energy components
+
             call SingleMolFourierTerms(residue_type, molecule_index)
-            ! Creation scenario: compute all energy components
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb, is_creation = creation_flag)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
             call ComputeEwaldSelfInteractionSingleMol(residue_type, new%ewald_self)
             call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, new%intra_coulomb)
+        
+            ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
+        
         else if (deletion_flag) then
-            ! Most energy terms of the absence of a molecule are 0
-            ! Must only recalculate energy%recip_coulomb
+
+            ! Note: Most energy terms in the absence of a molecule are 0
+            ! --> One must only recalculate energy%recip_coulomb
+
             new%non_coulomb = 0
             new%coulomb = 0
             new%ewald_self = 0
             new%intra_coulomb = 0
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb, is_creation = deletion_flag)
+
+            ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
+        
         else
-            ! Recompute Fourier terms for the moved molecule
+
+            ! Note, for simple move (translation or rotation), one only needs to
+            ! recompute reciprocal and pairwise interactions
+
             call SingleMolFourierTerms(residue_type, molecule_index)
-            ! Normal move: only recompute reciprocal + pairwise interactions
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
-            ! Total energy of the molecule
+
+            ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
+            
         end if
 
     end subroutine ComputeNewEnergy
