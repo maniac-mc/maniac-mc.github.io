@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-topology_path="../../../mc-topology/testcase-adsorption/H2O/"
+topology_path="../../../mc-topology/testcase-energy/LJ-gas/"
 build_path="../../../build/maniac"
 
 inc=$topology_path"parameters.inc"

@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-topology_path="../../../mc-topology/testcase-adsorption/H2O/"
+topology_path="../../../mc-topology/testcase-adsorption/ZIF8-CH4O-H2O/"
 build_path="../../../build/maniac"
 
 inc=$topology_path"parameters.inc"
-input=$topology_path"input.maniac"
+input="input.maniac"
 outputs="outputs/"
 data=$topology_path"topology.data"
 
