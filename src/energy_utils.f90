@@ -49,27 +49,26 @@ contains
     !   E_intra_total = Σ_{residues} Σ_{molecules} E_intra(molecule)
     !   where E_intra(molecule) is computed by
     !     ComputeIntraResidueRealCoulombEnergySingleMol
-    !
-    ! Notes:
-    !   - Skips inactive residues (input%is_active(residue_type) == 0)
-    !   - Uses the existing subroutine ComputeIntraResidueRealCoulombEnergySingleMol
     !------------------------------------------------------------------------------
 
     subroutine ComputeTotalIntraResidueCoulombEnergy()
 
         implicit none
 
+        ! Local variables
         integer :: residue_type_1
         integer :: molecule_index_1
         real(real64) :: e_intra_coulomb
 
         ! Initialize total intra-residue Coulomb energy
-        energy%intra_coulomb = zero
+        energy%intra_coulomb = zero ! In kcal/mol
 
         ! Loop over all residue types
         do residue_type_1 = 1, nb%type_residue
+            
             ! Skip inactive residues
             if (input%is_active(residue_type_1) == 1) then
+
                 ! Loop over all molecules of this residue type
                 do molecule_index_1 = 1, primary%num_residues(residue_type_1)
 
@@ -78,8 +77,11 @@ contains
 
                     ! Accumulate into total intra-residue energy
                     energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
+
                 end do
+
             end if
+
         end do
 
     end subroutine ComputeTotalIntraResidueCoulombEnergy
@@ -89,7 +91,7 @@ contains
         implicit none
 
         ! Input arguments
-        type(type_box), intent(inout) :: box    ! Box (revervoir or primary)
+        type(type_box), intent(inout) :: box    ! Box (reservoir or primary)
 
         ! Local variables
         integer :: residue_type_1
@@ -113,6 +115,7 @@ contains
                 ! Add residue_1, molecule_1 energy to the total pairwise energy
                 energy%non_coulomb = energy%non_coulomb + e_non_coulomb ! In kcal/mol
                 energy%coulomb = energy%coulomb + e_coulomb ! In kcal/mol
+
             end do
         end do
 
@@ -186,7 +189,7 @@ contains
         end do
 
         ! Re-scale energy
-        e_coulomb = e_coulomb * EPS0_INV_kcalA                                                   ! In kcal/mol
+        e_coulomb = e_coulomb * EPS0_INV_kcalA   ! In kcal/mol
 
     end subroutine SingleMolPairwiseEnergy
 
@@ -209,18 +212,25 @@ contains
 
         if (r >= input%real_space_cutoff) then
 
+            ! Return 0 if distance larger than cutoff
             energy = zero                                           ! kcal/mol
 
         else
 
-            ! Use tabulated r^6 and r^12 if available and requested
             if (use_table .and. r6_table%initialized .and. r12_table%initialized) then
+
+                ! Use tabulated r^6 and r^12 if available and requested
                 r6 = sigma**6 / LookupTabulated(r6_table, r)        ! No units
                 r12 = sigma**12 / LookupTabulated(r12_table, r)     ! No units
+
             else
+
+                ! Calculate r^6 and r^12
                 r6 = (sigma / r)**6                                 ! No units
                 r12 = r6 * r6                                       ! No units
+
             end if
+
             energy = four * epsilon * (r12 - r6)                    ! kcal/mol
 
         end if
@@ -274,11 +284,6 @@ contains
     !   1. Initialize weighting coefficients for each reciprocal lattice vector.
     !   2. Compute Fourier structure factors (∑ q_j exp(i·k·r_j)) for each molecule.
     !   3. Accumulate the reciprocal-space energy using precomputed factors.
-    !
-    ! Notes:
-    ! - The complementary real-space part is handled separately in the direct-space
-    !   calculation routine.
-    ! - The self-energy correction is handled by ComputeEwaldSelf().
     !------------------------------------------------------------------------------
     subroutine ComputeEwaldRecip()
 
@@ -311,12 +316,7 @@ contains
     !      (depends only on its charges, not its position).
     !   2. Multiply the result by the number of molecules of that residue type.
     !   3. Accumulate the correction into the total self-energy term.
-    !
-    ! Notes:
-    ! - This correction is independent of configuration (positions do not matter),
-    !   so it is constant throughout the simulation for fixed charges.
-    ! - Must be combined with reciprocal-space and real-space terms to obtain the
-    !   full Ewald electrostatic energy.
+    !------------------------------------------------------------------------------
     subroutine ComputeEwaldSelf()
 
         implicit none
@@ -351,6 +351,7 @@ contains
     ! electrostatic energy.
     !------------------------------------------------------------------------------
     subroutine SingleMolEwaldSelf(residue_type, self_energy_1)
+
         implicit none
 
         ! Input arguments
@@ -366,6 +367,7 @@ contains
 
         ! Loop over all atoms in the residue
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)
+
             charge_1 = primary%atom_charges(residue_type, atom_index_1)
 
             ! Skip atoms with negligible charge
@@ -373,10 +375,11 @@ contains
 
             ! Add the self-energy contribution of this atom
             self_energy_1 = self_energy_1 - ewald%alpha / SQRTPI * charge_1**2  ! In units of e^2/Å
+
         end do
 
         ! Convert to kcal/mol at the end
-        self_energy_1 = self_energy_1 * EPS0_INV_kcalA                          ! In kcal/mol
+        self_energy_1 = self_energy_1 * EPS0_INV_kcalA  ! In kcal/mol
 
     end subroutine SingleMolEwaldSelf
 
@@ -390,19 +393,19 @@ contains
 
         ! Input arguments
         type(type_box), intent(inout) :: box
-        integer, intent(in) :: residue_type_1        ! Residue type to be moved
-        integer, intent(in) :: molecule_index_1      ! Molecule ID
+        integer, intent(in) :: residue_type_1        ! Residue type 1
+        integer, intent(in) :: molecule_index_1      ! Molecule ID 1
         real(real64), intent(out) :: e_non_coulomb
         real(real64), intent(out) :: e_coulomb
 
         ! Local variables
-        integer :: atom_index_1, atom_index_2
-        integer :: molecule_index_2
-        integer :: residue_type_2
-        real(real64) :: distance
-        real(real64) :: r6, r12 ! r^n for LJ potential calculations
-        real(real64) :: sigma, epsilon ! Epsilon and sigma LJ potential calculations
-        real(real64) :: charge_1, charge_2 ! Charge for Coulomb interactions
+        integer :: atom_index_1, atom_index_2       ! Atom index 1 et 2  
+        integer :: molecule_index_2                 ! Molecule ID 2
+        integer :: residue_type_2                   ! Residue type 1
+        real(real64) :: distance                    ! Distance in Angstrom
+        real(real64) :: r6, r12                     ! r^n for LJ potential calculations
+        real(real64) :: sigma, epsilon              ! Epsilon and sigma LJ potential calculations
+        real(real64) :: charge_1, charge_2          ! Charge for Coulomb interactions
 
         e_non_coulomb = zero
         e_coulomb = zero
@@ -427,18 +430,21 @@ contains
                                    residue_type_2, molecule_index_2, atom_index_2)
 
                         if (distance < input%real_space_cutoff) then
+
                             ! LJ potential
                             sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Å
                             epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
                             r6 = (sigma / distance)**6                                  ! No units
                             r12 = r6 * r6                                               ! No units
                             e_non_coulomb = e_non_coulomb + four * epsilon * (r12 - r6) ! In kcal/mol
+
                         end if
 
                         ! Use Coulomb potential
                         charge_1 = primary%atom_charges(residue_type_1, atom_index_1)
                         charge_2 = primary%atom_charges(residue_type_2, atom_index_2)
 
+                        ! Skip calculations if one charge is too small
                         if ((abs(charge_1) < error) .or. (abs(charge_2) < error)) cycle
 
                         e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%alpha * distance)) / distance ! e**2/Å
