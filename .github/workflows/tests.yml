@@ -37,3 +37,10 @@ jobs:
             echo "Running test in $testdir"
             (cd "$testdir" && ./run-test.sh)
           done
+
+      - name: Run all unit tests
+        run: |
+          for testdir in tests/units/*; do
+            echo "Running test in $testdir"
+            (cd "$testdir" && ./run-test.sh)
+          done
