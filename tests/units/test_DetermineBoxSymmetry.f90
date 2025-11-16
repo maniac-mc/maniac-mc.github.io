@@ -47,8 +47,4 @@ program test_DetermineBoxSymmetry
         stop 1
     end if
 
-    if ((pass3) .and. (pass2) .and. (pass3)) then
-        print *, 'DetermineBoxSymmetry test PASSED'
-    end if
-
 end program test_DetermineBoxSymmetry

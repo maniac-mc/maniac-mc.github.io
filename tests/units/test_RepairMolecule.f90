@@ -100,13 +100,6 @@ program test_RepairMolecule
         stop 1
     end if
 
-    !-------------------------------------------------------------
-    ! Final summary
-    !-------------------------------------------------------------
-    if (pass1 .and. pass2 .and. pass3) then
-        print *, 'RepairMolecule test PASSED'
-    end if
-
 contains
     function inverse(mat) result(inv)
         real(real64), intent(in) :: mat(3,3)

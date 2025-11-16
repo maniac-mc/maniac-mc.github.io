@@ -36,12 +36,15 @@ program test_PickRandomResidueType
     !---------------------------------------
     ! Final result
     !---------------------------------------
-    if (pass1 .and. pass2) then
-        print *, 'PickRandomResidueType test PASSED'
-    else
+    if (.not. pass1) then
         print *, 'PickRandomResidueType test FAILED'
-        if (.not. pass1) print *, ' Error: function returned inactive residue'
-        if (.not. pass2) print *, ' Error: function did not return 0 for no active residues'
+        print *, ' Error: function returned inactive residue'
+        stop 1
+    end if
+
+    if (.not. pass2) then
+        print *, 'PickRandomResidueType test FAILED'
+        print *, ' Error: function did not return 0 for no active residues'
         stop 1
     end if
 
