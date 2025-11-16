@@ -116,18 +116,6 @@ contains
     !
     !   This is commonly used in Fourier/Ewald calculations to compute
     !   |A(k)|^2 for structure factor amplitudes.
-    !
-    ! Input:
-    !   z : complex(real64)
-    !       Complex number whose squared modulus is to be computed.
-    !
-    ! Output:
-    !   val : real(real64)
-    !       Squared modulus of z, i.e., |z|^2
-    !
-    ! Notes:
-    !   - Pure function with no side effects.
-    !   - Uses `z*conjg(z)` to compute |z|^2 efficiently.
     !--------------------------------------------------------------------
     pure function amplitude_squared(z) result(val)
 
@@ -166,5 +154,25 @@ contains
         c(3) = a(1)*b(2) - a(2)*b(1)            ! z-component
 
     end function CrossProduct
+
+    !--------------------------------------------------------------------
+    ! Function: Norm
+    !
+    ! Computes the Euclidean (L2) norm of a 3-component real vector.
+    !
+    ! For a vector v = (v1, v2, v3), the norm is defined as:
+    !
+    !       |v| = sqrt( v1^2 + v2^2 + v3^2 )
+    !
+    ! This is used frequently in geometry, box operations, and
+    ! minimum-image distance calculations.
+    !--------------------------------------------------------------------
+    pure real(real64) function norm(v)
+
+        real(real64), intent(in) :: v(3)
+
+        norm = sqrt(sum(v * v))
+
+    end function norm
 
 end module helper_utils

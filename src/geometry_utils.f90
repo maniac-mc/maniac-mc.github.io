@@ -23,6 +23,7 @@ contains
 
         ! Input argument
         type(type_box), intent(inout) :: box
+
         ! Local variable
         character(200) :: formatted_msg ! Buffer for formatted output messages
 
@@ -41,14 +42,22 @@ contains
 
         select case (box%type)
             case (1)
+
                 call LogMessage("Box symmetry type: Cubic")
+            
             case (2)
+            
                 call LogMessage("Box symmetry type: Orthorhombic")
+            
             case (3)
+            
                 call LogMessage("Box symmetry type: Triclinic")
+            
             case default
+            
                 write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%type
                 call LogMessage(formatted_msg)
+        
         end select
 
         write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%volume
@@ -71,6 +80,7 @@ contains
 
         ! Input parameters
         type(type_box), intent(inout) :: box
+
         ! Local variables
         real(real64), dimension(6) :: off_diag
 
@@ -81,14 +91,20 @@ contains
 
         ! Check for triclinic (any off-diagonal > tolerance)
         if (maxval(abs(off_diag)) > error) then
+
             box%type = 3
+        
         ! Check for orthorhombic (unequal diagonals)
         else if (abs(box%matrix(1,1) - box%matrix(2,2)) > error .or. &
                  abs(box%matrix(1,1) - box%matrix(3,3)) > error) then
+        
             box%type = 2
+        
         ! Otherwise, cubic
         else
+        
             box%type = 1
+        
         end if
 
     end subroutine DetermineBoxSymmetry
@@ -113,6 +129,7 @@ contains
 
         ! Input parameters
         type(type_box), intent(inout) :: box
+
         ! Local variables
         real(real64), dimension(3) :: vec_lengths ! Lengths of the three cell vectors
         real(real64), dimension(3) :: axb ! Cross product of vector a and b
@@ -129,9 +146,9 @@ contains
         c = box%matrix(:, 3)
 
         ! Calculate vector lengths
-        vec_lengths(1) = sqrt(sum(a**2))
-        vec_lengths(2) = sqrt(sum(b**2))
-        vec_lengths(3) = sqrt(sum(c**2))
+        vec_lengths(1) = norm(a)
+        vec_lengths(2) = norm(b)
+        vec_lengths(3) = norm(c)
 
         ! Calculate cosines of angles using dot products divided by product of lengths
         box%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
@@ -147,9 +164,9 @@ contains
         box%volume = abs(dot_product(box%matrix(:,1), bxc))
 
         ! Calculate cell perpendicular widths
-        box%metrics(7) = box%volume / norm2(bxc)
-        box%metrics(8) = box%volume / norm2(cxa)
-        box%metrics(9) = box%volume / norm2(axb)
+        box%metrics(7) = box%volume / norm(bxc)
+        box%metrics(8) = box%volume / norm(cxa)
+        box%metrics(9) = box%volume / norm(axb)
 
     end subroutine ComputeCellProperties
 
@@ -171,6 +188,7 @@ contains
         ! Input parameters
         type(type_box), intent(in) :: box
         real(real64), dimension(3), intent(inout) :: pos
+
         ! Local variables
         real(real64), dimension(3) :: frac_coords    ! Fractional coordinates inside the box
         real(real64) :: box_length                   ! Box length
@@ -363,10 +381,12 @@ contains
 
         implicit none
 
+        ! Input parameters
         type(type_box), intent(in) :: box
         integer, intent(in) :: residue_type_1, molecule_index_1, atom_index_1
         integer, intent(in) :: residue_type_2, molecule_index_2, atom_index_2
 
+        ! Local variables
         integer :: shift_x, shift_y, shift_z
         integer :: dim
         real(real64), dimension(3) :: delta
@@ -391,23 +411,27 @@ contains
             end do
 
             ! Compute distance
-            distance = sqrt(dot_product(delta, delta))
+            distance = norm(delta)
 
         ! Triclinic box
         else if (box%type == 3) then
 
-            min_dist2 = huge(1.0_real64)
+            min_dist2 = huge(one)
             do shift_x = -1,1
                 do shift_y = -1,1
                     do shift_z = -1,1
                         trial_delta = delta + shift_x*box%matrix(:,1) + &
                                             shift_y*box%matrix(:,2) + &
                                             shift_z*box%matrix(:,3)
-                        trial_dist2 = dot_product(trial_delta, trial_delta)
+
+                        trial_dist2 = norm(trial_delta)
+
                         if (trial_dist2 < min_dist2) min_dist2 = trial_dist2
+                        
                     end do
                 end do
             end do
+
             distance = sqrt(min_dist2)
 
         end if
