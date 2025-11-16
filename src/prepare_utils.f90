@@ -145,7 +145,7 @@ contains
                 write(msg, '(A)') 'WARNING: real_space_cutoff too large for box. Reducing to safe value.'
                 call LogMessage(msg)
             end if
-            safe_cutoff = min(primary%metrics(1), primary%metrics(2), primary%metrics(3)) / 2.0_real64
+            safe_cutoff = min(primary%metrics(1), primary%metrics(2), primary%metrics(3)) / two
             input%real_space_cutoff = safe_cutoff
         end if
     end subroutine AdjustRealSpaceCutoff
@@ -155,8 +155,10 @@ contains
     ! Purpose   : Limit the Ewald accuracy tolerance to a maximum value of 0.5.
     !--------------------------------------------------------------------
     subroutine ClampTolerance()
+
         ! Clamp accuracy tolerance to max 0.5
-        input%ewald_tolerance = min(abs(input%ewald_tolerance), 0.5_real64)
+        input%ewald_tolerance = min(abs(input%ewald_tolerance), half)
+    
     end subroutine ClampTolerance
 
     !--------------------------------------------------------------------
@@ -176,7 +178,7 @@ contains
 
         ! Estimate needed Fourier-space precision
         ewald%fourier_precision = sqrt(-log(input%ewald_tolerance * input%real_space_cutoff * &
-                                (2.0_real64 * ewald%screening_factor * ewald%alpha)**2))
+                                (two * ewald%screening_factor * ewald%alpha)**2))
     end subroutine ComputeEwaldParameters
 
     !--------------------------------------------------------------------
@@ -193,18 +195,21 @@ contains
         real(real64) :: k_squared           ! Normalized squared magnitude of k-vector
 
         ! Compute maximum Fourier indices in X, Y, Z directions
-        ewald%kmax = nint(0.25_real64 + primary%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
+        ewald%kmax = nint(quarter + primary%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
 
         ! Count the total number of valid reciprocal vectors
         count = 0
         do kx_idx = 0, ewald%kmax(1)
             do ky_idx = -ewald%kmax(2), ewald%kmax(2)
                 do kz_idx = -ewald%kmax(3), ewald%kmax(3)
+
                     if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
+                
                     k_squared = NormalizedKSquared(kx_idx, ky_idx, kz_idx, ewald%kmax)
                     if (CheckValidReciprocalVector(k_squared)) then
                         count = count + 1
                     end if
+                
                 end do
             end do
         end do

@@ -36,10 +36,11 @@ contains
         implicit none
 
         ! Input arguments
-        integer, intent(in) :: residue_type        ! Residue type to be moved
-        integer, intent(in) :: molecule_index     ! Molecule ID
+        integer, intent(in) :: residue_type             ! Residue type to be moved
+        integer, intent(in) :: molecule_index           ! Molecule ID
+
         ! Local variables
-        real(real64) :: probability                              ! Acceptance probability of rotation move
+        real(real64) :: probability                     ! Acceptance probability of rotation move
 
         ! Exit early if molecule cannot rotate
         if ((nb%atom_in_residue(residue_type) == 1) .or. (molecule_index == 0)) return
