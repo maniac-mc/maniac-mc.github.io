@@ -28,14 +28,8 @@ jobs:
         run: ./build.sh
 
       # Install a pre-built LAMMPS binary usable for your writer tests
-      - name: Download LAMMPS prebuilt binary
-        run: |
-          wget https://download.lammps.org/static/lammps-linux.tar.gz -O lammps.tar.gz
-          tar xzf lammps.tar.gz
-          # Extracted directory name begins with something like "lammps-23Jun2022"
-          mv lammps*/bin/lmp lmp
-          chmod +x lmp
-        shell: bash
+      - name: Install LAMMPS
+        run: sudo apt-get update && sudo apt-get install -y lammps
 
       # Run writer tests
       - name: Run writer tests
