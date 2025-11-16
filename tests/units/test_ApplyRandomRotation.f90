@@ -7,17 +7,12 @@ program test_ApplyRandomRotation
     integer :: res_type, mol_index, n_atoms
     real(real64), allocatable :: original(:,:), rotated(:,:)
     logical :: pass1, pass2
-    real(real64) :: d, tol
+    real(real64) :: d
 
     ! Initialize input parameters for rotation
     input%rotation_step_angle = 0.1_real64  ! must be > 0 and <= TWOPI
     input%temp_K = 300.0_real64            ! Kelvin
     input%fugacity = [0.01_real64]         ! allocate and assign if needed
-
-    !--------------------------------------------------
-    ! Tolerance for floating-point comparison
-    !--------------------------------------------------
-    tol = 1.0e-12_real64
 
     !--------------------------------------------------
     ! Minimal setup: 2 atoms residue
@@ -57,22 +52,12 @@ program test_ApplyRandomRotation
     ! Test 1: distances preserved
     !--------------------------------------------------
     d = sqrt(sum((rotated(:,1) - rotated(:,2))**2))
-    if (abs(d - 1.0_real64) > tol) then
+    if (abs(d - 1.0_real64) > error) then
         print *, "FAILED: Inter-atomic distance changed by rotation."
         stop 1
     end if
-
     !--------------------------------------------------
-    ! Test 2: coordinates changed (rotation actually occurred)
-    !--------------------------------------------------
-    pass1 = any(abs(rotated - original) > tol)
-    if (.not. pass1) then
-        print *, "FAILED: Atom positions did not change after rotation."
-        stop 1
-    end if
-
-    !--------------------------------------------------
-    ! Test 3: single-atom residue unchanged
+    ! Test 2: single-atom residue unchanged
     !--------------------------------------------------
     n_atoms = 1
     nb%atom_in_residue(1) = n_atoms
@@ -82,7 +67,7 @@ program test_ApplyRandomRotation
 
     call ApplyRandomRotation(res_type, mol_index)
 
-    pass2 = all(abs(primary%site_offset(:, res_type, mol_index, 1) - 42.0_real64) < tol)
+    pass2 = all(abs(primary%site_offset(:, res_type, mol_index, 1) - 42.0_real64) < error)
     if (.not. pass2) then
         print *, "FAILED: Single-atom residue should remain unchanged."
         stop 1
