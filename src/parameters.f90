@@ -27,6 +27,7 @@ module parameters
     ! Parameters for unit conversion
     real(real64), parameter :: A3_TO_M3 = 1.0d-30    ! Conversion factor: 1 Å³ → 1.0E-30 m³
     real(real64), parameter :: ATM_TO_PA = 1.01325d5 ! Conversion factor: 1 atm → 1.01325 × 10^5 Pa
+    real(real64), parameter :: G_TO_KG = 1.0d-3     ! Conversion factor: 1 g → 1.0E-3 km
 
     ! File names
     character(len=*), parameter :: data_filename = 'topology.data' ! Topology data file

@@ -106,29 +106,46 @@ contains
 
         real(real64) :: acc_trans, acc_rot
 
-        if (input%recalibrate_moves) then
+        if (.not. input%recalibrate_moves) return
 
-            ! Adjust translation step
-            if (counter%trial_translations > MIN_TRIALS_FOR_RECALIBRATION) then
-                acc_trans = real(counter%translations) / real(counter%trial_translations)
-                if (acc_trans - TARGET_ACCEPTANCE > TOL_ACCEPTANCE) then
-                    input%translation_step = min(input%translation_step * 1.05d0, MAX_TRANSLATION_STEP)
-                else if (acc_trans - TARGET_ACCEPTANCE < TOL_ACCEPTANCE) then
-                    input%translation_step = max(input%translation_step * 0.95d0, MIN_TRANSLATION_STEP)
-                end if
+        ! Adjust translation step
+        if (counter%trial_translations > MIN_TRIALS_FOR_RECALIBRATION) then
 
-            end if
+            acc_trans = real(counter%translations, real64) / &
+                real(counter%trial_translations, real64)
 
-            ! Adjust rotational step
-            if (counter%trial_rotations > MIN_TRIALS_FOR_RECALIBRATION) then
-                acc_rot = real(counter%rotations) / real(counter%trial_rotations)
-                if (acc_rot - TARGET_ACCEPTANCE > TOL_ACCEPTANCE) then
-                    input%rotation_step_angle = min(input%rotation_step_angle * 1.05d0, MAX_ROTATION_ANGLE)
-                else if (acc_rot - TARGET_ACCEPTANCE < TOL_ACCEPTANCE) then
-                    input%rotation_step_angle = min(input%rotation_step_angle * 1.95d0, MIN_ROTATION_ANGLE)
-                end if
+            if (acc_trans - TARGET_ACCEPTANCE > TOL_ACCEPTANCE) then
+
+                ! acceptance too high → increase step
+                input%translation_step = min(input%translation_step * 1.05d0, MAX_TRANSLATION_STEP)
+
+            else if (acc_trans - TARGET_ACCEPTANCE < TOL_ACCEPTANCE) then
+
+                ! acceptance too low → decrease step
+                input%translation_step = max(input%translation_step * 0.95d0, MIN_TRANSLATION_STEP)
 
             end if
+
+        end if
+
+        ! Adjust rotational step
+        if (counter%trial_rotations > MIN_TRIALS_FOR_RECALIBRATION) then
+
+            acc_rot = real(counter%rotations,real64) / &
+                    real(counter%trial_rotations,real64)
+
+            if (acc_rot - TARGET_ACCEPTANCE > TOL_ACCEPTANCE) then
+
+                ! acceptance too high → increase step
+                input%rotation_step_angle = min(input%rotation_step_angle * 1.05d0, MAX_ROTATION_ANGLE)
+
+            else if (acc_rot - TARGET_ACCEPTANCE < TOL_ACCEPTANCE) then
+
+                ! acceptance too low → decrease step
+                input%rotation_step_angle = max(input%rotation_step_angle * 0.95d0, MIN_ROTATION_ANGLE)
+            
+            end if
+
         end if
 
     end subroutine AdjustMoveStepSizes
@@ -288,7 +305,7 @@ contains
         real(real64) :: phi_old, phi_new        ! Fugacities of species
         real(real64) :: T                       ! Temperature in units of kB*T
         real(real64) :: beta                    ! 1/kB T
-        integer :: N_old, N_new                 ! Number of molecule per types
+        real(real64) :: N_old, N_new            ! Number of molecule per types
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
@@ -309,7 +326,7 @@ contains
     !---------------------------------------------------------------------------
     ! Purpose:
     !   Compute the updated energy of a single molecule after a trial move
-    !   (translation or rotation) for use in the Monte Carlo acceptance test.
+    !   for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
     subroutine ComputeNewEnergy(residue_type, molecule_index, new, is_creation, is_deletion)
 
@@ -367,35 +384,15 @@ contains
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
-            
+
         end if
 
     end subroutine ComputeNewEnergy
 
     !---------------------------------------------------------------------------
     ! Purpose:
-    !   Compute the "old" (pre-move) energy of a single molecule for Monte Carlo
-    !   Metropolis acceptance criterion.
-    !
-    ! Inputs:
-    !   residue_type   - Integer: Type of residue/molecule
-    !   molecule_index - Integer: Index of the molecule in the system
-    !   is_creation    - Optional logical flag:
-    !                    .true. if the molecule does not yet exist (creation scenario)
-    !                    .false. or absent for existing molecules
-    !
-    ! Outputs:
-    !   old            - Type(energy_state): Energy components before trial move
-    !
-    ! Notes:
-    !   - For existing molecules, computes:
-    !       * Reciprocal-space Coulomb energy via Ewald summation
-    !       * Pairwise interaction energies (van der Waals + real-space Coulomb)
-    !       * Translation/rotation does not affect self-energy or intra-molecular Coulomb terms
-    !   - For creation scenario:
-    !       * Most energy terms are set to 0 (non_coulomb, coulomb, intra_coulomb, ewald_self)
-    !       * Global reciprocal-space energy is copied from energy%recip_coulomb
-    !   - old%total stores the sum of all relevant energy components
+    !   Compute the previous energy of a single molecule before a trial move
+    !   for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
     subroutine ComputeOldEnergy(residue_type, molecule_index, old, is_creation, is_deletion)
 
@@ -407,6 +404,7 @@ contains
         type(energy_state), intent(out) :: old      ! Old energy states
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
+
         ! Local variables
         logical :: creation_flag
         logical :: deletion_flag
@@ -416,31 +414,39 @@ contains
 
         if (creation_flag) then
 
-            ! Creation scenario: molecule does not exist yet
-            ! Most energy terms of an unexisting molecule are 0
+            ! Note: Most energy terms in the absence of a molecule are 0
+            ! --> One must only recalculate energy%recip_coulomb
+
             old%non_coulomb = zero
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
             old%recip_coulomb = energy%recip_coulomb ! global system reciprocal energy
+
+            ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
 
         else if (deletion_flag) then
 
-            ! Deletion scenario
+            ! Note: In deletion scenario, compute all energy components
+
             call ComputeEwaldSelfInteractionSingleMol(residue_type, old%ewald_self)
             call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, old%intra_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
             old%recip_coulomb = energy%recip_coulomb
+
+            ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
 
         else
 
-            ! Normal pre-move scenario: molecule exists
-            ! Compute current energy (cf e_old)
+            ! Note, for simple move (translation or rotation), one only needs to
+            ! recompute reciprocal and pairwise interactions
+
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
-            ! Note: Translation/Translation does not affect ewald_self or intra_coulomb
+
+            ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb
 
         end if
@@ -463,8 +469,8 @@ contains
     subroutine AcceptMove(old, new, counter_var)
 
         ! Input arguments
-        type(energy_state), intent(in) :: old, new
-        integer, intent(inout) :: counter_var
+        type(energy_state), intent(in) :: old, new  ! Old and new energy states
+        integer, intent(inout) :: counter_var       ! Counter for succesfull move
 
         energy%recip_coulomb = energy%recip_coulomb + new%recip_coulomb - old%recip_coulomb
         energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb
@@ -503,6 +509,7 @@ contains
         integer, intent(in) :: mol_index        ! Index of the molecule
         real(real64), intent(out), optional :: com_old(3) ! Center-of-mass before move (for translation)
         real(real64), intent(out), optional :: offset_old(:, :) ! Site offsets before move (for rotation)
+
         ! Local variable
         integer :: natoms
 
@@ -580,6 +587,7 @@ contains
         integer, intent(in) :: residue_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
         integer, intent(out) :: rand_mol_index  ! Randomly selected molecule index from the reservoir
+
         ! Local variables
         logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
         real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
@@ -696,11 +704,11 @@ contains
                 !    μ_ideal = k_B * T * ln(ρ * Λ^3)
                 ! ----------------------------------------------------------------
                 T = input%temp_K                                  ! Temperature (K)
-                m = res%mass_residue(type_residue) / 1000.0_real64 / NA  ! Mass per molecule (kg)
+                m = res%mass_residue(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
                 Lambda = Hplank / sqrt(TWOPI * m * KB_JK * T)     ! Thermal de Broglie wavelength (m)
 
                 N = primary%num_residues(type_residue)           ! Number of molecules
-                V = primary%volume * A3_TO_M3                     ! Box volume (m^3)
+                V = primary%volume * A3_TO_M3                    ! Box volume (m^3)
                 rho = real(N, kind=real64) / V                   ! Number density (molecules/m^3)
 
                 mu_ideal = KB_kcalmol * T * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
