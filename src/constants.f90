@@ -9,10 +9,11 @@ module constants
     real(real64), parameter :: SQRTPI = SQRT(PI) ! Square root of Pi
     real(real64), parameter :: KB_JK = 1.380658D-23 ! Boltzmann constant (J/K)
     real(real64), parameter :: KB_kcalmol = 0.0019872041_real64 ! Boltzmann constant (kcal/mol)
-    real(real64), parameter :: EPS0_INV_eVA = 14.40198_real64 ! e^2 / 4 pi epsilon_0 (eV A)
+    real(real64), parameter :: EPS0_INV_eVA = 14.40198_real64 ! e^2 / 4 pi epsilon_0 (eV Å / e^2)
+    real(real64), parameter :: EPS0_INV_kcalA = 332.0637_real64 ! e^2 / 4 pi epsilon_0 (kcal Å/(mol e^2))
     real(real64), parameter :: KB_eVK = 8.6173852D-5    ! Boltzmann constant (eV/K)
     real(real64), parameter :: zero = 0.0_real64        ! Zero in real64
-    real(real64), parameter :: quarter = 0.25_real64     ! 1/4 in real64
+    real(real64), parameter :: quarter = 0.25_real64    ! 1/4 in real64
     real(real64), parameter :: half = 0.5_real64        ! 1/2 in real64
     real(real64), parameter :: one = 1.0_real64         ! One in real64
     real(real64), parameter :: two = 2.0_real64         ! Two in real64

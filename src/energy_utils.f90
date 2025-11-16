@@ -165,20 +165,20 @@ contains
                     do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
 
                         ! Read pair parameters
-                        sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2)
-                        epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2)
-                        charge_1 = primary%atom_charges(residue_type_1, atom_index_1)
-                        charge_2 = primary%atom_charges(residue_type_2, atom_index_2)
+                        sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Angstrom
+                        epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
+                        charge_1 = primary%atom_charges(residue_type_1, atom_index_1)                   ! In units of e
+                        charge_2 = primary%atom_charges(residue_type_2, atom_index_2)                   ! In units of e
 
                         ! Calculate the distance, accouting for periodic boundary conditions
                         distance = ComputeDistance(box, residue_type_1, molecule_index_1, atom_index_1, &
-                                   residue_type_2, molecule_index_2, atom_index_2)
+                                   residue_type_2, molecule_index_2, atom_index_2)                      ! In Angstrom
 
                         ! Update non-Coulomb energy
-                        e_non_coulomb = e_non_coulomb + LennardJonesEnergy(distance, sigma, epsilon)
+                        e_non_coulomb = e_non_coulomb + LennardJonesEnergy(distance, sigma, epsilon)    ! In kcal/mol
 
                         ! Update Coulomb energy
-                        e_coulomb = e_coulomb + CoulombEnergy(distance, charge_1, charge_2)
+                        e_coulomb = e_coulomb + CoulombEnergy(distance, charge_1, charge_2)             ! In e^2/Å
 
                     end do
                 end do
@@ -186,7 +186,7 @@ contains
         end do
 
         ! Re-scale energy
-        e_coulomb = e_coulomb * EPS0_INV_eVA / KB_eVK
+        e_coulomb = e_coulomb * EPS0_INV_kcalA                                                   ! In kcal/mol
 
     end subroutine SingleMolPairwiseEnergy
 
@@ -199,26 +199,30 @@ contains
 
         ! Input variables
         real(real64), intent(in) :: r          ! Distance between the two atoms (in Å)
-        real(real64), intent(in) :: sigma      ! Lennard-Jones sigma parameter (size, Å)
-        real(real64), intent(in) :: epsilon    ! Lennard-Jones epsilon parameter (well depth, eV or kJ/mol depending on units)
+        real(real64), intent(in) :: sigma      ! Lennard-Jones sigma parameter (in Å)
+        real(real64), intent(in) :: epsilon    ! Lennard-Jones epsilon parameter (in kJ/mol)
 
         ! Local variables
         real(real64) :: r6      ! (σ / r)^6 term of the LJ potential
         real(real64) :: r12     ! (σ / r)^12 term of the LJ potential
-        real(real64) :: energy  ! Computed Lennard-Jones energy contribution
+        real(real64) :: energy  ! Lennard-Jones energy contribution (kcal/mol)
 
         if (r >= input%real_space_cutoff) then
-            energy = zero
+
+            energy = zero                                           ! kcal/mol
+
         else
+
             ! Use tabulated r^6 and r^12 if available and requested
             if (use_table .and. r6_table%initialized .and. r12_table%initialized) then
-                r6 = sigma**6 / LookupTabulated(r6_table, r)
-                r12 = sigma**12 / LookupTabulated(r12_table, r)
+                r6 = sigma**6 / LookupTabulated(r6_table, r)        ! No units
+                r12 = sigma**12 / LookupTabulated(r12_table, r)     ! No units
             else
-                r6 = (sigma / r)**6
-                r12 = r6 * r6
+                r6 = (sigma / r)**6                                 ! No units
+                r12 = r6 * r6                                       ! No units
             end if
-            energy = four * epsilon * (r12 - r6)
+            energy = four * epsilon * (r12 - r6)                    ! kcal/mol
+
         end if
 
     end function LennardJonesEnergy
@@ -231,29 +235,34 @@ contains
         implicit none
 
         ! Input variables
-        real(real64), intent(in) :: r   ! Distance between the two atoms (in Å)
-        real(real64), intent(in) :: q1  ! Atomic partial charge of atom 1 (in e)
-        real(real64), intent(in) :: q2  ! Atomic partial charge of atom 2 (in e)
+        real(real64), intent(in) :: r       ! Distance between the two atoms (in Å)
+        real(real64), intent(in) :: q1      ! Atomic partial charge of atom 1 (in e)
+        real(real64), intent(in) :: q2      ! Atomic partial charge of atom 2 (in e)
 
         ! Local variable
-        real(real64) :: energy   ! Computed Coulomb energy contribution (unscaled)
+        real(real64) :: energy   ! Computed Coulomb energy contribution in units of e^2/Å
 
         ! Initialize energy
-        energy = zero
+        energy = zero           ! In units of e^2/Å
 
-        ! Skip negligible charges
+        ! Skip negligible charges (and therefore returns an energy of 0)
         if ((abs(q1) < error) .or. (abs(q2) < error)) return
 
-        ! Avoid division by zero
+        ! Avoid division by zero (and therefore returns an energy of 0)
         if (r < error) return
 
         ! Compute Coulomb energy (tabulated or direct)
         if (use_table .and. erfc_r_table%initialized) then
-            energy = q1 * q2 * LookupTabulated(erfc_r_table, r)
+
+            ! energy = q1*q2 * f(r)  , f(r) is erfc(r) / r from lookup table
+            energy = q1 * q2 * LookupTabulated(erfc_r_table, r)     ! In units of e^2/Å
+
         else
+
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r
-            energy = q1 * q2 * erfc(ewald%alpha * r) / r
+            energy = q1 * q2 * erfc(ewald%alpha * r) / r            ! In units of e^2/Å
+            
         end if
 
     end function CoulombEnergy
