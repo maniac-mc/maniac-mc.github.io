@@ -4,8 +4,7 @@ set -euo pipefail
 # Path to LAMMPS executable (default: "lmp" in PATH)
 LMP=${LMP:-lmp}
 
-
-# Loop over everything that is a directory (H2O, CO2, ... later)
+# Loop over everything that is a directory
 for testdir in */ ; do
     (
         cd "$testdir"
