@@ -107,6 +107,7 @@ contains
         ! Input arguments
         integer, intent(in) :: kx, ky, kz
         integer, intent(in) :: kmax(3)
+        
         ! Output argument
         real(real64) :: k_squared
 

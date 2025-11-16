@@ -91,16 +91,6 @@ contains
     !     - A(k) is the structure factor amplitude
     !     - W(k) is the reciprocal-space weight
     !     - form_factor accounts for k vs -k symmetry
-    !
-    ! Input:
-    !   None
-    !
-    ! Output:
-    !   u_recipCoulomb : total reciprocal Coulomb energy (eV per molecule)
-    !
-    ! Notes:
-    !   - Uses precomputed reciprocal vectors and phase factors.
-    !   - Converts the final sum to physical units at the end.
     !--------------------------------------------------------------------
     subroutine ComputeReciprocalEnergy(u_recipCoulomb)
 
@@ -129,20 +119,21 @@ contains
                 ewald%kvectors(idx)%ky, ewald%kvectors(idx)%kz)
 
             ! Retrieve the precomputed reciprocal-space weight
-            recip_constant = ewald%recip_constants(idx)
+            recip_constant = ewald%recip_constants(idx)! Å^2
 
             ! Compute squared modulus of the structure factor amplitude
-            amplitude_sq = amplitude_squared(recip_amplitude)
+            amplitude_sq = amplitude_squared(recip_amplitude) ! e^2
 
             ! Accumulate reciprocal-space energy:
             ! form_factor * reciprocal constant * |amplitude|^2
             ! E_k = form_factor * recip_constant * |recip_amplitude|^2
-            u_recipCoulomb = u_recipCoulomb + form_factor * recip_constant * amplitude_sq
+            u_recipCoulomb = u_recipCoulomb + form_factor * recip_constant * amplitude_sq ! In e^2 x Å^2
 
         end do
 
-        ! Convert accumulated energy to correct units (eV per molecule)
-        u_recipCoulomb = u_recipCoulomb * EPS0_INV_eVA / KB_eVK * TWOPI / primary%volume
+        ! Convert accumulated energy to correct units (kcal/mol)
+        ! e^2 x Å^2 * kcal Å / (mol e^2 Å^3) = kcal/mol
+        u_recipCoulomb = u_recipCoulomb * EPS0_INV_kcalA * TWOPI / primary%volume ! In kcal/mol
 
     end subroutine ComputeReciprocalEnergy
 
@@ -169,18 +160,6 @@ contains
     !          - W(k) is the precomputed reciprocal constant,
     !          - A(k) is the structure factor amplitude.
     !
-    !   After processing all k-vectors, the total energy is scaled into
-    !   physical units (eV per molecule).
-    !
-    ! Input arguments:
-    !   residue_type   - index of the residue type
-    !   molecule_index - index of the molecule
-    !   is_creation    - optional flag, true if molecule is being created
-    !   is_deletion    - optional flag, true if molecule is being deleted
-    !
-    ! Output arguments:
-    !   u_recipCoulomb_new - reciprocal-space Coulomb energy (in eV)
-    !
     ! Notes:
     !   - If neither is_creation nor is_deletion is present, the routine
     !     assumes a standard displacement/MC move and applies the
@@ -198,6 +177,7 @@ contains
         real(real64), intent(out) :: u_recipCoulomb_new  ! Output: reciprocal-space Coulomb energy
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
+
         ! Local variables
         integer :: kx_idx, ky_idx, kz_idx      ! Components of current reciprocal lattice vector
         integer :: idx                         ! Loop index over precomputed k-vectors
@@ -239,20 +219,26 @@ contains
 
             ! Update Fourier coefficient A(k)
             if (creation_flag) then
+
                 ! Molecule creation
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) ]
                 ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) + &
                     sum(ewald%charges(1:natoms) * ewald%phase_new(1:natoms))
+            
             else if (deletion_flag) then
+            
                 ! Molecule deletion
                 ! A(k) ← A(k) + Σ q_i [ - e^(i k·r_i,old) ]
                 ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) - &
                     sum(ewald%charges(1:natoms) * ewald%phase_old(1:natoms))
+            
             else
+            
                 ! Standard move (translation, rotation)
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) - e^(i k·r_i,old) ]
                 ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) + &
                     sum(ewald%charges(1:natoms) * (ewald%phase_new(1:natoms) - ewald%phase_old(1:natoms)))
+            
             end if
 
             ! Compute squared modulus of the structure factor amplitude
@@ -264,12 +250,13 @@ contains
             ! where W(k) is the precomputed reciprocal constant
             !----------------------------------------------
             u_recipCoulomb_new = u_recipCoulomb_new + form_factor * ewald%recip_constants(idx) * amplitude_sq
+
         end do
 
         !----------------------------------------------
         ! Convert accumulated energy to physical units:
         !----------------------------------------------
-        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_eVA / KB_eVK * TWOPI / primary%volume
+        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_kcalA * TWOPI / primary%volume ! In kcal/mol
 
     end subroutine ComputeRecipEnergySingleMol
 
@@ -293,17 +280,6 @@ contains
     !   for a molecule/residue is the sum over all atoms in that molecule:
     !
     !       E_self = Σ_i E_self(i) = - (α / √π) * Σ_i q_i^2
-    !
-    ! Inputs:
-    !   residue_type : integer index identifying the molecule/residue
-    !
-    ! Outputs:
-    !   self_energy_1 : real(real64)
-    !       Reciprocal-space self-energy correction for this molecule (in eV)
-    !
-    ! Notes:
-    !   - Charges below 1e-10 are ignored to prevent unnecessary computations.
-    !   - The result is scaled to eV per molecule using EPS0_INV_eVA / KB_eVK.
     !--------------------------------------------------------------------
     subroutine ComputeEwaldSelfInteractionSingleMol(residue_type, self_energy)
 
@@ -330,8 +306,7 @@ contains
             self_energy = self_energy - ewald%alpha / SQRTPI * charge_1**2
         end do
 
-        ! Scale by constants EPS0_INV_eVA and KB_eVK
-        self_energy = self_energy * EPS0_INV_eVA / KB_eVK
+        self_energy = self_energy * EPS0_INV_kcalA ! In kcal/mol
 
     end subroutine ComputeEwaldSelfInteractionSingleMol
 
@@ -353,20 +328,6 @@ contains
     !   at r -> 0. This implementation computes:
     !
     !       E_intra = Σ_{i<j} q_i * q_j * (erfc(α * r_ij) - 1) / r_ij
-    !
-    ! Inputs:
-    !   residue_type   : integer
-    !       Index identifying the residue type / molecule
-    !   molecule_index : integer
-    !       Index of the molecule in the system
-    !
-    ! Outputs:
-    !   u_intraCoulomb_1 : real(real64)
-    !       Real-space intramolecular Coulomb energy (in eV)
-    !
-    ! Notes:
-    !   - Pairs of atoms with distance < 1e-10 are skipped to avoid singularity.
-    !   - The result is scaled to physical units using EPS0_INV_eVA / KB_eVK.
     !------------------------------------------------------------------------------
     subroutine ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, u_intraCoulomb)
 
@@ -405,8 +366,7 @@ contains
             end do
         end do
 
-        ! Scale by constants EPS0_INV_eVA and KB_eVK
-        u_intraCoulomb = u_intraCoulomb * EPS0_INV_eVA / KB_eVK
+        u_intraCoulomb = u_intraCoulomb * EPS0_INV_kcalA ! In kcal/mol
 
     end subroutine ComputeIntraResidueRealCoulombEnergySingleMol
 

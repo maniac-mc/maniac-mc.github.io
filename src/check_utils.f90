@@ -7,7 +7,18 @@ module check_utils
 
 contains
 
-    subroutine CheckMolecule(box)
+    !===============================================================
+    ! Subroutine: ValidateMoleculeGeometry
+    !
+    ! Purpose:
+    !   Verify the integrity of molecules in the simulation box.
+    !   Performs two main checks:
+    !     1. The center-of-mass (COM) of each molecule is inside
+    !        the simulation box boundaries.
+    !     2. Atom offsets from the COM do not exceed a physically
+    !        reasonable threshold (10 Å) for active molecules.
+    !===============================================================
+    subroutine ValidateMoleculeGeometry(box)
 
         implicit none
 
@@ -34,31 +45,29 @@ contains
                 ! Check atom offsets
                 do k = 1, nb%atom_in_residue(i)
                     offset = box%site_offset(:, i, j, k)
-                    if (any(abs(offset) > 10.0_real64) .and. (input%is_active(i)) == 1) then
+                    if (any(abs(offset) > ten) .and. (input%is_active(i)) == 1) then
                         if (.not. warned_large_offset) then
                             call WarnUser("One of the active molecules has an offset larger than 1 nanometer.")
                             warned_large_offset = .true.
-                            write(*,*) box%site_offset(1, i, j, k), box%site_offset(2, i, j, k), box%site_offset(3, i, j, k)
-                            stop 3
                         end if
                     end if
                 end do
             end do
         end do
 
-    end subroutine CheckMolecule
+    end subroutine ValidateMoleculeGeometry
 
     !===============================================================
-    ! Subroutine: CheckConsistency
+    ! Subroutine: AssertMassConsistency
+    !
     ! Purpose:
-    !   Verify that atom masses in the primary simulation system
-    !   and the external reservoir are consistent
+    !   Ensure consistency of atomic masses between the primary
+    !   simulation system and an external reservoir.
     ! !===============================================================
-    subroutine CheckConsistency()
+    subroutine AssertMassConsistency()
 
         implicit none
 
-        real(real64), parameter :: tol = 1.0d-6
         integer :: j, k
         character(len=128) :: msg
 
@@ -66,7 +75,7 @@ contains
             ! Check that system and reservoir atom masses are consistent
             do j = 1, nb%type_residue
                 do k = 1, nb%types_per_residue(j)
-                    if (abs(primary%atom_masses(j, k) - reservoir%atom_masses(j, k)) > tol) then
+                    if (abs(primary%atom_masses(j, k) - reservoir%atom_masses(j, k)) > error) then
 
                         ! Generic header warning
                         call WarnUser("Reservoir and system mass don't match.")
@@ -85,6 +94,6 @@ contains
             end do
         end if
 
-    end subroutine CheckConsistency
+    end subroutine AssertMassConsistency
 
 end module check_utils

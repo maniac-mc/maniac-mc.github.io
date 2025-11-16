@@ -57,21 +57,28 @@ contains
 
         ! Fill rotation matrix based on axis
         select case(axis)
+
         case(1) ! X-axis
+
             rotation_matrix(2,2) = cos_theta
             rotation_matrix(2,3) = -sin_theta
             rotation_matrix(3,2) = sin_theta
             rotation_matrix(3,3) = cos_theta
+
         case(2) ! Y-axis
+
             rotation_matrix(1,1) = cos_theta
             rotation_matrix(1,3) = sin_theta
             rotation_matrix(3,1) = -sin_theta
             rotation_matrix(3,3) = cos_theta
+
         case(3) ! Z-axis
+
             rotation_matrix(1,1) = cos_theta
             rotation_matrix(1,2) = -sin_theta
             rotation_matrix(2,1) = sin_theta
             rotation_matrix(2,2) = cos_theta
+            
         end select
 
     end function RotationMatrix

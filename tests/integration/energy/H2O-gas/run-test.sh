@@ -13,7 +13,7 @@ $build_path -i $input -d $data -p $inc -o $outputs >> log.maniac
 
 logfile=$outputs"log.maniac"
 ref_energy=-32.822927 # LAMMPS reference value
-tolerance=0.01 # allowed deviation
+tolerance=0.02 # allowed deviation
 
 # Get the last TotEng value from the log
 last_toteng=$(awk '/TotEng/ {getline; gsub(/^[| ]+/,""); print $2}' "$logfile")

@@ -105,13 +105,6 @@ contains
         integer :: resi
         integer :: type_residue
 
-        real(real64) :: e_recip_coulomb_kcalmol
-        real(real64) :: e_non_coulomb_kcalmol
-        real(real64) :: e_coulomb_kcalmol
-        real(real64) :: e_ewald_self_kcalmol
-        real(real64) :: e_intra_coulomb__kcalmol
-        real(real64) :: e_total_kcalmol
-
         ! Decide whether to create new files or append
         ! For current_block == 0, we want to recreate the file from scratch
         ! For later blocks, we append to existing files
@@ -120,14 +113,6 @@ contains
         else
             file_status = 'OLD'
         end if
-
-        ! Convert energy components to kcal/mol
-        e_recip_coulomb_kcalmol = energy%recip_coulomb * KB_kcalmol
-        e_non_coulomb_kcalmol = energy%non_coulomb * KB_kcalmol
-        e_coulomb_kcalmol = energy%coulomb * KB_kcalmol
-        e_ewald_self_kcalmol = energy%ewald_self * KB_kcalmol
-        e_intra_coulomb__kcalmol = energy%intra_coulomb * KB_kcalmol
-        e_total_kcalmol = energy%total * KB_kcalmol
 
         ! ------------------------------------------------------
         ! Write to energy.dat
@@ -139,8 +124,8 @@ contains
                                     '     non-coulomb      coulomb     ewald_self    intramolecular-coulomb'
         end if
         write(UNIT_ENERGY, '(I10, 1X, F16.6, 1X, F16.6, 1X, F16.6, 1X, F16.6, 1X, F16.6, 1X, F16.6)') &
-            current_block, e_total_kcalmol, e_recip_coulomb_kcalmol, e_non_coulomb_kcalmol, &
-            e_coulomb_kcalmol, e_ewald_self_kcalmol, e_intra_coulomb__kcalmol
+            current_block, energy%total, energy%recip_coulomb, energy%non_coulomb, &
+            energy%coulomb , energy%ewald_self, energy%intra_coulomb 
         close(UNIT_ENERGY)
 
         ! ------------------------------------------------------

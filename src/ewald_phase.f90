@@ -24,19 +24,6 @@ contains
     !   or in vector form:
     !
     !       phase = 2π * (reciprocal_boxᵀ · atom_pos)
-    !
-    ! Arguments:
-    !   atom_pos        [in]  : Real(3) position of the atom in real space.
-    !   reciprocal_box  [in]  : Real(3,3) reciprocal lattice vectors (columns).
-    !
-    ! Returns:
-    !   phase(3) : Real(3) phase vector (in radians) used in exp(i * k · r)
-    !
-    ! Notes:
-    !   This produces the phase argument (in radians) for the exponential term
-    !   exp(i * k · r) used in the Ewald summation.
-    !   This function is pure and side-effect-free. It can be safely used in
-    !   parallel sections or array expressions.
     !--------------------------------------------------------------------
     pure function ComputeAtomPhase(atom_pos, reciprocal_box) result(phase)
 
@@ -44,11 +31,11 @@ contains
         real(real64), intent(in)  :: atom_pos(3)         ! Cartesian position of the atom in real space (x, y, z)
         real(real64), intent(in)  :: reciprocal_box(3,3) ! Reciprocal lattice vectors as columns of a 3×3 matrix
 
-        ! Function result
-        real(real64) :: phase(3)                        ! Returned phase components (2π * k·r)
-
         ! Local variables
         integer :: i, j                                 ! Loop indices over spatial dimensions
+
+        ! Function result
+        real(real64) :: phase(3)                        ! Returned phase components (2π * k·r)
 
         do i = 1, 3
             phase(i) = zero
@@ -73,19 +60,6 @@ contains
     ! Mathematical Formulation:
     !   For k ∈ [-kmax, kmax]:
     !       phase_factor_axis(k) = exp(i * k * phase_component)
-    !
-    ! Arguments:
-    !   phase_factor_axis [inout] : Complex array (-kmax:kmax) storing computed
-    !                               phase factors for all integer k values.
-    !   phase_component   [in]    : Real phase angle (θ) for the atom along this axis.
-    !   kmax              [in]    : Maximum positive reciprocal index (defines array bounds).
-    !
-    ! Notes:
-    !   Exploits conjugate symmetry:
-    !       exp(-i * k * θ) = conjg(exp(i * k * θ))
-    !   to avoid redundant trigonometric calculations for negative k-values.
-    !   The resulting array is reused during the reciprocal-space energy evaluation
-    !   to minimize repeated sine/cosine computations.
     !--------------------------------------------------------------------
     pure subroutine ComputePhaseFactors1D(phase_factor_axis, phase_component, kmax)
 
@@ -93,19 +67,24 @@ contains
         complex(real64), intent(inout) :: phase_factor_axis(-kmax:kmax) ! Array of complex phase factors for all k indices along one axis
         real(real64), intent(in) :: phase_component                  ! Phase angle for this atom along the current axis
         integer, intent(in) :: kmax                                  ! Maximum k-index in the positive direction
+
         ! Local arguments
         integer :: k                                                 ! Loop index over k-values
         complex(real64) :: phase_exp                                 ! Temporary complex exponential for current k
 
         do k = 0, kmax
+
             ! Compute complex exponential for positive k
             phase_exp = cmplx(dcos(k*phase_component), dsin(k*phase_component), kind=real64)
             phase_factor_axis(k) = phase_exp
 
             ! Exploit conjugate symmetry for negative k values
             if (k /= 0) then
+
                 phase_factor_axis(-k) = conjg(phase_exp)
+
             end if
+
         end do
 
     end subroutine ComputePhaseFactors1D
@@ -117,19 +96,6 @@ contains
     !   Saves the current Fourier-space phase factors and reciprocal amplitudes
     !   for a specific molecule or residue. This enables rollback after a
     !   rejected Monte Carlo or molecular dynamics move.
-    !
-    ! Arguments:
-    !   residue_type   [in] : Integer residue type identifier.
-    !   molecule_index [in] : Integer molecule index within this residue type.
-    !
-    ! Description:
-    !   1. Saves per-atom 1D phase factor arrays (IKX, IKY, IKZ) for all k-indices.
-    !      Handles both positive and negative k-values where applicable.
-    !   2. Saves all reciprocal amplitudes A(k) into backup arrays.
-    !
-    ! Notes:
-    !   The backup arrays (`_old`) preserve the previous Fourier state, allowing
-    !   full restoration without recomputation if a trial move is rejected.
     !--------------------------------------------------------------------
     subroutine SaveSingleMolFourierTerms(residue_type, molecule_index)
 
@@ -188,19 +154,6 @@ contains
     ! Purpose:
     !   Restores previously saved Fourier-space phase factors and reciprocal
     !   amplitudes for a molecule or residue after a rejected move.
-    !
-    ! Arguments:
-    !   residue_type   [in] : Integer residue type identifier.
-    !   molecule_index [in] : Integer molecule index within this residue type.
-    !
-    ! Description:
-    !   1. Restores all 1D phase factor arrays (IKX, IKY, IKZ) from backups.
-    !      Includes negative k-values for ky and kz when nonzero.
-    !   2. Restores reciprocal amplitudes A(k) from backup arrays.
-    !
-    ! Notes:
-    !   Ensures that the reciprocal-space data structures are consistent with
-    !   the accepted configuration before the rejected move attempt.
     !--------------------------------------------------------------------
     subroutine RestoreSingleMolFourier(residue_type, molecule_index)
 
@@ -262,16 +215,6 @@ contains
     !   with those from another molecule (`index_2`) of the same residue type.
     !   Used when molecule identities or positions are swapped (e.g., in
     !   exchange Monte Carlo or symmetry operations).
-    !
-    ! Arguments:
-    !   residue_type [in] : Integer residue type identifier.
-    !   index_1      [in] : Destination molecule index (to be updated).
-    !   index_2      [in] : Source molecule index (providing data).
-    !
-    ! Notes:
-    !   Copies 1D phase factor arrays (IKX, IKY, IKZ) for all atoms and all
-    !   reciprocal indices, including negative k-values where nonzero.
-    !   Reciprocal amplitudes are not modified by this routine.
     !--------------------------------------------------------------------
     subroutine ReplaceFourierTermsSingleMol(residue_type, index_1, index_2)
 
@@ -332,10 +275,6 @@ contains
     !   Loops over every residue type and every molecule within that type,
     !   invoking SingleMolFourierTerms to precompute and cache phase factors
     !   used in the reciprocal-space portion of the Ewald summation.
-    !
-    ! Notes:
-    !   This routine ensures that all required exp(i * k · r) terms are
-    !   available before evaluating reciprocal-space energies or forces.
     !--------------------------------------------------------------------
     subroutine ComputeAllFourierTerms()
 
@@ -365,20 +304,6 @@ contains
     ! Purpose:
     !   Computes the per-atom Fourier-space phase factors exp(i * k · r)
     !   for all k-indices along each Cartesian direction for a given molecule.
-    !
-    ! Arguments:
-    !   res_type [in] : Integer residue type identifier.
-    !   mol_index [in] : Integer molecule index within this residue type.
-    !
-    ! Description:
-    !   For each atom in the molecule:
-    !     1. Compute its real-space position.
-    !     2. Compute its phase vector: phase = 2π * (reciprocal_boxᵀ · r_atom).
-    !     3. Precompute exp(i * k * phase_component) arrays for x, y, and z axes.
-    !
-    ! Notes:
-    !   These precomputed 1D phase factors are used to construct the full
-    !   reciprocal-space structure factors efficiently during the Ewald sum.
     !--------------------------------------------------------------------
     subroutine SingleMolFourierTerms(res_type, mol_index)
 
@@ -387,11 +312,11 @@ contains
         ! Input arguments
         integer, intent(in) :: res_type
         integer, intent(in) :: mol_index
+        
         ! Local variables
         integer :: atom_index_1                 ! Atom index
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
-
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 

@@ -21,12 +21,13 @@ module parameters
     real(real64), parameter :: PROB_CREATE_DELETE = 0.5d0    ! Probability for insertion/deletion
     integer, parameter :: MIN_TRIALS_FOR_RECALIBRATION = 500 ! Minimum trials before recalibrating step sizes
 
-    ! Parameters controlling the outputs
+    ! Parameters controlling the printed outputs
     integer, parameter :: BOX_WIDTH = 78
 
     ! Parameters for unit conversion
     real(real64), parameter :: A3_TO_M3 = 1.0d-30    ! Conversion factor: 1 Å³ → 1.0E-30 m³
     real(real64), parameter :: ATM_TO_PA = 1.01325d5 ! Conversion factor: 1 atm → 1.01325 × 10^5 Pa
+    real(real64), parameter :: G_TO_KG = 1.0d-3     ! Conversion factor: 1 g → 1.0E-3 km
 
     ! File names
     character(len=*), parameter :: data_filename = 'topology.data' ! Topology data file
@@ -38,7 +39,7 @@ module parameters
     integer, parameter :: TYPE_ROTATION = 4 ! Move type: molecular rotation
 
     ! In module parameters
-    integer, parameter :: TABULATED_POINTS = 5000  ! Default number of points in tabulated functions
-    logical, parameter :: use_table = .false.        ! To fix: make it an input parameter for user
+    integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions
+    logical, parameter :: use_table = .false. ! #TODO: make it an input parameter for user
 
 end module parameters
