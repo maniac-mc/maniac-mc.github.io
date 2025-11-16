@@ -262,7 +262,7 @@ contains
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r
             energy = q1 * q2 * erfc(ewald%alpha * r) / r            ! In units of e^2/Å
-            
+
         end if
 
     end function CoulombEnergy
@@ -336,7 +336,7 @@ contains
             e_ewald_self = e_ewald_self * primary%num_residues(residue_type_1)
 
             ! Accumulate into total self-energy
-            energy%ewald_self = energy%ewald_self + e_ewald_self
+            energy%ewald_self = energy%ewald_self + e_ewald_self    ! In kcal/mol
 
         end do
 
@@ -372,11 +372,11 @@ contains
             if (abs(charge_1) < error) cycle
 
             ! Add the self-energy contribution of this atom
-            self_energy_1 = self_energy_1 - ewald%alpha / SQRTPI * charge_1**2
+            self_energy_1 = self_energy_1 - ewald%alpha / SQRTPI * charge_1**2  ! In units of e^2/Å
         end do
 
-        ! Convert to simulation units
-        self_energy_1 = self_energy_1 * EPS0_INV_eVA / KB_eVK
+        ! Convert to kcal/mol at the end
+        self_energy_1 = self_energy_1 * EPS0_INV_kcalA                          ! In kcal/mol
 
     end subroutine SingleMolEwaldSelf
 
@@ -399,7 +399,6 @@ contains
         integer :: atom_index_1, atom_index_2
         integer :: molecule_index_2
         integer :: residue_type_2
-        ! real(real64), dimension(3) :: delta
         real(real64) :: distance
         real(real64) :: r6, r12 ! r^n for LJ potential calculations
         real(real64) :: sigma, epsilon ! Epsilon and sigma LJ potential calculations
@@ -429,11 +428,11 @@ contains
 
                         if (distance < input%real_space_cutoff) then
                             ! LJ potential
-                            sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2)
-                            epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2)
-                            r6 = (sigma / distance)**6
-                            r12 = r6 * r6
-                            e_non_coulomb = e_non_coulomb + four * epsilon * (r12 - r6)
+                            sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Å
+                            epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
+                            r6 = (sigma / distance)**6                                  ! No units
+                            r12 = r6 * r6                                               ! No units
+                            e_non_coulomb = e_non_coulomb + four * epsilon * (r12 - r6) ! In kcal/mol
                         end if
 
                         ! Use Coulomb potential
@@ -442,15 +441,15 @@ contains
 
                         if ((abs(charge_1) < error) .or. (abs(charge_2) < error)) cycle
 
-                        e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%alpha * distance)) / distance
+                        e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%alpha * distance)) / distance ! e**2/Å
 
                     end do
                 end do
             end do
         end do
 
-        ! Re-scale energy
-        e_coulomb = e_coulomb * EPS0_INV_eVA / KB_eVK
+        ! Convert to kcal/mol at the end
+        e_coulomb = e_coulomb * EPS0_INV_kcalA                          ! In kcal/mol
 
     end subroutine ComputePairInteractionEnergy_singlemol
 
