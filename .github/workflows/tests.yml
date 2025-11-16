@@ -35,12 +35,8 @@ jobs:
       - name: Run writer tests
         working-directory: tests/writers
         env:
-          LMP_PATH: ${{ github.workspace }}/lmp
-        run: |
-          for testdir in */; do
-            echo "Running writer test in $testdir"
-            (cd "$testdir" && LMP="${LMP_PATH}" ./run-test.sh)
-          done
+          LMP: lmp
+        run: ./run-test.sh
 
       # Run reader tests
       - name: Run reader tests
