@@ -104,6 +104,7 @@ contains
         ! Input arguments
         integer, intent(in) :: residue_type    ! Residue type identifier
         integer, intent(in) :: molecule_index  ! Index of the molecule to save
+
         ! Local variables
         integer :: atom_index                  ! Atom index within the residue
         integer :: kx_idx, ky_idx, kz_idx      ! Reciprocal vector indices
@@ -162,6 +163,7 @@ contains
         ! Input arguments
         integer, intent(in) :: residue_type    ! Residue type identifier
         integer, intent(in) :: molecule_index  ! Index of the molecule to restore
+
         ! Local variables
         integer :: atom_index_1                ! Atom index within the residue
         integer :: kx_idx, ky_idx, kz_idx      ! Reciprocal vector indices
@@ -224,6 +226,7 @@ contains
         integer, intent(in) :: residue_type
         integer, intent(in) :: index_1
         integer, intent(in) :: index_2
+        
         ! Local variables
         integer :: kx_idx, ky_idx, kz_idx
         integer :: atom_index_1
