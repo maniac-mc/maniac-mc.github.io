@@ -139,14 +139,17 @@ contains
         real(real64) :: safe_cutoff     ! Adjusted real-space cutoff length to fit inside the simulation box safely
 
         if (input%real_space_cutoff > primary%metrics(1) &
-                .OR. input%real_space_cutoff > primary%metrics(2) &
-                .OR. input%real_space_cutoff > primary%metrics(3)) then
+                .or. input%real_space_cutoff > primary%metrics(2) &
+                .or. input%real_space_cutoff > primary%metrics(3)) then
+
             if (do_log) then
                 write(msg, '(A)') 'WARNING: real_space_cutoff too large for box. Reducing to safe value.'
                 call LogMessage(msg)
             end if
+            
             safe_cutoff = min(primary%metrics(1), primary%metrics(2), primary%metrics(3)) / two
             input%real_space_cutoff = safe_cutoff
+        
         end if
     end subroutine AdjustRealSpaceCutoff
 

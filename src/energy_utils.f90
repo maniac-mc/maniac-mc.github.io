@@ -15,6 +15,9 @@ module energy_utils
 
 contains
 
+    !------------------------------------------------------------------------------
+    ! Compute the total energy of the system
+    !------------------------------------------------------------------------------
     subroutine ComputeSystemEnergy(box)
 
         implicit none
@@ -30,7 +33,7 @@ contains
 
         ! Calculate total energy
         energy%total = energy%recip_coulomb + energy%non_coulomb + energy%coulomb + &
-            energy%ewald_self + energy%intra_coulomb
+            energy%ewald_self + energy%intra_coulomb ! In kcal/mol
 
     end subroutine ComputeSystemEnergy
 
@@ -69,11 +72,12 @@ contains
             if (input%is_active(residue_type_1) == 1) then
                 ! Loop over all molecules of this residue type
                 do molecule_index_1 = 1, primary%num_residues(residue_type_1)
+
                     ! Compute intra-residue Coulomb energy for this molecule
                     call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type_1, molecule_index_1, e_intra_coulomb)
 
                     ! Accumulate into total intra-residue energy
-                    energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb
+                    energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
                 end do
             end if
         end do
@@ -85,15 +89,15 @@ contains
         implicit none
 
         ! Input arguments
-        type(type_box), intent(inout) :: box
+        type(type_box), intent(inout) :: box    ! Box (revervoir or primary)
 
-        ! Variables for the residue of interest
+        ! Local variables
         integer :: residue_type_1
         integer :: molecule_index_1
         real(real64) :: e_non_coulomb
         real(real64) :: e_coulomb
 
-        ! First, initialize energies to zero
+        ! Initialize energies to zero
         energy%non_coulomb = zero
         energy%coulomb = zero
 
@@ -107,8 +111,8 @@ contains
                     molecule_index_1, e_non_coulomb, e_coulomb)
 
                 ! Add residue_1, molecule_1 energy to the total pairwise energy
-                energy%non_coulomb = energy%non_coulomb + e_non_coulomb
-                energy%coulomb = energy%coulomb + e_coulomb
+                energy%non_coulomb = energy%non_coulomb + e_non_coulomb ! In kcal/mol
+                energy%coulomb = energy%coulomb + e_coulomb ! In kcal/mol
             end do
         end do
 
