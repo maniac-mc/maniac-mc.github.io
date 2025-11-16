@@ -27,10 +27,33 @@ jobs:
       - name: Run build.sh
         run: ./build.sh
 
+      # Install a pre-built LAMMPS binary usable for your writer tests
+      - name: Download LAMMPS prebuilt binary
+        run: |
+          wget https://download.lammps.org/static/lammps-linux.tar.gz -O lammps.tar.gz
+          tar xzf lammps.tar.gz
+          # Extracted directory name begins with something like "lammps-23Jun2022"
+          mv lammps*/bin/lmp lmp
+          chmod +x lmp
+        shell: bash
+
+      # Run writer tests
+      - name: Run writer tests
+        working-directory: tests/writers
+        env:
+          LMP_PATH: ${{ github.workspace }}/lmp
+        run: |
+          for testdir in */; do
+            echo "Running writer test in $testdir"
+            (cd "$testdir" && LMP="${LMP_PATH}" ./run-test.sh)
+          done
+
+      # Run reader tests
       - name: Run reader tests
         working-directory: tests/readers/data
         run: ./run-test.sh
 
+      # Run integration tests
       - name: Run all integration tests
         run: |
           for testdir in tests/integration/energy/*; do
@@ -38,6 +61,7 @@ jobs:
             (cd "$testdir" && ./run-test.sh)
           done
 
+      # Run unit tests
       - name: Run all unit tests
         run: |
           for testdir in tests/units/*; do
