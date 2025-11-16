@@ -181,14 +181,32 @@ contains
 
     end function PickRandomMoleculeIndex
 
+    !----------------------------------------------------------------------
+    ! Compute the Metropolis acceptance probability for a Monte Carlo move.
+    ! 
+    ! This routine evaluates the acceptance probability for creation,
+    ! deletion, translation, and rotation moves in a grand-canonical or
+    ! canonical Monte Carlo simulation.  The expression uses:
+    !
+    !   - ΔE  = new%total – old%total          (energy difference)
+    !   - β   = 1 / (kB * T)                   (inverse temperature)
+    !   - φ   = fugacity of the residue type
+    !   - V   = simulation box volume
+    !   - N   = current number of residues of that type
+    !
+    ! Move-dependent acceptance rules:
+    !   * Creation:   min(1, (φ V / (N+1)) * exp(-β ΔE))
+    !   * Deletion:   min(1, ((N+1) / (φ V)) * exp(-β ΔE))
+    !   * Translation/Rotation:  min(1, exp(-β ΔE))
+    !----------------------------------------------------------------------
     function mc_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
         implicit none
 
         ! Input arguments
-        type(energy_state), intent(in) :: old   ! Previous energy states
+        type(energy_state), intent(in) :: old   ! Old energy states
         type(energy_state), intent(in) :: new   ! New energy states
-        integer, intent(in) :: move_type        ! MC move type: TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, TYPE_ROTATION
+        integer, intent(in) :: move_type        ! MC move type (TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, or TYPE_ROTATION)
         integer, intent(in) :: residue_type     ! Index of the residue type
         
         ! Local variables
@@ -200,25 +218,25 @@ contains
         real(real64) :: delta_e                 ! Energy difference ΔE between trial and current state
 
         N   = real(primary%num_residues(residue_type))
-        V   = primary%volume
-        phi = input%fugacity(residue_type)
-        T = input%temp_K
-
-        delta_e = new%total - old%total
+        V   = primary%volume                    ! Angstrom^3
+        phi = input%fugacity(residue_type)      ! Angstrom^-3
+        T = input%temp_K                        ! Kelvin
+        beta = 1/(KB_kcalmol*T)                 ! kcal/mol
+        delta_e = new%total - old%total         ! kcal/mol
 
         ! Compute factor based on move type
         select case (move_type)
             case (TYPE_CREATION)
 
-                probability = min(one, (phi * V / N) * exp(-delta_e / T))
+                probability = min(one, (phi * V / (N + one)) * exp(-beta * delta_e)) ! Note: N+1 instead of N to avoid division by zero
 
             case (TYPE_DELETION)
 
-                probability = min(one, ((N + one) / (phi * V)) * exp(-delta_e / T))
+                probability = min(one, ((N + one) / (phi * V)) * exp(-beta * delta_e))
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
-                probability = min(one, exp(-delta_e / T))
+                probability = min(one, exp(-beta * delta_e))
 
             case default
 
