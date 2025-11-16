@@ -53,8 +53,5 @@ jobs:
 
       # Run unit tests
       - name: Run all unit tests
-        run: |
-          for testdir in tests/units/*; do
-            echo "Running test in $testdir"
-            (cd "$testdir" && ./run-test.sh)
-          done
+        working-directory: tests/units
+        run: ./run-test.sh
