@@ -346,7 +346,7 @@ contains
         nb%type_residue = 0
 
         ! Initialize all fugacities to -1.0 (indicating unset)
-        input%fugacity(:) = -1.0_real64
+        input%fugacity(:) = -one
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -378,7 +378,7 @@ contains
             case ("temperature")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading temperature"
-                if (val_real <= 0.0_real64) error stop "Invalid temperature: must be > 0"
+                if (val_real <= zero) error stop "Invalid temperature: must be > 0"
                 input%temp_K = val_real
                 has_temp = .true.
 
@@ -391,28 +391,28 @@ contains
             case ("ewald_tolerance")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading ewald_tolerance"
-                if (val_real <= 0.0_real64) error stop "Invalid ewald_tolerance: must be > 0"
+                if (val_real <= zero) error stop "Invalid ewald_tolerance: must be > 0"
                 input%ewald_tolerance = val_real
                 has_tolerance = .true.
 
             case ("real_space_cutoff")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading real_space_cutoff"
-                if (val_real <= 0.0_real64) error stop "Invalid real_space_cutoff: must be > 0"
+                if (val_real <= zero) error stop "Invalid real_space_cutoff: must be > 0"
                 input%real_space_cutoff = val_real
                 has_cutoff = .true.
 
             case ("translation_step")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading translation_step"
-                if (val_real <= 0.0_real64) error stop "Invalid translation_step: must be > 0"
+                if (val_real <= zero) error stop "Invalid translation_step: must be > 0"
                 input%translation_step = val_real
                 has_translation_step = .true.
 
             case ("rotation_step_angle")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading rotation_step_angle"
-                if (val_real <= 0.0_real64) error stop "Invalid rotation_step_angle: must be > 0"
+                if (val_real <= zero) error stop "Invalid rotation_step_angle: must be > 0"
                 input%rotation_step_angle = val_real
                 has_rotation_step = .true.
 
@@ -425,7 +425,7 @@ contains
             case ("translation_proba")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading translation_proba"
-                if (val_real < 0.0_real64 .or. val_real > 1.0_real64) error stop &
+                if (val_real < zero .or. val_real > one) error stop &
                     "Invalid translation_proba: must be in [0,1]"
                 proba%translation = val_real
                 has_translation_proba = .true.
@@ -433,7 +433,7 @@ contains
             case ("rotation_proba")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading rotation_proba"
-                if (val_real < 0.0_real64 .or. val_real > 1.0_real64) error stop &
+                if (val_real < zero .or. val_real > one) error stop &
                     "Invalid rotation_proba: must be in [0,1]"
                 proba%rotation = val_real
                 has_rotation_proba = .true.
@@ -441,7 +441,7 @@ contains
             case ("insertion_deletion_proba")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading insertion_deletion_proba"
-                if (val_real < 0.0_real64 .or. val_real > 1.0_real64) error stop &
+                if (val_real < zero .or. val_real > one) error stop &
                     "Invalid insertion_deletion_proba: must be in [0,1]"
                 proba%insertion_deletion = val_real
                 has_insertdel_proba = .true.
@@ -449,7 +449,7 @@ contains
             case ("swap_proba")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading swap_proba"
-                if (val_real < 0.0_real64 .or. val_real > 1.0_real64) error stop &
+                if (val_real < zero .or. val_real > one) error stop &
                     "Invalid swap_proba: must be in [0,1]"
                 proba%swap = val_real
                 has_swap_proba = .true.
@@ -457,7 +457,7 @@ contains
             case ("widom_proba")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading widom_proba"
-                if (val_real < 0.0_real64 .or. val_real > 1.0_real64) error stop &
+                if (val_real < zero .or. val_real > one) error stop &
                     "Invalid widom_proba: must be in [0,1]"
                 proba%widom = val_real
                 has_widom_proba = .true.

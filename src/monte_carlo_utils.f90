@@ -55,7 +55,7 @@ contains
         theta = ChooseRotationAngle(use_full_rotation)
 
         ! Choose random axis (1=X, 2=Y, 3=Z)
-        rotation_axis = int(rand_uniform() * three) + 1 ! Random integer in [1,3]
+        rotation_axis = int(rand_uniform() * three) + 1 ! Random integer in range [1,3]
 
         ! Set rotation matrix based on axis
         rotation_matrix = RotationMatrix(rotation_axis, theta)

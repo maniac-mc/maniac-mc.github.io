@@ -97,6 +97,7 @@ contains
         ! Input variables
         integer, intent(in) :: res_type             ! Residue type to be moved
         integer, intent(in) :: mol_index            ! Molecule ID
+        
         ! Local variables
         real(real64) :: trial_pos(3)
 
