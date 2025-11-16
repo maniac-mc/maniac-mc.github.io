@@ -49,14 +49,23 @@ program test_PickRandomMoleculeIndex
     !---------------------------------------
     ! Final output
     !---------------------------------------
-    if (pass1 .and. pass2 .and. pass3) then
-        print *, 'PickRandomMoleculeIndex test PASSED'
-    else
+    if (.not. pass1) then
         print *, 'PickRandomMoleculeIndex test FAILED'
-        if (.not. pass1) print *, ' Error: returned index out of range'
-        if (.not. pass2) print *, ' Error: did not return 0 for zero molecules'
-        if (.not. pass3) print *, ' Error: random sampling missed some indices'
+        print *, ' Error: returned index out of range'
         stop 1
     end if
+
+    if (.not. pass2) then
+        print *, 'PickRandomMoleculeIndex test FAILED'
+        print *, ' Error: did not return 0 for zero molecules'
+        stop 1
+    end if
+
+    if (.not. pass3) then
+        print *, 'PickRandomMoleculeIndex test FAILED'
+        print *, ' Error: random sampling missed some indices'
+        stop 1
+    end if
+
 
 end program test_PickRandomMoleculeIndex

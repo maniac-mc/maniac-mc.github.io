@@ -72,11 +72,4 @@ program test_WrapIntoBox
         stop 1
     end if
 
-    !-------------------------------------------------------------
-    ! Final summary
-    !-------------------------------------------------------------
-    if (pass1 .and. pass2 .and. pass3) then
-        print *, 'WrapIntoBox test PASSED'
-    end if
-
 end program test_WrapIntoBox

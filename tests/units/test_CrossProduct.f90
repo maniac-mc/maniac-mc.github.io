@@ -44,13 +44,16 @@ program test_CrossProduct
     !---------------------------------------
     ! Final result
     !---------------------------------------
-    if (pass1 .and. pass2 .and. pass3) then
-        print *, 'cross_product test PASSED'
-    else
-        print *, 'cross_product test FAILED'
-        if (.not. pass1) print *, ' Test 1 failed: ', c
-        if (.not. pass2) print *, ' Test 2 failed: ', c
-        if (.not. pass3) print *, ' Test 3 failed: ', c
+    if (.not. pass1) then
+        print *, ' Test 1 failed: ', c
+        stop 1
+    end if
+    if (.not. pass2) then
+        print *, ' Test 2 failed: ', c
+        stop 1
+    end if
+    if (.not. pass3) then
+        print *, ' Test 3 failed: ', c
         stop 1
     end if
 

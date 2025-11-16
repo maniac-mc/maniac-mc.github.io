@@ -295,7 +295,6 @@ contains
     !           (φ_new / φ_old)
     !         * (N_old / (N_new + 1))
     !         * exp(-β ΔE) )
-    !
     !---------------------------------------------------------------------- 
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 

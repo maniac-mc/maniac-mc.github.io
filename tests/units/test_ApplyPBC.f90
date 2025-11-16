@@ -88,13 +88,6 @@ program test_ApplyPBC
         stop 1
     end if
 
-    !-------------------------------------------------------------
-    ! Final summary
-    !-------------------------------------------------------------
-    if (pass1 .and. pass2 .and. pass3) then
-        print *, 'ApplyPBC test PASSED'
-    end if
-
 contains
     !-----------------------------------------------------------------------
     ! Simple 3x3 matrix inverse (for triclinic test)
