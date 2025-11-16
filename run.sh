@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="SLIT"
+case="WIDOM"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"

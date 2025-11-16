@@ -94,17 +94,27 @@ contains
     end function ChooseRotationAngle
 
     !----------------------------------------------------------------------
-    ! Adjusts the Monte Carlo translation and rotation step sizes dynamically
-    ! This subroutine recalibrates the translational and rotational move steps
-    ! based on the observed acceptance ratios of recent MC trials. If the
-    ! acceptance is too high, the step size is increased (up to a defined maximum).
-    ! If the acceptance is too low, the step size is decreased (down to a defined minimum).
+    ! Adjust the Monte Carlo translation and rotation step sizes using a
+    ! Robbins–Monro adaptive scheme.
+    !
+    ! This routine updates the translational and rotational move amplitudes
+    ! based on the acceptance ratios observed over recent trial moves.
+    ! The adjustment follows the Robbins–Monro stochastic approximation:
+    !
+    !     step_new = step_old * exp( γ * (acc - TARGET) )
+    !
+    ! where:
+    !     acc   = observed acceptance ratio for the move type
+    !     γ     = learning rate (small positive constant)
+    !     TARGET = desired acceptance probability
     !----------------------------------------------------------------------
     subroutine AdjustMoveStepSizes()
 
         implicit none
 
+        ! Local variables
         real(real64) :: acc_trans, acc_rot
+        real(real64), parameter :: gamma = 0.10d0  ! learning rate
 
         if (.not. input%recalibrate_moves) return
 
@@ -114,17 +124,11 @@ contains
             acc_trans = real(counter%translations, real64) / &
                 real(counter%trial_translations, real64)
 
-            if (acc_trans - TARGET_ACCEPTANCE > TOL_ACCEPTANCE) then
+            input%translation_step = input%translation_step * &
+                                    exp(gamma * (acc_trans - TARGET_ACCEPTANCE))
 
-                ! acceptance too high → increase step
-                input%translation_step = min(input%translation_step * 1.05d0, MAX_TRANSLATION_STEP)
-
-            else if (acc_trans - TARGET_ACCEPTANCE < TOL_ACCEPTANCE) then
-
-                ! acceptance too low → decrease step
-                input%translation_step = max(input%translation_step * 0.95d0, MIN_TRANSLATION_STEP)
-
-            end if
+            input%translation_step = max(MIN_TRANSLATION_STEP, &
+                                    min(input%translation_step, MAX_TRANSLATION_STEP))
 
         end if
 
@@ -134,17 +138,11 @@ contains
             acc_rot = real(counter%rotations,real64) / &
                     real(counter%trial_rotations,real64)
 
-            if (acc_rot - TARGET_ACCEPTANCE > TOL_ACCEPTANCE) then
+            input%rotation_step_angle = input%rotation_step_angle * &
+                                        exp(gamma * (acc_rot - TARGET_ACCEPTANCE))
 
-                ! acceptance too high → increase step
-                input%rotation_step_angle = min(input%rotation_step_angle * 1.05d0, MAX_ROTATION_ANGLE)
-
-            else if (acc_rot - TARGET_ACCEPTANCE < TOL_ACCEPTANCE) then
-
-                ! acceptance too low → decrease step
-                input%rotation_step_angle = max(input%rotation_step_angle * 0.95d0, MIN_ROTATION_ANGLE)
-            
-            end if
+            input%rotation_step_angle = max(MIN_ROTATION_ANGLE, &
+                                        min(input%rotation_step_angle, MAX_ROTATION_ANGLE))
 
         end if
 
