@@ -395,8 +395,8 @@ contains
 
             ! Apply PBC to delta vector directly
             do dim = 1,3
-                delta(dim) = modulo(delta(dim) + 0.5_real64*box%matrix(dim,dim), &
-                    box%matrix(dim,dim)) - 0.5_real64*box%matrix(dim,dim)
+                delta(dim) = modulo(delta(dim) + half*box%matrix(dim,dim), &
+                    box%matrix(dim,dim)) - half*box%matrix(dim,dim)
             end do
 
             ! Compute distance
@@ -406,6 +406,7 @@ contains
         else if (box%type == 3) then
 
             min_dist2 = huge(one)
+
             do shift_x = -1,1
                 do shift_y = -1,1
                     do shift_z = -1,1
@@ -414,7 +415,7 @@ contains
                                             shift_y*box%matrix(:,2) + &
                                             shift_z*box%matrix(:,3)
 
-                        trial_dist2 = vector_norm(trial_delta)
+                        trial_dist2 = sum(trial_delta * trial_delta)
 
                         if (trial_dist2 < min_dist2) then
                             min_dist2 = trial_dist2
