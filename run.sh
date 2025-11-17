@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="WIDOM"
+case="ZIF8-CH4O"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"
@@ -9,6 +9,12 @@ base_reservoir="mc-topology/molecule-reservoir"
 base_widom="mc-topology/testcase-widom"
 
 case "$case" in
+  "ZIF8-CH4O")
+    folder="$base_adsorption/ZIF8-CH4O"
+    input="$folder/input.maniac"
+    data="$folder/topology.data"
+    inc="$folder/parameters.inc"
+    ;;
   "WIDOM")
     folder="$base_widom/ZIF8-MET"
     input="$folder/input.maniac"

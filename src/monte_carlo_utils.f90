@@ -244,6 +244,7 @@ contains
         real(real64) :: T                       ! Temperature in units of kB*T (optional local copy for clarity)
         real(real64) :: delta_e                 ! Energy difference ΔE between trial and current state
         real(real64) :: beta                    ! 1/kB T
+        real(real64) :: prefactor               ! Prefactor for probability calculation
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
@@ -258,22 +259,24 @@ contains
         ! Compute factor based on move type
         select case (move_type)
             case (TYPE_CREATION)
-
-                probability = min(one, (phi * V / (N + one)) * exp(-beta * delta_e)) ! Note: N+1 instead of N to avoid division by zero
-
+            
+                prefactor = phi * V / (N + one) ! Note: N+1 instead of N to avoid division by zero
+            
             case (TYPE_DELETION)
-
-                probability = min(one, ((N + one) / (phi * V)) * exp(-beta * delta_e))
-
+            
+                prefactor = (N + one) / (phi * V)
+            
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
-                probability = min(one, exp(-beta * delta_e))
+                prefactor = one
 
             case default
 
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
 
         end select
+
+        probability = min(one, prefactor * exp(-beta * delta_e)) 
 
     end function compute_acceptance_probability
 
@@ -427,7 +430,9 @@ contains
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
-            old%recip_coulomb = energy%recip_coulomb ! global system reciprocal energy
+            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+
+            ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -435,11 +440,11 @@ contains
         else if (deletion_flag) then
 
             ! Note: In deletion scenario, compute all energy components
-
             call ComputeEwaldSelfInteractionSingleMol(residue_type, old%ewald_self)
             call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, old%intra_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
-            old%recip_coulomb = energy%recip_coulomb
+            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -725,6 +730,5 @@ contains
         end do
 
     end subroutine CalculateExcessMu
-
 
 end module monte_carlo_utils
