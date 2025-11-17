@@ -1,4 +1,4 @@
-program test_ComputeInverse
+program test_compute_box_determinant_and_inverse
 
     use, intrinsic :: iso_fortran_env, only: real64
     use geometry_utils
@@ -18,7 +18,7 @@ program test_ComputeInverse
     test_box%matrix(2,2) = 2.0_real64
     test_box%matrix(3,3) = 2.0_real64
 
-    call ComputeInverse(test_box)
+    call compute_box_determinant_and_inverse(test_box)
 
     ! Check determinant
     pass1 = abs(test_box%determinant - 8.0_real64) < tol
@@ -36,7 +36,7 @@ program test_ComputeInverse
     end do
 
     if (.not. pass1) then
-        print *, 'ComputeInverse : Cubic box test FAILED'
+        print *, 'compute_box_determinant_and_inverse : Cubic box test FAILED'
         stop 1
     end if
 
@@ -48,7 +48,7 @@ program test_ComputeInverse
     test_box%matrix(2,2) = 2.0_real64
     test_box%matrix(3,3) = 3.0_real64
 
-    call ComputeInverse(test_box)
+    call compute_box_determinant_and_inverse(test_box)
 
     pass2 = abs(test_box%determinant - 6.0_real64) < tol
     identity_check = matmul(test_box%matrix, test_box%reciprocal)
@@ -63,7 +63,7 @@ program test_ComputeInverse
     end do
 
     if (.not. pass2) then
-        print *, 'ComputeInverse : Orthorhombic box test FAILED'
+        print *, 'compute_box_determinant_and_inverse : Orthorhombic box test FAILED'
         stop 1
     end if
 
@@ -74,7 +74,7 @@ program test_ComputeInverse
     test_box%matrix(:,2) = [0.1_real64, 3.0_real64, 0.1_real64]
     test_box%matrix(:,3) = [0.05_real64, 0.1_real64, 4.0_real64]
 
-    call ComputeInverse(test_box)
+    call compute_box_determinant_and_inverse(test_box)
 
     pass3 = abs(test_box%determinant) > tol
     identity_check = matmul(test_box%matrix, test_box%reciprocal)
@@ -89,8 +89,8 @@ program test_ComputeInverse
     end do
 
     if (.not. pass3) then
-        print *, 'ComputeInverse : Triclinic box test FAILED'
+        print *, 'compute_box_determinant_and_inverse : Triclinic box test FAILED'
         stop 1
     end if
 
-end program test_ComputeInverse
+end program test_compute_box_determinant_and_inverse

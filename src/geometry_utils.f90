@@ -34,7 +34,7 @@ contains
         call ComputeCellProperties(box)
 
         ! Step 3: Compute inverse matrix for reciprocal-space operations
-        call ComputeInverse(box)
+        call compute_box_determinant_and_inverse(box)
 
         ! Log final results
         call LogMessage("====== Simulation preparation ======")
@@ -238,24 +238,22 @@ contains
     end subroutine ApplyPBC
 
     !-----------------------------------------------------------
-    ! Subroutine: WrapIntoBox
-    !
     ! Ensures a position is inside the simulation box using the
     ! following conventions:
     !  - Cubic/Orthorhombic: [-L/2, L/2]
     !  - Triclinic (fractional space): [-0.5, 0.5)
     !-----------------------------------------------------------
-    subroutine WrapIntoBox(pos, box)
+    subroutine wrap_into_box(pos, box)
 
         implicit none
 
         ! Input parameters
-        real(real64), dimension(3), intent(inout) :: pos
-        type(type_box), intent(inout) :: box
+        real(real64), dimension(3), intent(inout) :: pos   ! Cartesian position to wrap into box
+        type(type_box), intent(inout) :: box               ! Simulation box (geometry + PBC matrices)
 
         ! Local variables
-        real(real64), dimension(3) :: fractional_pos
-        integer :: dim
+        real(real64), dimension(3) :: fractional_pos    ! Position in fractional coordinates (triclinic)
+        integer :: dim                                  ! Loop index over Cartesian dimensions
 
         ! Cubic or Orthorhombic box
         if (box%type == 1 .or. box%type == 2) then
@@ -282,46 +280,44 @@ contains
 
         end if
 
-    end subroutine WrapIntoBox
+    end subroutine wrap_into_box
 
     !----------------------------------------------------------------------------
-    ! Subroutine: ComputeInverse
-    !
     ! Computes the inverse and determinant of a 3x3 box matrix.
     ! Uses the adjugate (cofactor transpose) method:
     !   H^{-1} = adj(H) / det(H)
     ! Also checks for near-zero determinant to avoid numerical issues.
     !----------------------------------------------------------------------------
-    subroutine ComputeInverse(box)
+    subroutine compute_box_determinant_and_inverse(box)
 
         implicit none
 
         ! Input parameters
-        type(type_box), intent(inout) :: box
+        type(type_box), intent(inout) :: box        ! Box structure (matrix, determinant, inverse) to be read and updated
 
         ! Local variables
         real(real64), dimension(3,3) :: adjugate    ! Adjugate (cofactor transpose) matrix of box_mat
         real(real64) :: reciprocal                  ! Reciprocal of the determinant of box_mat
-        real(real64), dimension(3) :: a, b
+        real(real64), dimension(3) :: vec1, vec2    ! Temporary vectors for cross products
         integer :: i, j                             ! Loop indices for matrix element iteration
 
         ! Compute the adjugate (cofactor transpose) using cross products
         ! First column of adjugate
-        a = box%matrix(:, 2)
-        b = box%matrix(:, 3)
-        adjugate(:,1) = CrossProduct(a, b)
+        vec1 = box%matrix(:, 2)
+        vec2 = box%matrix(:, 3)
+        adjugate(:,1) = CrossProduct(vec1, vec2)
 
         ! Second column
-        a = box%matrix(:, 3)
-        b = box%matrix(:, 1)
-        adjugate(:,2) = CrossProduct(a, b)
+        vec1 = box%matrix(:, 3)
+        vec2 = box%matrix(:, 1)
+        adjugate(:,2) = CrossProduct(vec1, vec2)
 
         ! Third column
-        a = box%matrix(:, 1)
-        b = box%matrix(:, 2)
-        adjugate(:,3) = CrossProduct(a, b)
+        vec1 = box%matrix(:, 1)
+        vec2 = box%matrix(:, 2)
+        adjugate(:,3) = CrossProduct(vec1, vec2)
 
-        ! Determinant from first row
+        ! Compute determinant from first row
         box%determinant = dot_product(box%matrix(:,1), adjugate(:,1))
 
         ! Check for denormal/underflow values in determinant
@@ -346,7 +342,7 @@ contains
             end do
         end do
 
-    end subroutine ComputeInverse
+    end subroutine compute_box_determinant_and_inverse
 
     !---------------------------------------------------------------------
     ! Compute the minimum-image distance between two atoms in a periodic box

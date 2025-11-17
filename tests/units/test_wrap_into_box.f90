@@ -1,4 +1,4 @@
-program test_WrapIntoBox
+program test_wrap_into_box
     use, intrinsic :: iso_fortran_env, only: real64
     use geometry_utils
     implicit none
@@ -20,12 +20,12 @@ program test_WrapIntoBox
     box%matrix(3,3) = 2.0_real64
 
     pos = [3.0_real64, -2.5_real64, 4.1_real64]
-    call WrapIntoBox(pos, box)
+    call wrap_into_box(pos, box)
 
     expected = [-1.0_real64, -0.5_real64, 0.1_real64]
     pass1 = all(abs(pos - expected) < tol)
     if (.not. pass1) then
-        print *, "Cubic box WrapIntoBox test FAILED: pos = ", pos, " expected = ", expected
+        print *, "Cubic box wrap_into_box test FAILED: pos = ", pos, " expected = ", expected
         stop 1
     end if
 
@@ -39,12 +39,12 @@ program test_WrapIntoBox
     box%matrix(3,3) = 3.0_real64
 
     pos = [-1.2_real64, 2.5_real64, -3.7_real64]
-    call WrapIntoBox(pos, box)
+    call wrap_into_box(pos, box)
 
     expected = [-0.2_real64, 0.5_real64, -0.7_real64]  ! wrapped into [-L/2, L/2]
     pass2 = all(abs(pos - expected) < tol)
     if (.not. pass2) then
-        print *, "Orthorhombic box WrapIntoBox test FAILED: pos = ", pos, " expected = ", expected
+        print *, "Orthorhombic box wrap_into_box test FAILED: pos = ", pos, " expected = ", expected
         stop 1
     end if
 
@@ -58,18 +58,18 @@ program test_WrapIntoBox
     box%matrix(:,3) = [0.05_real64, 0.1_real64, 4.0_real64]
 
     ! Compute reciprocal matrix
-    call ComputeInverse(box)
+    call compute_box_determinant_and_inverse(box)
 
     pos = [3.0_real64, -4.0_real64, 5.0_real64]
-    call WrapIntoBox(pos, box)
+    call wrap_into_box(pos, box)
 
     ! Convert to fractional coordinates
     pos = matmul(box%reciprocal, pos)
     expected = mod(pos + 0.5_real64, 1.0_real64) - 0.5_real64
     pass3 = all(abs(pos - expected) < tol)
     if (.not. pass3) then
-        print *, "Triclinic box WrapIntoBox test FAILED: pos = ", pos, " expected = ", expected
+        print *, "Triclinic box wrap_into_box test FAILED: pos = ", pos, " expected = ", expected
         stop 1
     end if
 
-end program test_WrapIntoBox
+end program test_wrap_into_box
