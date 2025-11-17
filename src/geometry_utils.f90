@@ -146,9 +146,9 @@ contains
         c = box%matrix(:, 3)
 
         ! Calculate vector lengths
-        vec_lengths(1) = norm(a)
-        vec_lengths(2) = norm(b)
-        vec_lengths(3) = norm(c)
+        vec_lengths(1) = vector_norm(a)
+        vec_lengths(2) = vector_norm(b)
+        vec_lengths(3) = vector_norm(c)
 
         ! Calculate cosines of angles using dot products divided by product of lengths
         box%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
@@ -164,9 +164,9 @@ contains
         box%volume = abs(dot_product(box%matrix(:,1), bxc))
 
         ! Calculate cell perpendicular widths
-        box%metrics(7) = box%volume / norm(bxc)
-        box%metrics(8) = box%volume / norm(cxa)
-        box%metrics(9) = box%volume / norm(axb)
+        box%metrics(7) = box%volume / vector_norm(bxc)
+        box%metrics(8) = box%volume / vector_norm(cxa)
+        box%metrics(9) = box%volume / vector_norm(axb)
 
     end subroutine ComputeCellProperties
 
@@ -349,30 +349,19 @@ contains
     end subroutine ComputeInverse
 
     !---------------------------------------------------------------------
-    !> Compute the minimum-image distance between two atoms in a periodic box
-    !>
-    !> This function calculates the Cartesian distance between two atoms,
-    !> taking into account periodic boundary conditions (PBC). It handles
-    !> three types of boxes:
-    !>   1. Cubic
-    !>   2. Orthorhombic
-    !>   3. Triclinic (tilted boxes)
-    !>
-    !> For cubic and orthorhombic boxes, the minimum-image convention is
-    !> applied per Cartesian component. For triclinic boxes, all 27
-    !> neighboring periodic images are checked to ensure the true
-    !> shortest distance is returned.
-    !>
-    !> @param box                Box structure containing box vectors,
-    !>                           molecule centers, atom offsets, and box type
-    !> @param residue_type_1     Residue type of the first atom
-    !> @param molecule_index_1   Molecule index of the first atom
-    !> @param atom_index_1       Atom index of the first atom
-    !> @param residue_type_2     Residue type of the second atom
-    !> @param molecule_index_2   Molecule index of the second atom
-    !> @param atom_index_2       Atom index of the second atom
-    !>
-    !> @return distance          Minimum-image Cartesian distance between the two atoms
+    ! Compute the minimum-image distance between two atoms in a periodic box
+    !
+    ! This function calculates the Cartesian distance between two atoms,
+    ! taking into account periodic boundary conditions (PBC). It handles
+    ! three types of boxes:
+    !   1. Cubic
+    !   2. Orthorhombic
+    !   3. Triclinic (tilted boxes)
+    !
+    ! For cubic and orthorhombic boxes, the minimum-image convention is
+    ! applied per Cartesian component. For triclinic boxes, all 27
+    ! neighboring periodic images are checked to ensure the true
+    ! shortest distance is returned.
     !---------------------------------------------------------------------
     function ComputeDistance(box, residue_type_1, molecule_index_1, atom_index_1, &
                             residue_type_2, molecule_index_2, atom_index_2) result(distance)
@@ -411,7 +400,7 @@ contains
             end do
 
             ! Compute distance
-            distance = norm(delta)
+            distance = vector_norm(delta)
 
         ! Triclinic box
         else if (box%type == 3) then
@@ -420,14 +409,17 @@ contains
             do shift_x = -1,1
                 do shift_y = -1,1
                     do shift_z = -1,1
+
                         trial_delta = delta + shift_x*box%matrix(:,1) + &
                                             shift_y*box%matrix(:,2) + &
                                             shift_z*box%matrix(:,3)
 
-                        trial_dist2 = norm(trial_delta)
+                        trial_dist2 = vector_norm(trial_delta)
 
-                        if (trial_dist2 < min_dist2) min_dist2 = trial_dist2
-                        
+                        if (trial_dist2 < min_dist2) then
+                            min_dist2 = trial_dist2
+                        end if
+
                     end do
                 end do
             end do
