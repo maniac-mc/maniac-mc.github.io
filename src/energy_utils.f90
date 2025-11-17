@@ -174,7 +174,7 @@ contains
                         charge_2 = primary%atom_charges(residue_type_2, atom_index_2)                   ! In units of e
 
                         ! Calculate the distance, accouting for periodic boundary conditions
-                        distance = ComputeDistance(box, residue_type_1, molecule_index_1, atom_index_1, &
+                        distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                                    residue_type_2, molecule_index_2, atom_index_2)                      ! In Angstrom
 
                         ! Update non-Coulomb energy
@@ -426,7 +426,7 @@ contains
                     ! Loop over all side of the selected molecule 2
                     do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
 
-                        distance = ComputeDistance(box, residue_type_1, molecule_index_1, atom_index_1, &
+                        distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                                    residue_type_2, molecule_index_2, atom_index_2)
 
                         if (distance < input%real_space_cutoff) then

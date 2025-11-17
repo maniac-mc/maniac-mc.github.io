@@ -353,42 +353,47 @@ contains
     !
     ! This function calculates the Cartesian distance between two atoms,
     ! taking into account periodic boundary conditions (PBC). It handles
-    ! three types of boxes:
-    !   1. Cubic
-    !   2. Orthorhombic
-    !   3. Triclinic (tilted boxes)
+    ! 2 types of boxes:
+    !   1. Cubic or Orthorhombic
+    !   2. Triclinic (tilted boxes)
     !
     ! For cubic and orthorhombic boxes, the minimum-image convention is
     ! applied per Cartesian component. For triclinic boxes, all 27
     ! neighboring periodic images are checked to ensure the true
     ! shortest distance is returned.
     !---------------------------------------------------------------------
-    function ComputeDistance(box, residue_type_1, molecule_index_1, atom_index_1, &
+    function minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                             residue_type_2, molecule_index_2, atom_index_2) result(distance)
-
-        use, intrinsic :: iso_fortran_env, only: real64
 
         implicit none
 
         ! Input parameters
-        type(type_box), intent(in) :: box
-        integer, intent(in) :: residue_type_1, molecule_index_1, atom_index_1
-        integer, intent(in) :: residue_type_2, molecule_index_2, atom_index_2
+        type(type_box), intent(in) :: box                 ! simulation box (geometry + PBC matrices)
+        integer, intent(in) :: residue_type_1             ! residue type ID for atom 1
+        integer, intent(in) :: molecule_index_1           ! molecule index within that residue type
+        integer, intent(in) :: atom_index_1               ! atom index within the molecule (atom 1)
+        integer, intent(in) :: residue_type_2             ! residue type ID for atom 2
+        integer, intent(in) :: molecule_index_2           ! molecule index within that residue type
+        integer, intent(in) :: atom_index_2               ! atom index within the molecule (atom 2)
 
         ! Local variables
-        integer :: shift_x, shift_y, shift_z
-        integer :: dim
-        real(real64), dimension(3) :: delta
-        real(real64), dimension(3) :: trial_delta
-        real(real64) :: distance
-        real(real64) :: min_dist2
-        real(real64) :: trial_dist2
+        integer :: shift_x, shift_y, shift_z   ! periodic image shifts in triclinic search
+        integer :: dim                         ! Cartesian dimension index (1..3)
+        real(real64) :: delta(3)               ! displacement vector between atoms (with PBC)
+        real(real64) :: trial_delta(3)         ! displacement to a specific periodic image
+        real(real64) :: distance               ! final minimum-image distance
+        real(real64) :: min_dist2              ! smallest squared distance found
+        real(real64) :: trial_dist2            ! squared distance for current image
+        real(real64) :: pos1(3), pos2(3)       ! absolute Cartesian positions of the two atoms
+
+        pos1 = box%mol_com(:,residue_type_1,molecule_index_1) + &
+            box%site_offset(:,residue_type_1,molecule_index_1,atom_index_1)
+
+        pos2 = box%mol_com(:,residue_type_2,molecule_index_2) + &
+            box%site_offset(:,residue_type_2,molecule_index_2,atom_index_2)
 
         ! Compute Cartesian difference between the two atoms
-        delta = (box%mol_com(:,residue_type_2,molecule_index_2) + &
-                box%site_offset(:,residue_type_2,molecule_index_2,atom_index_2)) - &
-                (box%mol_com(:,residue_type_1,molecule_index_1) + &
-                box%site_offset(:,residue_type_1,molecule_index_1,atom_index_1))
+        delta = pos2 - pos1
 
         ! Cubic or Orthorhombic box
         if (box%type == 1 .or. box%type == 2) then
@@ -429,6 +434,6 @@ contains
 
         end if
 
-    end function ComputeDistance
+    end function minimum_image_distance
 
 end module geometry_utils

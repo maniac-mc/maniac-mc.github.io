@@ -353,7 +353,7 @@ contains
                 charge_2 = primary%atom_charges(residue_type, atom_index_2)
 
                 ! Compute interatomic distance
-                distance = ComputeDistance(primary, residue_type, molecule_index, atom_index_1, &
+                distance = minimum_image_distance(primary, residue_type, molecule_index, atom_index_1, &
                             residue_type, molecule_index, atom_index_2)
 
                 ! Skip extremely small distances to avoid singularity
