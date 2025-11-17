@@ -1,4 +1,4 @@
-program test_ComputeDistance
+program test_minimum_image_distance
 
     use, intrinsic :: iso_fortran_env, only: real64
     use energy_utils
@@ -34,7 +34,7 @@ program test_ComputeDistance
     box%matrix(:,1) = [10.0_real64, 0.0_real64, 0.0_real64]
     box%matrix(:,2) = [0.0_real64, 10.0_real64, 0.0_real64]
     box%matrix(:,3) = [0.0_real64, 0.0_real64, 10.0_real64]
-    dist = ComputeDistance(box,1,1,1,2,1,1)
+    dist = minimum_image_distance(box,1,1,1,2,1,1)
 
     ! Precomputed with MDAnalysis
     expected = 3.4641014086612083_real64
@@ -54,7 +54,7 @@ program test_ComputeDistance
     box%matrix(:,1) = [12.0_real64, 0.0_real64, 0.0_real64]
     box%matrix(:,2) = [0.0_real64, 10.0_real64, 0.0_real64]
     box%matrix(:,3) = [0.0_real64, 0.0_real64, 10.0_real64]
-    dist = ComputeDistance(box,1,1,1,2,1,1)
+    dist = minimum_image_distance(box,1,1,1,2,1,1)
 
     ! Precomputed with MDAnalysis
     expected = 4.898979193564424_real64
@@ -75,7 +75,7 @@ program test_ComputeDistance
     ! box%matrix(:,2) = [2.0_real64, 10.0_real64, 0.0_real64]
     ! box%matrix(:,3) = [1.0_real64, 1.0_real64, 10.0_real64]
     ! call ComputeInverse(box)
-    ! dist = ComputeDistance(box,1,1,1,2,1,1)
+    ! dist = minimum_image_distance(box,1,1,1,2,1,1)
 
     ! ! Precomputed with MDAnalysis
     ! expected = 6.164413925615866_real64
@@ -88,4 +88,4 @@ program test_ComputeDistance
     !     stop 1
     ! end if
 
-end program test_ComputeDistance
+end program test_minimum_image_distance

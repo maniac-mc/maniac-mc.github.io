@@ -34,7 +34,7 @@ contains
         call ComputeCellProperties(box)
 
         ! Step 3: Compute inverse matrix for reciprocal-space operations
-        call ComputeInverse(box)
+        call compute_box_determinant_and_inverse(box)
 
         ! Log final results
         call LogMessage("====== Simulation preparation ======")
@@ -146,9 +146,9 @@ contains
         c = box%matrix(:, 3)
 
         ! Calculate vector lengths
-        vec_lengths(1) = norm(a)
-        vec_lengths(2) = norm(b)
-        vec_lengths(3) = norm(c)
+        vec_lengths(1) = vector_norm(a)
+        vec_lengths(2) = vector_norm(b)
+        vec_lengths(3) = vector_norm(c)
 
         ! Calculate cosines of angles using dot products divided by product of lengths
         box%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
@@ -164,9 +164,9 @@ contains
         box%volume = abs(dot_product(box%matrix(:,1), bxc))
 
         ! Calculate cell perpendicular widths
-        box%metrics(7) = box%volume / norm(bxc)
-        box%metrics(8) = box%volume / norm(cxa)
-        box%metrics(9) = box%volume / norm(axb)
+        box%metrics(7) = box%volume / vector_norm(bxc)
+        box%metrics(8) = box%volume / vector_norm(cxa)
+        box%metrics(9) = box%volume / vector_norm(axb)
 
     end subroutine ComputeCellProperties
 
@@ -238,24 +238,22 @@ contains
     end subroutine ApplyPBC
 
     !-----------------------------------------------------------
-    ! Subroutine: WrapIntoBox
-    !
     ! Ensures a position is inside the simulation box using the
     ! following conventions:
     !  - Cubic/Orthorhombic: [-L/2, L/2]
     !  - Triclinic (fractional space): [-0.5, 0.5)
     !-----------------------------------------------------------
-    subroutine WrapIntoBox(pos, box)
+    subroutine wrap_into_box(pos, box)
 
         implicit none
 
         ! Input parameters
-        real(real64), dimension(3), intent(inout) :: pos
-        type(type_box), intent(inout) :: box
+        real(real64), dimension(3), intent(inout) :: pos   ! Cartesian position to wrap into box
+        type(type_box), intent(inout) :: box               ! Simulation box (geometry + PBC matrices)
 
         ! Local variables
-        real(real64), dimension(3) :: fractional_pos
-        integer :: dim
+        real(real64), dimension(3) :: fractional_pos    ! Position in fractional coordinates (triclinic)
+        integer :: dim                                  ! Loop index over Cartesian dimensions
 
         ! Cubic or Orthorhombic box
         if (box%type == 1 .or. box%type == 2) then
@@ -282,46 +280,44 @@ contains
 
         end if
 
-    end subroutine WrapIntoBox
+    end subroutine wrap_into_box
 
     !----------------------------------------------------------------------------
-    ! Subroutine: ComputeInverse
-    !
     ! Computes the inverse and determinant of a 3x3 box matrix.
     ! Uses the adjugate (cofactor transpose) method:
     !   H^{-1} = adj(H) / det(H)
     ! Also checks for near-zero determinant to avoid numerical issues.
     !----------------------------------------------------------------------------
-    subroutine ComputeInverse(box)
+    subroutine compute_box_determinant_and_inverse(box)
 
         implicit none
 
         ! Input parameters
-        type(type_box), intent(inout) :: box
+        type(type_box), intent(inout) :: box        ! Box structure (matrix, determinant, inverse) to be read and updated
 
         ! Local variables
         real(real64), dimension(3,3) :: adjugate    ! Adjugate (cofactor transpose) matrix of box_mat
         real(real64) :: reciprocal                  ! Reciprocal of the determinant of box_mat
-        real(real64), dimension(3) :: a, b
+        real(real64), dimension(3) :: vec1, vec2    ! Temporary vectors for cross products
         integer :: i, j                             ! Loop indices for matrix element iteration
 
         ! Compute the adjugate (cofactor transpose) using cross products
         ! First column of adjugate
-        a = box%matrix(:, 2)
-        b = box%matrix(:, 3)
-        adjugate(:,1) = CrossProduct(a, b)
+        vec1 = box%matrix(:, 2)
+        vec2 = box%matrix(:, 3)
+        adjugate(:,1) = CrossProduct(vec1, vec2)
 
         ! Second column
-        a = box%matrix(:, 3)
-        b = box%matrix(:, 1)
-        adjugate(:,2) = CrossProduct(a, b)
+        vec1 = box%matrix(:, 3)
+        vec2 = box%matrix(:, 1)
+        adjugate(:,2) = CrossProduct(vec1, vec2)
 
         ! Third column
-        a = box%matrix(:, 1)
-        b = box%matrix(:, 2)
-        adjugate(:,3) = CrossProduct(a, b)
+        vec1 = box%matrix(:, 1)
+        vec2 = box%matrix(:, 2)
+        adjugate(:,3) = CrossProduct(vec1, vec2)
 
-        ! Determinant from first row
+        ! Compute determinant from first row
         box%determinant = dot_product(box%matrix(:,1), adjugate(:,1))
 
         ! Check for denormal/underflow values in determinant
@@ -346,88 +342,86 @@ contains
             end do
         end do
 
-    end subroutine ComputeInverse
+    end subroutine compute_box_determinant_and_inverse
 
     !---------------------------------------------------------------------
-    !> Compute the minimum-image distance between two atoms in a periodic box
-    !>
-    !> This function calculates the Cartesian distance between two atoms,
-    !> taking into account periodic boundary conditions (PBC). It handles
-    !> three types of boxes:
-    !>   1. Cubic
-    !>   2. Orthorhombic
-    !>   3. Triclinic (tilted boxes)
-    !>
-    !> For cubic and orthorhombic boxes, the minimum-image convention is
-    !> applied per Cartesian component. For triclinic boxes, all 27
-    !> neighboring periodic images are checked to ensure the true
-    !> shortest distance is returned.
-    !>
-    !> @param box                Box structure containing box vectors,
-    !>                           molecule centers, atom offsets, and box type
-    !> @param residue_type_1     Residue type of the first atom
-    !> @param molecule_index_1   Molecule index of the first atom
-    !> @param atom_index_1       Atom index of the first atom
-    !> @param residue_type_2     Residue type of the second atom
-    !> @param molecule_index_2   Molecule index of the second atom
-    !> @param atom_index_2       Atom index of the second atom
-    !>
-    !> @return distance          Minimum-image Cartesian distance between the two atoms
+    ! Compute the minimum-image distance between two atoms in a periodic box
+    !
+    ! This function calculates the Cartesian distance between two atoms,
+    ! taking into account periodic boundary conditions (PBC). It handles
+    ! 2 types of boxes:
+    !   1. Cubic or Orthorhombic
+    !   2. Triclinic (tilted boxes)
+    !
+    ! For cubic and orthorhombic boxes, the minimum-image convention is
+    ! applied per Cartesian component. For triclinic boxes, all 27
+    ! neighboring periodic images are checked to ensure the true
+    ! shortest distance is returned.
     !---------------------------------------------------------------------
-    function ComputeDistance(box, residue_type_1, molecule_index_1, atom_index_1, &
+    function minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                             residue_type_2, molecule_index_2, atom_index_2) result(distance)
-
-        use, intrinsic :: iso_fortran_env, only: real64
 
         implicit none
 
         ! Input parameters
-        type(type_box), intent(in) :: box
-        integer, intent(in) :: residue_type_1, molecule_index_1, atom_index_1
-        integer, intent(in) :: residue_type_2, molecule_index_2, atom_index_2
+        type(type_box), intent(in) :: box                 ! simulation box (geometry + PBC matrices)
+        integer, intent(in) :: residue_type_1             ! residue type ID for atom 1
+        integer, intent(in) :: molecule_index_1           ! molecule index within that residue type
+        integer, intent(in) :: atom_index_1               ! atom index within the molecule (atom 1)
+        integer, intent(in) :: residue_type_2             ! residue type ID for atom 2
+        integer, intent(in) :: molecule_index_2           ! molecule index within that residue type
+        integer, intent(in) :: atom_index_2               ! atom index within the molecule (atom 2)
 
         ! Local variables
-        integer :: shift_x, shift_y, shift_z
-        integer :: dim
-        real(real64), dimension(3) :: delta
-        real(real64), dimension(3) :: trial_delta
-        real(real64) :: distance
-        real(real64) :: min_dist2
-        real(real64) :: trial_dist2
+        integer :: shift_x, shift_y, shift_z   ! periodic image shifts in triclinic search
+        integer :: dim                         ! Cartesian dimension index (1..3)
+        real(real64) :: delta(3)               ! displacement vector between atoms (with PBC)
+        real(real64) :: trial_delta(3)         ! displacement to a specific periodic image
+        real(real64) :: distance               ! final minimum-image distance
+        real(real64) :: min_dist2              ! smallest squared distance found
+        real(real64) :: trial_dist2            ! squared distance for current image
+        real(real64) :: pos1(3), pos2(3)       ! absolute Cartesian positions of the two atoms
+
+        pos1 = box%mol_com(:,residue_type_1,molecule_index_1) + &
+            box%site_offset(:,residue_type_1,molecule_index_1,atom_index_1)
+
+        pos2 = box%mol_com(:,residue_type_2,molecule_index_2) + &
+            box%site_offset(:,residue_type_2,molecule_index_2,atom_index_2)
 
         ! Compute Cartesian difference between the two atoms
-        delta = (box%mol_com(:,residue_type_2,molecule_index_2) + &
-                box%site_offset(:,residue_type_2,molecule_index_2,atom_index_2)) - &
-                (box%mol_com(:,residue_type_1,molecule_index_1) + &
-                box%site_offset(:,residue_type_1,molecule_index_1,atom_index_1))
+        delta = pos2 - pos1
 
         ! Cubic or Orthorhombic box
         if (box%type == 1 .or. box%type == 2) then
 
             ! Apply PBC to delta vector directly
             do dim = 1,3
-                delta(dim) = modulo(delta(dim) + 0.5_real64*box%matrix(dim,dim), &
-                    box%matrix(dim,dim)) - 0.5_real64*box%matrix(dim,dim)
+                delta(dim) = modulo(delta(dim) + half*box%matrix(dim,dim), &
+                    box%matrix(dim,dim)) - half*box%matrix(dim,dim)
             end do
 
             ! Compute distance
-            distance = norm(delta)
+            distance = vector_norm(delta)
 
         ! Triclinic box
         else if (box%type == 3) then
 
             min_dist2 = huge(one)
+
             do shift_x = -1,1
                 do shift_y = -1,1
                     do shift_z = -1,1
+
                         trial_delta = delta + shift_x*box%matrix(:,1) + &
                                             shift_y*box%matrix(:,2) + &
                                             shift_z*box%matrix(:,3)
 
-                        trial_dist2 = norm(trial_delta)
+                        trial_dist2 = sum(trial_delta * trial_delta)
 
-                        if (trial_dist2 < min_dist2) min_dist2 = trial_dist2
-                        
+                        if (trial_dist2 < min_dist2) then
+                            min_dist2 = trial_dist2
+                        end if
+
                     end do
                 end do
             end do
@@ -436,6 +430,6 @@ contains
 
         end if
 
-    end function ComputeDistance
+    end function minimum_image_distance
 
 end module geometry_utils

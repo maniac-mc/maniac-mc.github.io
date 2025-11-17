@@ -66,7 +66,7 @@ contains
 
                 ! Wrap CoM into box for active molecules
                 if (input%is_active(i) == 1) then
-                    call WrapIntoBox(com, box)
+                    call wrap_into_box(com, box)
                 end if
 
                 do k = 1, nb%atom_in_residue(i)
@@ -80,7 +80,7 @@ contains
 
                     ! Wrap position for inactive structure
                     if (input%is_active(i) == 0) then
-                        call WrapIntoBox(pos, box)
+                        call wrap_into_box(pos, box)
                     end if
 
                     write(UNIT_LMP, '(I6,1X,I4,3(1X,F12.7))') atom_id, atom_type, pos(1), pos(2), pos(3)
@@ -338,7 +338,7 @@ contains
 
                     ! Only wrap atom of inative species (i.e. leave active molecules continuous at the pbc)
                     if (input%is_active(i) == 0) then
-                        call WrapIntoBox(pos, box)
+                        call wrap_into_box(pos, box)
                     end if
 
                     write(UNIT_DATA, '(I6,1X,I6,1X,I4,1X,F12.8,3(1X,F12.7))') &

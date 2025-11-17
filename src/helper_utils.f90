@@ -156,7 +156,7 @@ contains
     end function CrossProduct
 
     !--------------------------------------------------------------------
-    ! Function: Norm
+    ! Function: vector_norm
     !
     ! Computes the Euclidean (L2) norm of a 3-component real vector.
     !
@@ -167,12 +167,12 @@ contains
     ! This is used frequently in geometry, box operations, and
     ! minimum-image distance calculations.
     !--------------------------------------------------------------------
-    pure real(real64) function norm(v)
+    pure real(real64) function vector_norm(v)
 
         real(real64), intent(in) :: v(3)
 
-        norm = sqrt(sum(v * v))
+        vector_norm = sqrt(sum(v * v))
 
-    end function norm
+    end function vector_norm
 
 end module helper_utils
