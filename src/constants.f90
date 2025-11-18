@@ -17,6 +17,8 @@ module constants
     real(real64), parameter :: EPS0_INV = E_CHARGE**2 / (4.0_real64 * PI * EPS0) ! Coulomb prefactor e^2 / 4 pi epsilon_0, SI units, N m^2
     real(real64), parameter :: EPS0_INV_real = EPS0_INV * J_to_kcal * m_to_A * NA ! Coulomb prefactor in real units, 
 
+    real(real64) :: beta ! 1 / (kB T)
+
     ! TO REMOVE -----------------
     real(real64), parameter :: KB_JK = 1.380658D-23 ! Boltzmann constant (J/K)
     real(real64), parameter :: KB_kcalmol = 0.0019872041_real64 ! Boltzmann constant (kcal/mol)

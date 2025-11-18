@@ -1461,7 +1461,7 @@ contains
                                     com(1), com(2), com(3))
 
                     total_mass = ComputeMass(nb%atom_in_residue(i), tmp_atom_masses_1d)
-                    res%mass_residue(i) = total_mass 
+                    res%mass(i) = total_mass 
 
                     ! Save original CoM before applying periodic boundary conditions
                     original_com = com ! Save the CoM

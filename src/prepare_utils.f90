@@ -20,6 +20,9 @@ contains
 
         implicit none
 
+        real(real64) :: mass                   ! Mass of residue
+        integer :: val_int                     ! Integer value read from input
+
         ! Initialize Ewald summation parameters
         ! (cutoff, precision, reciprocal space, etc.)
         call SetupEwald()
@@ -34,6 +37,30 @@ contains
         ! Log the Ewald parameters and settings for
         ! reproducibility and debugging
         call LogEwaldParameters()
+
+
+        ! ---------------------------------------
+        ! Some precalculations
+        ! ---------------------------------------
+
+        ! Compute inverse thermal energy β = 1/(k_B T)
+        ! Units: KB_kcalmol in kcal/(mol·K), T in K
+        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
+
+        do val_int = 1, nb%type_residue
+
+            if (input%is_active(val_int) == 0) cycle
+
+            ! Compute thermal de Broglie wavelength λ for each active residue:
+            ! λ = h / sqrt(2 π m k_B T)
+            ! H_PLANCK in J s, mass in kg, KB_JK in J/K, T in K
+            mass = res%mass(val_int) * G_TO_KG / NA ! Mass per residue (kg)
+            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB_JK * input%temperature) * M_TO_A ! Thermal de Broglie wavelength
+            
+            ! Convert lambda to Å
+            res%lambda(val_int) = res%lambda(val_int) * M_TO_A
+
+        end do
 
     end subroutine PrepareSimulationParameters
 

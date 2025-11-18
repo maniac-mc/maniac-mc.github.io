@@ -137,7 +137,8 @@ module simulation_state
 
     ! Residues information
     type :: type_residue
-        real(real64), dimension(:), allocatable :: mass_residue        ! Array of mass of residue
+        real(real64), dimension(:), allocatable :: mass                ! de Broglie length
+        real(real64), dimension(:), allocatable :: lambda              ! Array of mass of residue
         real(real64), dimension(:), allocatable :: masses_1d           ! Array of atoms masses
         character(len=10), dimension(:), allocatable :: names_1d       ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: names_2d    ! Site names for each residue

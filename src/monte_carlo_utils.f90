@@ -246,7 +246,6 @@ contains
         ! real(real64) :: fugacity              ! Fugacity of the residue type (no units)
         real(real64) :: mu      
         real(real64) :: deltaU                  ! Energy difference ΔE between trial and current state
-        real(real64) :: beta                    ! 1/kB T
         real(real64) :: prefactor               ! Prefactor for probability calculation
         real(real64) :: lambda                  ! de Broglie wavelength in m
         real(real64) :: mass                    ! residue pass in kg
@@ -257,10 +256,9 @@ contains
         N = real(primary%num_residues(residue_type), real64)
         V = primary%volume                      ! Angstrom^3
         
-        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
         deltaU = new%total - old%total          ! kcal/mol
 
-        mass= res%mass_residue(residue_type) * G_TO_KG / NA ! Mass per molecule (kg)
+        mass= res%mass(residue_type) * G_TO_KG / NA ! Mass per molecule (kg)
         lambda = H_PLANCK / sqrt(TWOPI * mass * KB_JK * input%temperature) / A_TO_M ! Thermal de Broglie wavelength (A)
 
         mu = input%chemical_potential(residue_type)     ! Fugacity in Angstrom^-3
@@ -321,7 +319,6 @@ contains
         ! Local valriables
         real(real64) :: delta_e                 ! Energy difference
         real(real64) :: phi_old, phi_new        ! Fugacities of species
-        real(real64) :: beta                    ! 1/kB T
         real(real64) :: N_old, N_new            ! Number of molecule per types
 
         ! Return value
@@ -331,7 +328,6 @@ contains
         N_old = real(primary%num_residues(type_old), real64)
         phi_old = input%fugacity(type_old)      ! Fugacity in Angstrom^-3
         phi_new = input%fugacity(type_new)      ! Fugacity in Angstrom^-3
-        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
         delta_e = new%total - old%total         ! kcal/mol
 
         ! Swap acceptance probability
@@ -720,7 +716,7 @@ contains
                 ! 3. Compute ideal gas chemical potential (kcal/mol)
                 !    μ_ideal = k_B * T * ln(ρ * Λ^3)
                 ! ----------------------------------------------------------------
-                m = res%mass_residue(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
+                m = res%mass(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
                 Lambda = H_PLANCK / sqrt(TWOPI * m * KB_JK * input%temperature) ! Thermal de Broglie wavelength (m)
 
                 N = primary%num_residues(type_residue)           ! Number of molecules
