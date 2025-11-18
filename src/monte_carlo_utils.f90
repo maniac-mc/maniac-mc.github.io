@@ -153,6 +153,9 @@ contains
     ! available types in [1, active_residue_count].
     !----------------------------------------------------------------------
     function PickRandomResidueType(is_active) result(residue_type)
+
+        implicit none
+
         integer, dimension(:), intent(in) :: is_active
         integer :: residue_type
         integer :: i, n_active
@@ -161,8 +164,8 @@ contains
         ! Count active residues
         n_active = count(is_active == 1)
 
-        if (n_active == 0) then
-            residue_type = 0  ! or some error code
+        if (n_active == 0) then ! No active residue to pick from
+            residue_type = 0
             return
         end if
 
@@ -238,43 +241,51 @@ contains
         integer, intent(in) :: residue_type     ! Index of the residue type
         
         ! Local variables
-        real(real64) :: N                       ! Number of residues of this type (local copy)
-        real(real64) :: V                       ! Simulation box volume (local copy)
-        real(real64) :: phi                     ! Fugacity of the residue type (local copy)
-        real(real64) :: delta_e                 ! Energy difference ΔE between trial and current state
+        real(real64) :: N                       ! Number of residues of this type
+        real(real64) :: V                       ! Simulation box volume
+        ! real(real64) :: fugacity              ! Fugacity of the residue type (no units)
+        real(real64) :: mu      
+        real(real64) :: deltaU                  ! Energy difference ΔE between trial and current state
         real(real64) :: beta                    ! 1/kB T
         real(real64) :: prefactor               ! Prefactor for probability calculation
+        real(real64) :: lambda                  ! de Broglie wavelength in m
+        real(real64) :: mass                    ! residue pass in kg
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N   = real(primary%num_residues(residue_type), real64)
-        V   = primary%volume                    ! Angstrom^3
-        phi = input%fugacity(residue_type)      ! Fugacity in Angstrom^-3
+        N = real(primary%num_residues(residue_type), real64)
+        V = primary%volume                      ! Angstrom^3
+        
         beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
-        delta_e = new%total - old%total         ! kcal/mol
+        deltaU = new%total - old%total          ! kcal/mol
+
+        mass= res%mass_residue(residue_type) * G_TO_KG / NA ! Mass per molecule (kg)
+        lambda = H_PLANCK / sqrt(TWOPI * mass * KB_JK * input%temperature) / A_TO_M ! Thermal de Broglie wavelength (A)
+
+        mu = input%chemical_potential(residue_type)     ! Fugacity in Angstrom^-3
 
         ! Compute factor based on move type
         select case (move_type)
             case (TYPE_CREATION)
-            
-                prefactor = phi * V / (N + one) ! Note: N+1 instead of N to avoid division by zero
-            
+                ! P_acc(N -> N+1) = min[1, (V / ((N+1) λ³)) * exp(-β * (ΔU - μ))]
+                ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
+                ! Note: N+1 instead of N to avoid division by zero
+                prefactor = primary%volume / (N + 1.0_real64) / lambda**3
+                probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
             case (TYPE_DELETION)
-            
-                prefactor = (N + one) / (phi * V)
+                ! P_acc(N -> N-1) = min[1, ((N+1) λ³ / V) * exp(-β * (ΔU + μ))]
+                ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
+                prefactor = (N + 1.0_real64) * lambda**3 / (primary%volume)
+                probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
             case (TYPE_TRANSLATION, TYPE_ROTATION)
-
-                prefactor = one
-
+                ! P_acc = min[1, exp(-β * ΔU)]
+                probability = min(1.0_real64, exp(-beta * deltaU))
             case default
-
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
-
         end select
 
-        probability = min(one, prefactor * exp(-beta * delta_e)) 
 
     end function compute_acceptance_probability
 
@@ -710,7 +721,7 @@ contains
                 !    μ_ideal = k_B * T * ln(ρ * Λ^3)
                 ! ----------------------------------------------------------------
                 m = res%mass_residue(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
-                Lambda = Hplank / sqrt(TWOPI * m * KB_JK * input%temperature) ! Thermal de Broglie wavelength (m)
+                Lambda = H_PLANCK / sqrt(TWOPI * m * KB_JK * input%temperature) ! Thermal de Broglie wavelength (m)
 
                 N = primary%num_residues(type_residue)           ! Number of molecules
                 V = primary%volume * A3_TO_M3                    ! Box volume (m^3)

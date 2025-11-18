@@ -20,58 +20,26 @@ contains
 
         implicit none
 
-        ! Step 1: Convert fugacities to dimensionless activities
-        ! call ConvertFugacity()
-
-        ! Step 2: Initialize Ewald summation parameters
-        !         (cutoff, precision, reciprocal space, etc.)
+        ! Initialize Ewald summation parameters
+        ! (cutoff, precision, reciprocal space, etc.)
         call SetupEwald()
 
-        ! Step 3: Allocate memory for arrays needed by the Ewald
-        !         method (reciprocal vectors, coefficients, etc.)
+        ! Allocate memory for arrays needed by the Ewald
+        ! method (reciprocal vectors, coefficients, etc.)
         call AllocateArray()
 
-        ! Step 4: Precompute k vectors
+        ! Precompute k vectors
         call PrecomputeValidReciprocalVectors()
 
-        ! Step 5: Log the Ewald parameters and settings for
-        !         reproducibility and debugging
+        ! Log the Ewald parameters and settings for
+        ! reproducibility and debugging
         call LogEwaldParameters()
 
     end subroutine PrepareSimulationParameters
 
-    ! !--------------------------------------------------------------------
-    ! ! Subroutine: ConvertFugacity
-    ! !   Converts the fugacity of each active residue from units of atm
-    ! !   into a dimensionless activity per cubic ångström (Å-3).
-    ! !--------------------------------------------------------------------
-    ! subroutine ConvertFugacity()
-
-    !     use constants
-
-    !     implicit none
-
-    !     ! Local variables
-    !     real(real64) :: thermal_energy ! kB * T in Joule
-    !     integer :: id_residue
-
-    !     thermal_energy = KB_JK * input%temperature ! Joule
-
-    !     do id_residue = 1, nb%type_residue
-    !         if (input%is_active(id_residue) == 1) then
-
-    !             if (input%fugacity(id_residue) <= zero) then
-    !                 call AbortRun("Invalid fugacity for active residue with ID = " // trim(res%names_1d(id_residue)))
-    !             end if
-
-    !             ! Convert fugacity from atm to dimensionless activity in Å-3
-    !             input%fugacity(id_residue) = input%fugacity(id_residue) * ATM_TO_PA * A3_TO_M3 / thermal_energy ! atm to Å-3
-                
-    !         end if
-    !     end do
-
-    ! end subroutine ConvertFugacity
-
+    !-----------------------------------------------------------
+    ! Print Ewald information
+    !-----------------------------------------------------------
     subroutine LogEwaldParameters()
 
         implicit none
@@ -111,16 +79,16 @@ contains
         ! Default: log unless explicitly disabled
         do_log = .true.; if (present(verbose)) do_log = verbose
 
-        ! Step 1: Adjust cutoff if too large
+        ! Adjust cutoff if too large
         call AdjustRealSpaceCutoff(do_log)
 
-        ! Step 2: Clamp tolerance
+        ! Clamp tolerance
         call ClampTolerance()
 
-        ! Step 3: Compute Ewald parameters
+        ! Compute Ewald parameters
         call ComputeEwaldParameters()
 
-        ! Step 4: Compute Fourier indices
+        ! Compute Fourier indices
         call ComputeFourierIndices()
 
     end subroutine SetupEwald
@@ -172,6 +140,7 @@ contains
     !             - Fourier-space precision
     !--------------------------------------------------------------------
     subroutine ComputeEwaldParameters()
+    
         ! Intermediate tolerance factor for screening width
         ewald%screening_factor = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff)))
 
@@ -182,6 +151,7 @@ contains
         ! Estimate needed Fourier-space precision
         ewald%fourier_precision = sqrt(-log(input%ewald_tolerance * input%real_space_cutoff * &
                                 (two * ewald%screening_factor * ewald%alpha)**2))
+
     end subroutine ComputeEwaldParameters
 
     !--------------------------------------------------------------------

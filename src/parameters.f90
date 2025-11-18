@@ -25,9 +25,14 @@ module parameters
     integer, parameter :: BOX_WIDTH = 78
 
     ! Parameters for unit conversion
-    real(real64), parameter :: A3_TO_M3 = 1.0d-30    ! Conversion factor: 1 Å³ → 1.0E-30 m³
-    real(real64), parameter :: ATM_TO_PA = 1.01325d5 ! Conversion factor: 1 atm → 1.01325 × 10^5 Pa
-    real(real64), parameter :: G_TO_KG = 1.0d-3     ! Conversion factor: 1 g → 1.0E-3 km
+    real(real64), parameter :: A_TO_M = 1.0d-10         ! Conversion factor: 1 Å → 1.0E-10 m
+    real(real64), parameter :: A3_TO_M3 = 1.0d-30       ! Conversion factor: 1 Å^3 → 1.0E-30 m^3
+    real(real64), parameter :: ATM_TO_PA = 1.01325d5    ! Conversion factor: 1 atm → 1.01325 × 10^5 Pa
+    real(real64), parameter :: G_TO_KG = 1.0d-3         ! Conversion factor: 1 g → 1.0E-3 km
+
+    real(real64), parameter :: J_to_kcal  = 0.000239005736        ! 1 J = 0.239005736 cal
+    real(real64), parameter :: cal_to_kcal = 1.0e-3
+    real(real64), parameter :: m_to_A     = 1.0e10                 ! 1 m = 10^10 Å
 
     ! File names
     character(len=*), parameter :: data_filename = 'topology.data' ! Topology data file
@@ -41,5 +46,7 @@ module parameters
     ! In module parameters
     integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions
     logical, parameter :: use_table = .false. ! #TODO: make it an input parameter for user
+
+    real(real64), parameter :: error = 1.0D-10              ! Small number for error calculation
 
 end module parameters

@@ -270,6 +270,7 @@ contains
         allocate(res%types_2d(nb%type_residue, nb%max_type_per_residue))
         allocate(res%names_2d(nb%type_residue, nb%max_type_per_residue))
         allocate(input%fugacity(nb%type_residue))
+        allocate(input%chemical_potential(nb%type_residue))
         allocate(nb%types_per_residue(nb%type_residue))
         allocate(nb%atom_in_residue(nb%type_residue))
         allocate(nb%bonds_per_residue(nb%type_residue))
@@ -648,7 +649,7 @@ contains
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
         integer, allocatable :: tmp_is_active(:), tmp_atom_in_residue(:), tmp_types_per_residue(:)
-        real(real64), allocatable :: tmp_fugacity(:)
+        real(real64), allocatable :: tmp_fugacity(:), tmp_chemical_potential(:)
         integer, allocatable :: tmp_types_2d(:,:)
         character(len=10), allocatable :: tmp_names_2d(:,:)
 
@@ -660,6 +661,7 @@ contains
         allocate(tmp_names_1d(n))
         allocate(tmp_is_active(n))
         allocate(tmp_fugacity(n))
+        allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
         allocate(tmp_types_per_residue(n))
         allocate(tmp_types_2d(size(res%types_2d,1), size(res%types_2d,2)))
@@ -690,6 +692,7 @@ contains
             tmp_names_1d(i)          = res%names_1d(k)
             tmp_is_active(i)         = input%is_active(k)
             tmp_fugacity(i)          = input%fugacity(k)
+            tmp_chemical_potential(i) = input%chemical_potential(k)
             tmp_atom_in_residue(i)   = nb%atom_in_residue(k)
             tmp_types_per_residue(i) = nb%types_per_residue(k)
             tmp_types_2d(i,:)        = res%types_2d(k,:)
@@ -700,13 +703,14 @@ contains
         res%names_1d          = tmp_names_1d
         input%is_active       = tmp_is_active
         input%fugacity        = tmp_fugacity
+        input%chemical_potential = tmp_chemical_potential
         nb%atom_in_residue    = tmp_atom_in_residue
         nb%types_per_residue  = tmp_types_per_residue
         res%types_2d          = tmp_types_2d
         res%names_2d          = tmp_names_2d
 
         ! Deallocate temporary arrays
-        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, &
+        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &
                 tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
     end subroutine SortResidues
