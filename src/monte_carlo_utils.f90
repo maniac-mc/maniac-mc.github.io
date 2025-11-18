@@ -266,7 +266,7 @@ contains
 
                 ! P_acc = min[1, exp(-β * ΔU)]
                 probability = min(1.0_real64, exp(-beta * deltaU))
-                
+
             case default
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
         end select
@@ -474,24 +474,9 @@ contains
     end subroutine
 
     !---------------------------------------------------------------------------
-    ! Subroutine: SaveMoleculeState
-    !
-    ! Purpose:
-    !   Save the current state of a molecule for a Monte Carlo move.
-    !   - For translation: saves center-of-mass (COM)
-    !   - For rotation: saves site offsets
-    !   - Also saves Fourier terms for later restoration if the move is rejected
-    !
-    ! Inputs:
-    !   residue_type   - Integer: Residue type of the molecule
-    !   molecule_index - Integer: Index of the molecule
-    !
-    ! Outputs:
-    !   com_old         - Real(3) array: center-of-mass (for translation)
-    !   site_offset_old - Real(3, natoms) array: site offsets (for rotation)
-    ! Notes:
-    !   - Only one of com_old or site_offset_old is allocated by the caller
-    !   - Fourier terms are always saved
+    ! Save the current state of a molecule for a Monte Carlo move. For
+    ! translation: saves center-of-mass (COM). For rotation: saves site offsets.
+    ! Also saves Fourier terms for later restoration if the move is rejected
     !---------------------------------------------------------------------------
     subroutine SaveMoleculeState(res_type, mol_index, com_old, offset_old)
 
@@ -523,17 +508,8 @@ contains
     end subroutine SaveMoleculeState
 
     !---------------------------------------------------------------------------
-    ! Subroutine: RejectMoleculeMove
-    !
-    ! Purpose:
-    !   Restore a molecule's previous state (COM or site offsets) and Fourier terms
-    !   if a Monte Carlo move is rejected.
-    !
-    ! Inputs:
-    !   res_type - Residue type of the molecule
-    !   mol_index - Index of the molecule
-    !   com_old - Previous COM (for translation, optional)
-    !   site_offset_old - Previous site offsets (for rotation, optional)
+    ! Restore a molecule's previous state (COM or site offsets) and Fourier terms
+    ! if a Monte Carlo move is rejected.
     !---------------------------------------------------------------------------
     subroutine RejectMoleculeMove(res_type, mol_index, com_old, site_offset_old)
         implicit none
@@ -564,13 +540,9 @@ contains
     end subroutine RejectMoleculeMove
 
     !---------------------------------------------------------------------------
-    ! Subroutine: InsertAndOrientMolecule
-    !
-    ! Purpose:
-    !   Generates a random position for the new molecule and copies/orients
-    !   its atomic geometry. Can take geometry from a reservoir or apply
-    !   a random rotation if no reservoir exists.
-    !
+    ! Generates a random position for the new molecule and copies/orients
+    ! its atomic geometry. Can take geometry from a reservoir or apply
+    ! a random rotation if no reservoir exists.
     !---------------------------------------------------------------------------
     subroutine InsertAndOrientMolecule(residue_type, molecule_index, rand_mol_index)
 
@@ -617,12 +589,8 @@ contains
     end subroutine InsertAndOrientMolecule
 
     !---------------------------------------------------------------------------
-    ! Subroutine: RejectCreationMove
-    !
-    ! Purpose:
-    !   Restores molecule and atom counts, and resets Fourier states if a
-    !   creation move is rejected.
-    !
+    ! Restores molecule and atom counts, and resets Fourier states if a
+    ! creation move is rejected.
     !---------------------------------------------------------------------------
     subroutine RejectCreationMove(residue_type, molecule_index)
 
@@ -641,25 +609,9 @@ contains
     end subroutine RejectCreationMove
 
     !------------------------------------------------------------------------------
-    ! Subroutine: CalculateExcessMu
-    !
-    ! Purpose:
-    !   Compute the excess chemical potential (μ_ex) for each residue type
-    !   using Widom particle insertion method, and optionally the ideal chemical
-    !   potential (μ_ideal) for reporting purposes.
-    !
-    ! Formulas:
-    !   1. Excess chemical potential (Widom):
-    !        μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
-    !          - <exp(-β ΔU)> = average Boltzmann weight from Widom sampling
-    !          - k_B: Boltzmann constant in kcal/mol/K
-    !          - T: temperature in Kelvin
-    !
-    !   2. Ideal chemical potential:
-    !        μ_ideal = k_B * T * ln(ρ * Λ^3)
-    !          - ρ = N / V = number density (molecules/m^3)
-    !          - Λ = hbar / sqrt(2 * π * m * k_B * T) = thermal de Broglie wavelength (m)
-    !          - m: mass per molecule in kg
+    ! Compute the excess chemical potential (μ_ex) for each residue type
+    ! using Widom particle insertion method, and optionally the ideal chemical
+    ! potential (μ_ideal) for reporting purposes.
     !------------------------------------------------------------------------------
     subroutine CalculateExcessMu()
 
@@ -670,9 +622,9 @@ contains
         integer :: N                ! Number of molecules of current residue
         real(real64) :: avg_weight  ! Average Boltzmann weight for Widom sampling
         real(real64) :: mu_ideal    ! Ideal chemical potential (kcal/mol)
-        real(real64) :: m           ! Mass per molecule (kg)
-        real(real64) :: Lambda      ! Thermal de Broglie wavelength (m)
-        real(real64) :: V           ! Simulation box volume (m^3)
+        real(real64) :: lambda      ! Thermal de Broglie wavelength (m)
+        real(real64) :: temperature ! Temperature (K)
+        real(real64) :: volume      ! Simulation box volume (m^3)
         real(real64) :: rho         ! Number density (molecules/m^3)
 
         ! Loop over all residue types
@@ -680,29 +632,27 @@ contains
             if (widom_stat%sample(type_residue) > 0) then
 
                 ! ----------------------------------------------------------------
-                ! 1. Compute average Boltzmann factor from Widom sampling
-                !    <exp(-β ΔU)> = sum_weights / N_samples
+                ! Compute average Boltzmann factor from Widom sampling
+                ! <exp(-β ΔU)> = sum_weights / N_samples
                 ! ----------------------------------------------------------------
                 avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
 
                 ! ----------------------------------------------------------------
-                ! 2. Compute excess chemical potential (kcal/mol)
-                !    μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
+                ! Compute excess chemical potential (kcal/mol)
+                ! μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
                 ! ----------------------------------------------------------------
-                widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temperature * log(avg_weight) ! kcal/mol
+                temperature = input%temperature
+                widom_stat%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
 
                 ! ----------------------------------------------------------------
-                ! 3. Compute ideal gas chemical potential (kcal/mol)
-                !    μ_ideal = k_B * T * ln(ρ * Λ^3)
+                ! Compute ideal gas chemical potential (kcal/mol)
+                ! μ_ideal = k_B * T * ln(ρ * Λ^3)
                 ! ----------------------------------------------------------------
-                m = res%mass(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
-                Lambda = H_PLANCK / sqrt(TWOPI * m * KB_JK * input%temperature) ! Thermal de Broglie wavelength (m)
-
-                N = primary%num_residues(type_residue)           ! Number of molecules
-                V = primary%volume * A3_TO_M3                    ! Box volume (m^3)
-                rho = real(N, kind=real64) / V                   ! Number density (molecules/m^3)
-
-                mu_ideal = KB_kcalmol * input%temperature * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
+                lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
+                N = primary%num_residues(type_residue)              ! Number of molecules
+                volume = primary%volume                             ! Box volume (A^3)
+                rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
+                mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)
 
                 widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
 
