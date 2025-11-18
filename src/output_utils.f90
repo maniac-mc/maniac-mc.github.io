@@ -764,7 +764,7 @@ contains
         call LogMessage(msg)
         write(msg, '("Number of steps: ", I0)') input%nb_step
         call LogMessage(msg)
-        write(msg, '("Temperature (K): ", F10.2)') input%temp_K
+        write(msg, '("Temperature (K): ", F10.2)') input%temperature
         call LogMessage(msg)
         call LogMessage("")
 

@@ -21,7 +21,7 @@ contains
         implicit none
 
         ! Step 1: Convert fugacities to dimensionless activities
-        call ConvertFugacity()
+        ! call ConvertFugacity()
 
         ! Step 2: Initialize Ewald summation parameters
         !         (cutoff, precision, reciprocal space, etc.)
@@ -40,37 +40,37 @@ contains
 
     end subroutine PrepareSimulationParameters
 
-    !--------------------------------------------------------------------
-    ! Subroutine: ConvertFugacity
-    !   Converts the fugacity of each active residue from units of atm
-    !   into a dimensionless activity per cubic ångström (Å-3).
-    !--------------------------------------------------------------------
-    subroutine ConvertFugacity()
+    ! !--------------------------------------------------------------------
+    ! ! Subroutine: ConvertFugacity
+    ! !   Converts the fugacity of each active residue from units of atm
+    ! !   into a dimensionless activity per cubic ångström (Å-3).
+    ! !--------------------------------------------------------------------
+    ! subroutine ConvertFugacity()
 
-        use constants
+    !     use constants
 
-        implicit none
+    !     implicit none
 
-        ! Local variables
-        real(real64) :: thermal_energy ! kB * T in Joule
-        integer :: id_residue
+    !     ! Local variables
+    !     real(real64) :: thermal_energy ! kB * T in Joule
+    !     integer :: id_residue
 
-        thermal_energy = KB_JK * input%temp_K ! Joule
+    !     thermal_energy = KB_JK * input%temperature ! Joule
 
-        do id_residue = 1, nb%type_residue
-            if (input%is_active(id_residue) == 1) then
+    !     do id_residue = 1, nb%type_residue
+    !         if (input%is_active(id_residue) == 1) then
 
-                if (input%fugacity(id_residue) <= zero) then
-                    call AbortRun("Invalid fugacity for active residue with ID = " // trim(res%names_1d(id_residue)))
-                end if
+    !             if (input%fugacity(id_residue) <= zero) then
+    !                 call AbortRun("Invalid fugacity for active residue with ID = " // trim(res%names_1d(id_residue)))
+    !             end if
 
-                ! Convert fugacity from atm to dimensionless activity in Å-3
-                input%fugacity(id_residue) = input%fugacity(id_residue) * ATM_TO_PA * A3_TO_M3 / thermal_energy ! atm to Å-3
+    !             ! Convert fugacity from atm to dimensionless activity in Å-3
+    !             input%fugacity(id_residue) = input%fugacity(id_residue) * ATM_TO_PA * A3_TO_M3 / thermal_energy ! atm to Å-3
                 
-            end if
-        end do
+    !         end if
+    !     end do
 
-    end subroutine ConvertFugacity
+    ! end subroutine ConvertFugacity
 
     subroutine LogEwaldParameters()
 

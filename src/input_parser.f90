@@ -325,6 +325,7 @@ contains
         logical :: has_translation_step, has_rotation_step, has_recalibrate
         logical :: has_translation_proba, has_rotation_proba
         logical :: has_insertdel_proba, has_swap_proba, has_widom_proba
+        logical :: has_fugacity, has_chemical_potential
 
         has_nb_block = .false.
         has_nb_step = .false.
@@ -347,6 +348,8 @@ contains
 
         ! Initialize all fugacities to -1.0 (indicating unset)
         input%fugacity(:) = -one
+        ! Initialize all chemical_potential to 0.0 (indicating unset)
+        input%chemical_potential(:) = zero
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -379,7 +382,7 @@ contains
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading temperature"
                 if (val_real <= zero) error stop "Invalid temperature: must be > 0"
-                input%temp_K = val_real
+                input%temperature = val_real
                 has_temp = .true.
 
             case ("seed")
@@ -473,7 +476,7 @@ contains
             end select
 
             ! ===============================
-            ! Residue parsing (types, names, fugacity, nb-atoms)
+            ! Residue parsing (types, names, fugacity, chemical potential nb-atoms)
             ! ===============================
             if (in_residue_block) then
 
@@ -519,6 +522,11 @@ contains
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
                     input%fugacity(nb%type_residue + 1) = val_real
+
+                ! Check if the line specifies the chemical potential
+                else if (trim(token) == 'chemical_potential') then
+                    read(rest_line, *, iostat=ios) val_real
+                    input%chemical_potential(nb%type_residue + 1) = val_real
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
@@ -571,12 +579,24 @@ contains
 
         ! Validate fugacity for active residues
         do val_int = 1, nb%type_residue
-            if (input%is_active(val_int) == 1) then
-                if (input%fugacity(val_int) < zero) then
-                    call AbortRun("Fugacity not provided or invalid for active residue: " &
-                        // trim(res%names_1d(val_int)))
-                end if
+
+            if (input%is_active(val_int) == 0) cycle
+
+            has_fugacity = (input%fugacity(val_int) >= zero)
+            has_chemical_potential = (input%chemical_potential(val_int) < zero)
+
+            ! Rule 1: at least one must be provided
+            if (.not.(has_fugacity .or. has_chemical_potential)) then
+                call AbortRun("Neither fugacity nor chemical potential provided for active residue: " // &
+                            trim(res%names_1d(val_int)))
             end if
+
+            ! Rule 2: cannot both be provided
+            if (has_fugacity .and. has_chemical_potential) then
+                call AbortRun("Both fugacity and chemical potential were specified for active residue: " // &
+                            trim(res%names_1d(val_int)))
+            end if
+
         end do
 
         ! === Validation of required parameters ===

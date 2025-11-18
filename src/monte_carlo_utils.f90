@@ -241,7 +241,6 @@ contains
         real(real64) :: N                       ! Number of residues of this type (local copy)
         real(real64) :: V                       ! Simulation box volume (local copy)
         real(real64) :: phi                     ! Fugacity of the residue type (local copy)
-        real(real64) :: T                       ! Temperature in units of kB*T (optional local copy for clarity)
         real(real64) :: delta_e                 ! Energy difference ΔE between trial and current state
         real(real64) :: beta                    ! 1/kB T
         real(real64) :: prefactor               ! Prefactor for probability calculation
@@ -252,8 +251,7 @@ contains
         N   = real(primary%num_residues(residue_type), real64)
         V   = primary%volume                    ! Angstrom^3
         phi = input%fugacity(residue_type)      ! Fugacity in Angstrom^-3
-        T = input%temp_K                        ! Kelvin
-        beta = 1/(KB_kcalmol*T)                 ! 1/(kcal/mol)
+        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
         delta_e = new%total - old%total         ! kcal/mol
 
         ! Compute factor based on move type
@@ -312,7 +310,6 @@ contains
         ! Local valriables
         real(real64) :: delta_e                 ! Energy difference
         real(real64) :: phi_old, phi_new        ! Fugacities of species
-        real(real64) :: T                       ! Temperature in units of kB*T
         real(real64) :: beta                    ! 1/kB T
         real(real64) :: N_old, N_new            ! Number of molecule per types
 
@@ -323,8 +320,7 @@ contains
         N_old = real(primary%num_residues(type_old), real64)
         phi_old = input%fugacity(type_old)      ! Fugacity in Angstrom^-3
         phi_new = input%fugacity(type_new)      ! Fugacity in Angstrom^-3
-        T = input%temp_K                        ! Kelvin
-        beta = 1/(KB_kcalmol*T)                 ! 1/(kcal/mol)
+        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
         delta_e = new%total - old%total         ! kcal/mol
 
         ! Swap acceptance probability
@@ -690,7 +686,6 @@ contains
         real(real64) :: mu_ideal    ! Ideal chemical potential (kcal/mol)
         real(real64) :: m           ! Mass per molecule (kg)
         real(real64) :: Lambda      ! Thermal de Broglie wavelength (m)
-        real(real64) :: T           ! Temperature (K)
         real(real64) :: V           ! Simulation box volume (m^3)
         real(real64) :: rho         ! Number density (molecules/m^3)
 
@@ -708,21 +703,20 @@ contains
                 ! 2. Compute excess chemical potential (kcal/mol)
                 !    μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
                 ! ----------------------------------------------------------------
-                widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temp_K * log(avg_weight) ! kcal/mol
+                widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temperature * log(avg_weight) ! kcal/mol
 
                 ! ----------------------------------------------------------------
                 ! 3. Compute ideal gas chemical potential (kcal/mol)
                 !    μ_ideal = k_B * T * ln(ρ * Λ^3)
                 ! ----------------------------------------------------------------
-                T = input%temp_K                                  ! Temperature (K)
                 m = res%mass_residue(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
-                Lambda = Hplank / sqrt(TWOPI * m * KB_JK * T)     ! Thermal de Broglie wavelength (m)
+                Lambda = Hplank / sqrt(TWOPI * m * KB_JK * input%temperature) ! Thermal de Broglie wavelength (m)
 
                 N = primary%num_residues(type_residue)           ! Number of molecules
                 V = primary%volume * A3_TO_M3                    ! Box volume (m^3)
                 rho = real(N, kind=real64) / V                   ! Number density (molecules/m^3)
 
-                mu_ideal = KB_kcalmol * T * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
+                mu_ideal = KB_kcalmol * input%temperature * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
 
                 widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
 
