@@ -217,18 +217,7 @@ contains
     ! 
     ! This routine evaluates the acceptance probability for creation,
     ! deletion, translation, and rotation moves in a grand-canonical or
-    ! canonical Monte Carlo simulation.  The expression uses:
-    !
-    !   - ΔE  = new%total – old%total          (energy difference)
-    !   - β   = 1 / (kB * T)                   (inverse temperature)
-    !   - φ   = fugacity of the residue type
-    !   - V   = simulation box volume
-    !   - N   = current number of residues of that type
-    !
-    ! Move-dependent acceptance rules:
-    !   * Creation:   min(1, (φ V / (N+1)) * exp(-β ΔE))
-    !   * Deletion:   min(1, ((N+1) / (φ V)) * exp(-β ΔE))
-    !   * Translation/Rotation:  min(1, exp(-β ΔE))
+    ! canonical Monte Carlo simulation.
     !----------------------------------------------------------------------
     function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
@@ -241,27 +230,20 @@ contains
         integer, intent(in) :: residue_type     ! Index of the residue type
         
         ! Local variables
-        real(real64) :: N                       ! Number of residues of this type
-        real(real64) :: V                       ! Simulation box volume
-        ! real(real64) :: fugacity              ! Fugacity of the residue type (no units)
-        real(real64) :: mu      
+        real(real64) :: N, Nplus1               ! Number of residues of this type, and Number + 1
+        real(real64) :: mu                      ! Chemical potential
         real(real64) :: deltaU                  ! Energy difference ΔE between trial and current state
         real(real64) :: prefactor               ! Prefactor for probability calculation
         real(real64) :: lambda                  ! de Broglie wavelength in m
-        real(real64) :: mass                    ! residue pass in kg
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
         N = real(primary%num_residues(residue_type), real64)
-        V = primary%volume                      ! Angstrom^3
-        
-        deltaU = new%total - old%total          ! kcal/mol
-
-        mass= res%mass(residue_type) * G_TO_KG / NA ! Mass per molecule (kg)
-        lambda = H_PLANCK / sqrt(TWOPI * mass * KB_JK * input%temperature) / A_TO_M ! Thermal de Broglie wavelength (A)
-
-        mu = input%chemical_potential(residue_type)     ! Fugacity in Angstrom^-3
+        Nplus1 = N + 1.0_real64
+        lambda = res%lambda(residue_type)               ! Thermal de Broglie wavelength (A)
+        deltaU = new%total - old%total                  ! kcal/mol
+        mu = input%chemical_potential(residue_type)     ! kcal/mol
 
         ! Compute factor based on move type
         select case (move_type)
@@ -269,12 +251,12 @@ contains
                 ! P_acc(N -> N+1) = min[1, (V / ((N+1) λ³)) * exp(-β * (ΔU - μ))]
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
-                prefactor = primary%volume / (N + 1.0_real64) / lambda**3
+                prefactor = primary%volume / Nplus1 / lambda**3
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
             case (TYPE_DELETION)
                 ! P_acc(N -> N-1) = min[1, ((N+1) λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
-                prefactor = (N + 1.0_real64) * lambda**3 / (primary%volume)
+                prefactor = Nplus1 * lambda**3 / (primary%volume)
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
             case (TYPE_TRANSLATION, TYPE_ROTATION)
@@ -283,7 +265,6 @@ contains
             case default
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
         end select
-
 
     end function compute_acceptance_probability
 
