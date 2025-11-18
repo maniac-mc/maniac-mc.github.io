@@ -248,20 +248,25 @@ contains
         ! Compute factor based on move type
         select case (move_type)
             case (TYPE_CREATION)
+
                 ! P_acc(N -> N+1) = min[1, (V / ((N+1) λ³)) * exp(-β * (ΔU - μ))]
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
                 prefactor = primary%volume / Nplus1 / lambda**3
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
+
             case (TYPE_DELETION)
-                ! P_acc(N -> N-1) = min[1, ((N+1) λ³ / V) * exp(-β * (ΔU + μ))]
+
+                ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
-                prefactor = Nplus1 * lambda**3 / (primary%volume)
+                prefactor = N * lambda**3 / (primary%volume)
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
             case (TYPE_TRANSLATION, TYPE_ROTATION)
+
                 ! P_acc = min[1, exp(-β * ΔU)]
                 probability = min(1.0_real64, exp(-beta * deltaU))
+                
             case default
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
         end select
@@ -273,19 +278,7 @@ contains
     !
     ! This routine evaluates the acceptance probability for replacing a
     ! molecule of type_old with one of type_new in a grand-canonical or
-    ! semi-grand Monte Carlo simulation.  The expression uses:
-    !
-    !   - ΔE  = new%total - old%total          (energy difference)
-    !   - β   = 1 / (kB * T)                   (inverse temperature)
-    !   - φ   = fugacity of each residue type
-    !   - N   = current number of residues of each type
-    !
-    ! Swap move acceptance rule:
-    !
-    !   P = min(1,
-    !           (φ_new / φ_old)
-    !         * (N_old / (N_new + 1))
-    !         * exp(-β ΔE) )
+    ! semi-grand Monte Carlo simulation.
     !---------------------------------------------------------------------- 
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
@@ -297,22 +290,27 @@ contains
         integer, intent(in) :: type_old         ! Residue type being removed
         integer, intent(in) :: type_new         ! Residue type being inserted
 
-        ! Local valriables
-        real(real64) :: delta_e                 ! Energy difference
-        real(real64) :: phi_old, phi_new        ! Fugacities of species
-        real(real64) :: N_old, N_new            ! Number of molecule per types
+        ! Local variables
+        real(real64) :: deltaU                  ! Energy difference
+        real(real64) :: mu_old, mu_new          ! Chemical potentials (kcal/mol)
+        real(real64) :: N_old, N_new            ! Number of molecules per type
+        real(real64) :: Nplus1
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
         N_new = real(primary%num_residues(type_new), real64)
         N_old = real(primary%num_residues(type_old), real64)
-        phi_old = input%fugacity(type_old)      ! Fugacity in Angstrom^-3
-        phi_new = input%fugacity(type_new)      ! Fugacity in Angstrom^-3
-        delta_e = new%total - old%total         ! kcal/mol
+        Nplus1 = N_new + 1.0_real64
 
-        ! Swap acceptance probability
-        probability = min(one, (phi_new / phi_old) * (N_old / (N_new + one)) * exp(-beta * delta_e))
+        ! Chemical potentials
+        mu_old = input%chemical_potential(type_old) ! kcal/mol
+        mu_new = input%chemical_potential(type_new) ! kcal/mol
+        deltaU = new%total - old%total         ! kcal/mol
+
+        ! Swap acceptance probability:
+        ! P_acc = min[1, (N_old / (N_new + 1)) * exp(-β (ΔE + μ_new - μ_old))]
+        probability = min(1.0_real64, (N_old / Nplus1) * exp(-beta * (deltaU + mu_new - mu_old)))
 
     end function swap_acceptance_probability
 
