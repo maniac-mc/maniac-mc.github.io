@@ -47,7 +47,7 @@ contains
         integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
         logical :: is_creation                  ! Flag indicating creation
 
-        real(real64) :: deltaU, weight, T
+        real(real64) :: deltaU, weight
 
         call CheckMoleculeIndex(molecule_index, NB_MAX_MOLECULE)
 
@@ -76,9 +76,8 @@ contains
 
         ! Bolzmann weight 
         deltaU = new%total - old%total ! In K units
-        T = input%temp_K ! In K units
 
-        weight = exp(-deltaU / T)
+        weight = exp(-deltaU / input%temperature)
 
         widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + weight
         widom_stat%sample(residue_type) = widom_stat%sample(residue_type) + 1

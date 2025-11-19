@@ -132,8 +132,7 @@ contains
         end do
 
         ! Convert accumulated energy to correct units (kcal/mol)
-        ! e^2 x Å^2 * kcal Å / (mol e^2 Å^3) = kcal/mol
-        u_recipCoulomb = u_recipCoulomb * EPS0_INV_kcalA * TWOPI / primary%volume ! In kcal/mol
+        u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%volume ! In kcal/mol
 
     end subroutine ComputeReciprocalEnergy
 
@@ -253,10 +252,8 @@ contains
 
         end do
 
-        !----------------------------------------------
         ! Convert accumulated energy to physical units:
-        !----------------------------------------------
-        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_kcalA * TWOPI / primary%volume ! In kcal/mol
+        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%volume ! In kcal/mol
 
     end subroutine ComputeRecipEnergySingleMol
 
@@ -306,7 +303,7 @@ contains
             self_energy = self_energy - ewald%alpha / SQRTPI * charge_1**2
         end do
 
-        self_energy = self_energy * EPS0_INV_kcalA ! In kcal/mol
+        self_energy = self_energy * EPS0_INV_real ! In kcal/mol
 
     end subroutine ComputeEwaldSelfInteractionSingleMol
 
@@ -366,7 +363,7 @@ contains
             end do
         end do
 
-        u_intraCoulomb = u_intraCoulomb * EPS0_INV_kcalA ! In kcal/mol
+        u_intraCoulomb = u_intraCoulomb * EPS0_INV_real ! In kcal/mol
 
     end subroutine ComputeIntraResidueRealCoulombEnergySingleMol
 

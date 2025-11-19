@@ -166,65 +166,6 @@ contains
 
     end subroutine PrintTerminationMessage
 
-    !------------------------------------------------------------------------------
-    ! Subroutine: PrintStatus
-    !
-    ! Purpose:
-    !   Generates a formatted summary of the current Monte Carlo simulation state
-    !   and prints it to the log file via the LogMessage routine.
-    !
-    ! Notes:
-    !   - Energies are converted to kcal/mol for reporting.
-    !------------------------------------------------------------------------------
-    subroutine PrintStatus_old()
-
-        implicit none
-
-        integer :: nb_type_residue
-        real(real64) :: e_tot
-        real(real64) :: e_coul
-        real(real64) :: e_long
-        character(len=64) :: tmp
-        character(LEN=1024) :: formatted_msg
-
-        call LogMessage("")
-
-        formatted_msg = "  Energy report | Active molecules: "
-        do nb_type_residue = 1, nb%type_residue
-            if (primary%num_residues(nb_type_residue) /= 0 .and. input%is_active(nb_type_residue) == 1) then
-                write(tmp,'(A,"=",I0)') trim(res%names_1d(nb_type_residue)), primary%num_residues(nb_type_residue)
-                if (len_trim(formatted_msg) > 0) then
-                    formatted_msg = trim(formatted_msg)//" " // trim(tmp)
-                else
-                    formatted_msg = trim(tmp)
-                end if
-            end if
-        end do
-        call LogMessage(formatted_msg)
-
-        ! Compute total energies
-        e_tot = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
-                energy%ewald_self +  energy%intra_coulomb
-        e_coul = energy%coulomb +  energy%intra_coulomb
-        e_long = energy%recip_coulomb + energy%ewald_self
-
-        write(formatted_msg,'(A10,1X,A14,1X,A14,1X,A14,1X,A14,2X,A10,2X,A10,2X,A20)') &
-            'Step','TotEng','E_vdwl','E_coul','E_long','TransStep','RotAngle','MC (acc/trial)'
-
-        call LogMessage(formatted_msg)
-
-        write(formatted_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4,2X,'// &
-                            ' "T(",I0,"/",I0,") R(",I0,"/",I0,") C(",I0,"/",I0,") D(",I0,"/",I0,")")') &
-            current_block, e_tot, energy%non_coulomb, e_coul, e_long, &
-            input%translation_step, input%rotation_step_angle, &
-            counter%translations, counter%trial_translations, &
-            counter%rotations, counter%trial_rotations, &
-            counter%creations, counter%trial_creations, &
-            counter%deletions, counter%trial_deletions
-        call LogMessage(formatted_msg)
-
-    end subroutine PrintStatus_old
-
     subroutine PrintStatus()
 
         implicit none
@@ -764,7 +705,7 @@ contains
         call LogMessage(msg)
         write(msg, '("Number of steps: ", I0)') input%nb_step
         call LogMessage(msg)
-        write(msg, '("Temperature (K): ", F10.2)') input%temp_K
+        write(msg, '("Temperature (K): ", F10.2)') input%temperature
         call LogMessage(msg)
         call LogMessage("")
 

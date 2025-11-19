@@ -175,4 +175,42 @@ contains
 
     end function vector_norm
 
+    !--------------------------------------------------------------------
+    ! Pads the given column title to 12 characters and adds one space (A12,1X),
+    ! ensuring consistent alignment with numeric columns printed using I12.
+    ! Appends the formatted field to the growing header line.
+    !--------------------------------------------------------------------
+    subroutine add_col(line, title)
+
+        ! Input argument
+        character(len=*), intent(inout) :: line
+        character(len=*), intent(in)    :: title
+
+        ! Local variable
+        character(len=16) :: tmp
+
+        ! EXACT match to "(1X,I12)" used by data columns
+        write(tmp,'(1X, A12)') title
+
+        ! DO NOT trim, append raw padded field
+        line = line // tmp
+
+    end subroutine add_col
+
+    subroutine add_first_col(line, title)
+
+        ! Input arguments
+        character(len=*), intent(inout) :: line
+        character(len=*), intent(in)    :: title
+
+        ! Local variable
+        character(len=16) :: tmp
+
+        ! FIRST column: matches (I12)
+        write(tmp,'(A12)') title
+        line = line // tmp
+
+    end subroutine add_first_col
+
+
 end module helper_utils

@@ -189,7 +189,7 @@ contains
         end do
 
         ! Re-scale energy
-        e_coulomb = e_coulomb * EPS0_INV_kcalA   ! In kcal/mol
+        e_coulomb = e_coulomb * EPS0_INV_real   ! In kcal/mol
 
     end subroutine SingleMolPairwiseEnergy
 
@@ -379,7 +379,7 @@ contains
         end do
 
         ! Convert to kcal/mol at the end
-        self_energy_1 = self_energy_1 * EPS0_INV_kcalA  ! In kcal/mol
+        self_energy_1 = self_energy_1 * EPS0_INV_real  ! In kcal/mol
 
     end subroutine SingleMolEwaldSelf
 
@@ -455,7 +455,7 @@ contains
         end do
 
         ! Convert to kcal/mol at the end
-        e_coulomb = e_coulomb * EPS0_INV_kcalA                          ! In kcal/mol
+        e_coulomb = e_coulomb * EPS0_INV_real                          ! In kcal/mol
 
     end subroutine ComputePairInteractionEnergy_singlemol
 

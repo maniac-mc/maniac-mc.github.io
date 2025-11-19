@@ -43,9 +43,10 @@ module simulation_state
 
     ! Parameters provided in the input file
     type :: input_type
-        real(real64), dimension(:), allocatable :: fugacity ! Fugacity array of the GCMC reservoir
+        real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
+        real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
         integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
-        real(real64) :: temp_K                  ! Temperature in Kelvin
+        real(real64) :: temperature             ! Temperature in Kelvin
         real(real64) :: translation_step        ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle     ! Maximum rotation for MC moves
         real(real64) :: ewald_tolerance         ! Numerical accuracy for Ewald summation,
@@ -136,7 +137,8 @@ module simulation_state
 
     ! Residues information
     type :: type_residue
-        real(real64), dimension(:), allocatable :: mass_residue        ! Array of mass of residue
+        real(real64), dimension(:), allocatable :: mass                ! de Broglie length
+        real(real64), dimension(:), allocatable :: lambda              ! Array of mass of residue
         real(real64), dimension(:), allocatable :: masses_1d           ! Array of atoms masses
         character(len=10), dimension(:), allocatable :: names_1d       ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: names_2d    ! Site names for each residue

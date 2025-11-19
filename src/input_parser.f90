@@ -259,7 +259,8 @@ contains
         allocate(reservoir%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
         allocate(reservoir%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_residue))
         allocate(reservoir%num_residues(nb%type_residue))
-        allocate(res%mass_residue(nb%type_residue))
+        allocate(res%mass(nb%type_residue))
+        allocate(res%lambda(nb%type_residue))
 
         ! Allocate parameter arrays
         allocate(coeff%sigma(nb%type_residue, nb%type_residue,&
@@ -270,6 +271,7 @@ contains
         allocate(res%types_2d(nb%type_residue, nb%max_type_per_residue))
         allocate(res%names_2d(nb%type_residue, nb%max_type_per_residue))
         allocate(input%fugacity(nb%type_residue))
+        allocate(input%chemical_potential(nb%type_residue))
         allocate(nb%types_per_residue(nb%type_residue))
         allocate(nb%atom_in_residue(nb%type_residue))
         allocate(nb%bonds_per_residue(nb%type_residue))
@@ -325,6 +327,7 @@ contains
         logical :: has_translation_step, has_rotation_step, has_recalibrate
         logical :: has_translation_proba, has_rotation_proba
         logical :: has_insertdel_proba, has_swap_proba, has_widom_proba
+        logical :: has_fugacity, has_chemical_potential
 
         has_nb_block = .false.
         has_nb_step = .false.
@@ -347,6 +350,8 @@ contains
 
         ! Initialize all fugacities to -1.0 (indicating unset)
         input%fugacity(:) = -one
+        ! Initialize all chemical_potential to 0.0 (indicating unset)
+        input%chemical_potential(:) = zero
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -379,7 +384,7 @@ contains
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading temperature"
                 if (val_real <= zero) error stop "Invalid temperature: must be > 0"
-                input%temp_K = val_real
+                input%temperature = val_real
                 has_temp = .true.
 
             case ("seed")
@@ -473,7 +478,7 @@ contains
             end select
 
             ! ===============================
-            ! Residue parsing (types, names, fugacity, nb-atoms)
+            ! Residue parsing (types, names, fugacity, chemical potential nb-atoms)
             ! ===============================
             if (in_residue_block) then
 
@@ -519,6 +524,11 @@ contains
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
                     input%fugacity(nb%type_residue + 1) = val_real
+
+                ! Check if the line specifies the chemical potential
+                else if (trim(token) == 'chemical_potential') then
+                    read(rest_line, *, iostat=ios) val_real
+                    input%chemical_potential(nb%type_residue + 1) = val_real
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
@@ -571,12 +581,24 @@ contains
 
         ! Validate fugacity for active residues
         do val_int = 1, nb%type_residue
-            if (input%is_active(val_int) == 1) then
-                if (input%fugacity(val_int) < zero) then
-                    call AbortRun("Fugacity not provided or invalid for active residue: " &
-                        // trim(res%names_1d(val_int)))
-                end if
+
+            if (input%is_active(val_int) == 0) cycle
+
+            has_fugacity = (input%fugacity(val_int) >= zero)
+            has_chemical_potential = (input%chemical_potential(val_int) < zero)
+
+            ! Rule 1: at least one must be provided
+            if (.not.(has_fugacity .or. has_chemical_potential)) then
+                call AbortRun("Neither fugacity nor chemical potential provided for active residue: " // &
+                            trim(res%names_1d(val_int)))
             end if
+
+            ! Rule 2: cannot both be provided
+            if (has_fugacity .and. has_chemical_potential) then
+                call AbortRun("Both fugacity and chemical potential were specified for active residue: " // &
+                            trim(res%names_1d(val_int)))
+            end if
+
         end do
 
         ! === Validation of required parameters ===
@@ -628,7 +650,7 @@ contains
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
         integer, allocatable :: tmp_is_active(:), tmp_atom_in_residue(:), tmp_types_per_residue(:)
-        real(real64), allocatable :: tmp_fugacity(:)
+        real(real64), allocatable :: tmp_fugacity(:), tmp_chemical_potential(:)
         integer, allocatable :: tmp_types_2d(:,:)
         character(len=10), allocatable :: tmp_names_2d(:,:)
 
@@ -640,6 +662,7 @@ contains
         allocate(tmp_names_1d(n))
         allocate(tmp_is_active(n))
         allocate(tmp_fugacity(n))
+        allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
         allocate(tmp_types_per_residue(n))
         allocate(tmp_types_2d(size(res%types_2d,1), size(res%types_2d,2)))
@@ -670,6 +693,7 @@ contains
             tmp_names_1d(i)          = res%names_1d(k)
             tmp_is_active(i)         = input%is_active(k)
             tmp_fugacity(i)          = input%fugacity(k)
+            tmp_chemical_potential(i) = input%chemical_potential(k)
             tmp_atom_in_residue(i)   = nb%atom_in_residue(k)
             tmp_types_per_residue(i) = nb%types_per_residue(k)
             tmp_types_2d(i,:)        = res%types_2d(k,:)
@@ -680,13 +704,14 @@ contains
         res%names_1d          = tmp_names_1d
         input%is_active       = tmp_is_active
         input%fugacity        = tmp_fugacity
+        input%chemical_potential = tmp_chemical_potential
         nb%atom_in_residue    = tmp_atom_in_residue
         nb%types_per_residue  = tmp_types_per_residue
         res%types_2d          = tmp_types_2d
         res%names_2d          = tmp_names_2d
 
         ! Deallocate temporary arrays
-        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, &
+        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &
                 tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
     end subroutine SortResidues

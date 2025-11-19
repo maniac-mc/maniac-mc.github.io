@@ -153,6 +153,9 @@ contains
     ! available types in [1, active_residue_count].
     !----------------------------------------------------------------------
     function PickRandomResidueType(is_active) result(residue_type)
+
+        implicit none
+
         integer, dimension(:), intent(in) :: is_active
         integer :: residue_type
         integer :: i, n_active
@@ -161,8 +164,8 @@ contains
         ! Count active residues
         n_active = count(is_active == 1)
 
-        if (n_active == 0) then
-            residue_type = 0  ! or some error code
+        if (n_active == 0) then ! No active residue to pick from
+            residue_type = 0
             return
         end if
 
@@ -214,18 +217,7 @@ contains
     ! 
     ! This routine evaluates the acceptance probability for creation,
     ! deletion, translation, and rotation moves in a grand-canonical or
-    ! canonical Monte Carlo simulation.  The expression uses:
-    !
-    !   - ΔE  = new%total – old%total          (energy difference)
-    !   - β   = 1 / (kB * T)                   (inverse temperature)
-    !   - φ   = fugacity of the residue type
-    !   - V   = simulation box volume
-    !   - N   = current number of residues of that type
-    !
-    ! Move-dependent acceptance rules:
-    !   * Creation:   min(1, (φ V / (N+1)) * exp(-β ΔE))
-    !   * Deletion:   min(1, ((N+1) / (φ V)) * exp(-β ΔE))
-    !   * Translation/Rotation:  min(1, exp(-β ΔE))
+    ! canonical Monte Carlo simulation.
     !----------------------------------------------------------------------
     function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
@@ -238,45 +230,46 @@ contains
         integer, intent(in) :: residue_type     ! Index of the residue type
         
         ! Local variables
-        real(real64) :: N                       ! Number of residues of this type (local copy)
-        real(real64) :: V                       ! Simulation box volume (local copy)
-        real(real64) :: phi                     ! Fugacity of the residue type (local copy)
-        real(real64) :: T                       ! Temperature in units of kB*T (optional local copy for clarity)
-        real(real64) :: delta_e                 ! Energy difference ΔE between trial and current state
-        real(real64) :: beta                    ! 1/kB T
+        real(real64) :: N, Nplus1               ! Number of residues of this type, and Number + 1
+        real(real64) :: mu                      ! Chemical potential
+        real(real64) :: deltaU                  ! Energy difference ΔE between trial and current state
         real(real64) :: prefactor               ! Prefactor for probability calculation
+        real(real64) :: lambda                  ! de Broglie wavelength in m
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N   = real(primary%num_residues(residue_type), real64)
-        V   = primary%volume                    ! Angstrom^3
-        phi = input%fugacity(residue_type)      ! Fugacity in Angstrom^-3
-        T = input%temp_K                        ! Kelvin
-        beta = 1/(KB_kcalmol*T)                 ! 1/(kcal/mol)
-        delta_e = new%total - old%total         ! kcal/mol
+        N = real(primary%num_residues(residue_type), real64)
+        Nplus1 = N + 1.0_real64
+        lambda = res%lambda(residue_type)               ! Thermal de Broglie wavelength (A)
+        deltaU = new%total - old%total                  ! kcal/mol
+        mu = input%chemical_potential(residue_type)     ! kcal/mol
 
         ! Compute factor based on move type
         select case (move_type)
             case (TYPE_CREATION)
-            
-                prefactor = phi * V / (N + one) ! Note: N+1 instead of N to avoid division by zero
-            
+
+                ! P_acc(N -> N+1) = min[1, (V / ((N+1) λ³)) * exp(-β * (ΔU - μ))]
+                ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
+                ! Note: N+1 instead of N to avoid division by zero
+                prefactor = primary%volume / Nplus1 / lambda**3
+                probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
+
             case (TYPE_DELETION)
-            
-                prefactor = (N + one) / (phi * V)
+
+                ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
+                ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
+                prefactor = N * lambda**3 / (primary%volume)
+                probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
-                prefactor = one
+                ! P_acc = min[1, exp(-β * ΔU)]
+                probability = min(1.0_real64, exp(-beta * deltaU))
 
             case default
-
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
-
         end select
-
-        probability = min(one, prefactor * exp(-beta * delta_e)) 
 
     end function compute_acceptance_probability
 
@@ -285,19 +278,7 @@ contains
     !
     ! This routine evaluates the acceptance probability for replacing a
     ! molecule of type_old with one of type_new in a grand-canonical or
-    ! semi-grand Monte Carlo simulation.  The expression uses:
-    !
-    !   - ΔE  = new%total - old%total          (energy difference)
-    !   - β   = 1 / (kB * T)                   (inverse temperature)
-    !   - φ   = fugacity of each residue type
-    !   - N   = current number of residues of each type
-    !
-    ! Swap move acceptance rule:
-    !
-    !   P = min(1,
-    !           (φ_new / φ_old)
-    !         * (N_old / (N_new + 1))
-    !         * exp(-β ΔE) )
+    ! semi-grand Monte Carlo simulation.
     !---------------------------------------------------------------------- 
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
@@ -309,26 +290,27 @@ contains
         integer, intent(in) :: type_old         ! Residue type being removed
         integer, intent(in) :: type_new         ! Residue type being inserted
 
-        ! Local valriables
-        real(real64) :: delta_e                 ! Energy difference
-        real(real64) :: phi_old, phi_new        ! Fugacities of species
-        real(real64) :: T                       ! Temperature in units of kB*T
-        real(real64) :: beta                    ! 1/kB T
-        real(real64) :: N_old, N_new            ! Number of molecule per types
+        ! Local variables
+        real(real64) :: deltaU                  ! Energy difference
+        real(real64) :: mu_old, mu_new          ! Chemical potentials (kcal/mol)
+        real(real64) :: N_old, N_new            ! Number of molecules per type
+        real(real64) :: Nplus1
 
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
         N_new = real(primary%num_residues(type_new), real64)
         N_old = real(primary%num_residues(type_old), real64)
-        phi_old = input%fugacity(type_old)      ! Fugacity in Angstrom^-3
-        phi_new = input%fugacity(type_new)      ! Fugacity in Angstrom^-3
-        T = input%temp_K                        ! Kelvin
-        beta = 1/(KB_kcalmol*T)                 ! 1/(kcal/mol)
-        delta_e = new%total - old%total         ! kcal/mol
+        Nplus1 = N_new + 1.0_real64
 
-        ! Swap acceptance probability
-        probability = min(one, (phi_new / phi_old) * (N_old / (N_new + one)) * exp(-beta * delta_e))
+        ! Chemical potentials
+        mu_old = input%chemical_potential(type_old) ! kcal/mol
+        mu_new = input%chemical_potential(type_new) ! kcal/mol
+        deltaU = new%total - old%total         ! kcal/mol
+
+        ! Swap acceptance probability:
+        ! P_acc = min[1, (N_old / (N_new + 1)) * exp(-β (ΔE + μ_new - μ_old))]
+        probability = min(1.0_real64, (N_old / Nplus1) * exp(-beta * (deltaU + mu_new - mu_old)))
 
     end function swap_acceptance_probability
 
@@ -492,24 +474,9 @@ contains
     end subroutine
 
     !---------------------------------------------------------------------------
-    ! Subroutine: SaveMoleculeState
-    !
-    ! Purpose:
-    !   Save the current state of a molecule for a Monte Carlo move.
-    !   - For translation: saves center-of-mass (COM)
-    !   - For rotation: saves site offsets
-    !   - Also saves Fourier terms for later restoration if the move is rejected
-    !
-    ! Inputs:
-    !   residue_type   - Integer: Residue type of the molecule
-    !   molecule_index - Integer: Index of the molecule
-    !
-    ! Outputs:
-    !   com_old         - Real(3) array: center-of-mass (for translation)
-    !   site_offset_old - Real(3, natoms) array: site offsets (for rotation)
-    ! Notes:
-    !   - Only one of com_old or site_offset_old is allocated by the caller
-    !   - Fourier terms are always saved
+    ! Save the current state of a molecule for a Monte Carlo move. For
+    ! translation: saves center-of-mass (COM). For rotation: saves site offsets.
+    ! Also saves Fourier terms for later restoration if the move is rejected
     !---------------------------------------------------------------------------
     subroutine SaveMoleculeState(res_type, mol_index, com_old, offset_old)
 
@@ -541,17 +508,8 @@ contains
     end subroutine SaveMoleculeState
 
     !---------------------------------------------------------------------------
-    ! Subroutine: RejectMoleculeMove
-    !
-    ! Purpose:
-    !   Restore a molecule's previous state (COM or site offsets) and Fourier terms
-    !   if a Monte Carlo move is rejected.
-    !
-    ! Inputs:
-    !   res_type - Residue type of the molecule
-    !   mol_index - Index of the molecule
-    !   com_old - Previous COM (for translation, optional)
-    !   site_offset_old - Previous site offsets (for rotation, optional)
+    ! Restore a molecule's previous state (COM or site offsets) and Fourier terms
+    ! if a Monte Carlo move is rejected.
     !---------------------------------------------------------------------------
     subroutine RejectMoleculeMove(res_type, mol_index, com_old, site_offset_old)
         implicit none
@@ -582,13 +540,9 @@ contains
     end subroutine RejectMoleculeMove
 
     !---------------------------------------------------------------------------
-    ! Subroutine: InsertAndOrientMolecule
-    !
-    ! Purpose:
-    !   Generates a random position for the new molecule and copies/orients
-    !   its atomic geometry. Can take geometry from a reservoir or apply
-    !   a random rotation if no reservoir exists.
-    !
+    ! Generates a random position for the new molecule and copies/orients
+    ! its atomic geometry. Can take geometry from a reservoir or apply
+    ! a random rotation if no reservoir exists.
     !---------------------------------------------------------------------------
     subroutine InsertAndOrientMolecule(residue_type, molecule_index, rand_mol_index)
 
@@ -635,12 +589,8 @@ contains
     end subroutine InsertAndOrientMolecule
 
     !---------------------------------------------------------------------------
-    ! Subroutine: RejectCreationMove
-    !
-    ! Purpose:
-    !   Restores molecule and atom counts, and resets Fourier states if a
-    !   creation move is rejected.
-    !
+    ! Restores molecule and atom counts, and resets Fourier states if a
+    ! creation move is rejected.
     !---------------------------------------------------------------------------
     subroutine RejectCreationMove(residue_type, molecule_index)
 
@@ -659,25 +609,9 @@ contains
     end subroutine RejectCreationMove
 
     !------------------------------------------------------------------------------
-    ! Subroutine: CalculateExcessMu
-    !
-    ! Purpose:
-    !   Compute the excess chemical potential (μ_ex) for each residue type
-    !   using Widom particle insertion method, and optionally the ideal chemical
-    !   potential (μ_ideal) for reporting purposes.
-    !
-    ! Formulas:
-    !   1. Excess chemical potential (Widom):
-    !        μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
-    !          - <exp(-β ΔU)> = average Boltzmann weight from Widom sampling
-    !          - k_B: Boltzmann constant in kcal/mol/K
-    !          - T: temperature in Kelvin
-    !
-    !   2. Ideal chemical potential:
-    !        μ_ideal = k_B * T * ln(ρ * Λ^3)
-    !          - ρ = N / V = number density (molecules/m^3)
-    !          - Λ = hbar / sqrt(2 * π * m * k_B * T) = thermal de Broglie wavelength (m)
-    !          - m: mass per molecule in kg
+    ! Compute the excess chemical potential (μ_ex) for each residue type
+    ! using Widom particle insertion method, and optionally the ideal chemical
+    ! potential (μ_ideal) for reporting purposes.
     !------------------------------------------------------------------------------
     subroutine CalculateExcessMu()
 
@@ -688,41 +622,31 @@ contains
         integer :: N                ! Number of molecules of current residue
         real(real64) :: avg_weight  ! Average Boltzmann weight for Widom sampling
         real(real64) :: mu_ideal    ! Ideal chemical potential (kcal/mol)
-        real(real64) :: m           ! Mass per molecule (kg)
-        real(real64) :: Lambda      ! Thermal de Broglie wavelength (m)
-        real(real64) :: T           ! Temperature (K)
-        real(real64) :: V           ! Simulation box volume (m^3)
+        real(real64) :: lambda      ! Thermal de Broglie wavelength (m)
+        real(real64) :: temperature ! Temperature (K)
+        real(real64) :: volume      ! Simulation box volume (m^3)
         real(real64) :: rho         ! Number density (molecules/m^3)
 
         ! Loop over all residue types
         do type_residue = 1, nb%type_residue
             if (widom_stat%sample(type_residue) > 0) then
 
-                ! ----------------------------------------------------------------
-                ! 1. Compute average Boltzmann factor from Widom sampling
-                !    <exp(-β ΔU)> = sum_weights / N_samples
-                ! ----------------------------------------------------------------
+                ! Compute average Boltzmann factor from Widom sampling
+                ! <exp(-β ΔU)> = sum_weights / N_samples
                 avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
 
-                ! ----------------------------------------------------------------
-                ! 2. Compute excess chemical potential (kcal/mol)
-                !    μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
-                ! ----------------------------------------------------------------
-                widom_stat%mu_ex(type_residue) = - KB_kcalmol * input%temp_K * log(avg_weight) ! kcal/mol
+                ! Compute excess chemical potential (kcal/mol)
+                ! μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
+                temperature = input%temperature
+                widom_stat%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
 
-                ! ----------------------------------------------------------------
-                ! 3. Compute ideal gas chemical potential (kcal/mol)
-                !    μ_ideal = k_B * T * ln(ρ * Λ^3)
-                ! ----------------------------------------------------------------
-                T = input%temp_K                                  ! Temperature (K)
-                m = res%mass_residue(type_residue) * G_TO_KG / NA ! Mass per molecule (kg)
-                Lambda = Hplank / sqrt(TWOPI * m * KB_JK * T)     ! Thermal de Broglie wavelength (m)
-
-                N = primary%num_residues(type_residue)           ! Number of molecules
-                V = primary%volume * A3_TO_M3                    ! Box volume (m^3)
-                rho = real(N, kind=real64) / V                   ! Number density (molecules/m^3)
-
-                mu_ideal = KB_kcalmol * T * log(rho * Lambda**3) ! Ideal chemical potential (kcal/mol)
+                ! Compute ideal gas chemical potential (kcal/mol)
+                ! μ_ideal = k_B * T * ln(ρ * Λ^3)
+                lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
+                N = primary%num_residues(type_residue)              ! Number of molecules
+                volume = primary%volume                             ! Box volume (A^3)
+                rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
+                mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)
 
                 widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
 
