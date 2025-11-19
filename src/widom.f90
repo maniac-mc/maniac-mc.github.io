@@ -77,7 +77,7 @@ contains
         ! Bolzmann weight 
         deltaU = new%total - old%total ! In K units
 
-        weight = exp(-deltaU / input%temperature)
+        weight = exp(-deltaU * beta)
 
         widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + weight
         widom_stat%sample(residue_type) = widom_stat%sample(residue_type) + 1

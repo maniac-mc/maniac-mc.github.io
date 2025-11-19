@@ -8,107 +8,214 @@ module cli_utils
 contains
 
     !-----------------------------------------------------------------------------
-    ! ParseCommandLineArguments
-    !
-    ! Purpose:
-    !   Reads and processes command-line arguments for the MANIAC program.
-    !   Recognized options:
-    !     -i <input_file>      : Main MANIAC input file (mandatory)
-    !     -d <data_file>       : Topology/data file (mandatory)
-    !     -p <parameters_file> : Parameter include file (mandatory)
-    !     -r <reservoir_file>  : Optional reservoir file
-    !     -o <output_dir>      : Optional output directory (default: 'outputs/')
+    ! Reads and processes command-line arguments for the MANIAC program.
+    ! Recognized options.
     !-----------------------------------------------------------------------------
-    subroutine ParseCommandLineArguments()
-        call SetDefaultCLIValues()
-        call ReadCommandLineArgs()
-        call ValidateCLIArguments()
-        call NormalizeOutputPath()
-    end subroutine ParseCommandLineArguments
+    subroutine parse_command_line_arguments()
+
+        implicit none
+
+        ! Set default CLI values
+        call set_default_CLI_values()
+
+        ! Read command-line arguments into global variables
+        call read_command_line_args()
+
+        ! Validate CLI arguments and check file existence
+        call validate_CLI_arguments()
+
+        ! Ensure output path ends with a trailing slash
+        call normalize_output_path()
+
+    end subroutine parse_command_line_arguments
 
     !-----------------------------------------------------------------
     ! Set default CLI values
     !-----------------------------------------------------------------
-    subroutine SetDefaultCLIValues()
+    subroutine set_default_CLI_values()
+
+        implicit none
+
         maniac_file = ''
-        data_file   = ''
-        inc_file    = ''
-        res_file    = ''
+        data_file = ''
+        inc_file = ''
+        res_file = ''
         output_path = 'outputs/'
-    end subroutine SetDefaultCLIValues
+
+    end subroutine set_default_CLI_values
 
     !-----------------------------------------------------------------
     ! Read command-line arguments into global variables
     !-----------------------------------------------------------------
-    subroutine ReadCommandLineArgs()
+    subroutine read_command_line_args()
+
         implicit none
+    
+        ! Local variables
         character(len=256) :: arg
         integer :: i, nargs
+        logical :: seen_maniac_file = .false.
+        logical :: seen_data_file   = .false.
+        logical :: seen_inc_file    = .false.
+        logical :: seen_res_file    = .false.
+        logical :: seen_output_path = .false.
 
         nargs = command_argument_count()
+
         do i = 1, nargs
+
             call get_command_argument(i, arg)
+            
             select case(trim(arg))
+
             case ('-i')
-                call get_command_argument(i+1, maniac_file)
-                maniac_file = trim(maniac_file)
+                if (seen_maniac_file) then
+                    call AbortRun("Duplicate option: -i", 1)
+                end if
+                call expect_value(i, nargs, "-i", maniac_file)
+                seen_maniac_file = .true.
+                cycle
+
             case ('-d')
-                call get_command_argument(i+1, data_file)
-                data_file = trim(data_file)
+                if (seen_data_file) then
+                    call AbortRun("Duplicate option: -d", 1)
+                end if
+                call expect_value(i, nargs, "-d", data_file)
+                seen_data_file = .true.
+                cycle
+
             case ('-p')
-                call get_command_argument(i+1, inc_file)
-                inc_file = trim(inc_file)
+                if (seen_inc_file) then
+                    call AbortRun("Duplicate option: -p", 1)
+                end if
+                call expect_value(i, nargs, "-p", inc_file)
+                seen_inc_file = .true.
+                cycle
+
             case ('-r')
-                call get_command_argument(i+1, res_file)
-                res_file = trim(res_file)
+                if (seen_res_file) then
+                    call AbortRun("Duplicate option: -r", 1)
+                end if
+                call expect_value(i, nargs, "-r", res_file)
+                seen_res_file = .true.
+                cycle
+
             case ('-o')
-                call get_command_argument(i+1, output_path)
-                output_path = trim(output_path)
+                if (seen_output_path) then
+                    call AbortRun("Duplicate option: -o", 1)
+                end if
+                call expect_value(i, nargs, "-o", output_path)
+                seen_output_path = .true.
+                cycle
+                
+            case default ! If argument starts with '-', it's an unknown flag
+                if (arg(1:1) == '-') then
+                    call AbortRun("Unknown option: "//trim(arg), 1)
+                end if
+
             end select
         end do
-    end subroutine ReadCommandLineArgs
+
+    end subroutine read_command_line_args
 
     !-----------------------------------------------------------------
     ! Validate CLI arguments and check file existence
     !-----------------------------------------------------------------
-    subroutine ValidateCLIArguments()
+    subroutine validate_CLI_arguments()
+
+        implicit none
+
         if (trim(maniac_file) == '' .or. trim(data_file) == '' .or. trim(inc_file) == '') then
             call AbortRun("Missing mandatory input arguments: -i, -d, -p required.", 1)
         end if
 
-        if (.not. file_exists(maniac_file)) call AbortRun("Input file not found: "//trim(maniac_file), 1)
-        if (.not. file_exists(data_file)) call AbortRun("Data file not found: "//trim(data_file), 1)
-        if (.not. file_exists(inc_file)) call AbortRun("Parameter file not found: "//trim(inc_file), 1)
+        if (.not. file_exists(maniac_file)) then
+            call AbortRun("Input file not found: "//trim(maniac_file), 1)
+        end if
+        
+        if (.not. file_exists(data_file)) then
+            call AbortRun("Data file not found: "//trim(data_file), 1)
+        end if 
 
-        if (trim(res_file) /= '' .and. .not. file_exists(res_file)) call AbortRun("Reservoir file not found: "//trim(res_file), 1)
-    end subroutine ValidateCLIArguments
+        if (.not. file_exists(inc_file)) then
+            call AbortRun("Parameter file not found: "//trim(inc_file), 1)
+        end if
+
+        if (trim(res_file) /= '' .and. .not. file_exists(res_file)) then
+            call AbortRun("Reservoir file not found: "//trim(res_file), 1)
+        end if
+
+    end subroutine validate_CLI_arguments
 
     !-----------------------------------------------------------------
     ! Ensure output path ends with a trailing slash
     !-----------------------------------------------------------------
-    subroutine NormalizeOutputPath()
+    subroutine normalize_output_path()
+
+        implicit none
+
         if (len_trim(output_path) > 0) then
+
             if (output_path(len_trim(output_path):len_trim(output_path)) /= '/') then
                 output_path = trim(output_path) // '/'
             end if
+
         end if
-    end subroutine NormalizeOutputPath
+    end subroutine normalize_output_path
 
     !-----------------------------------------------------------------
     ! Utility function to check if a file exists
-    !
-    ! Arguments:
-    !   filename - character string with file name
-    !
-    ! Returns:
-    !   .true. if the file exists, .false. otherwise
-    !-----------------------------------------------------------------------------
+    !-----------------------------------------------------------------
     logical function file_exists(filename)
+
+        implicit none
+
+        ! Input parameters
         character(len=*), intent(in) :: filename
+    
+        ! Local variables
         logical :: exists
 
         inquire(file=trim(filename), exist=exists)
         file_exists = exists
+
     end function file_exists
+
+    !-----------------------------------------------------------------
+    ! Reads the value following a CLI flag and validates it.
+    !-----------------------------------------------------------------
+    subroutine expect_value(idx, nargs, flag, value_out)
+
+        implicit none
+    
+        ! Input parameters
+        integer, intent(in)  :: idx, nargs
+        character(len=*), intent(in)  :: flag
+        character(len=*), intent(out) :: value_out
+        
+        ! Local variables
+        character(len=256) :: tmp
+
+        ! Ensure value exists after the flag
+        if (idx >= nargs) then
+            call AbortRun("Missing value after option "//trim(flag), 1)
+        end if
+
+        ! Read next argument
+        call get_command_argument(idx+1, tmp)
+
+        ! Check empty value (e.g. "-i  ")
+        if (len_trim(tmp) == 0) then
+            call AbortRun("Empty value after option "//trim(flag), 1)
+        end if
+
+        ! Check empty value (e.g. "-i  ")
+        if (len_trim(tmp) == 0) then
+            call AbortRun("Empty value after option "//trim(flag), 1)
+        end if
+
+        value_out = trim(tmp)
+
+    end subroutine expect_value
 
 end module cli_utils

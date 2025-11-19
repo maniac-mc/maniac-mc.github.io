@@ -239,7 +239,6 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-
         N = real(primary%num_residues(residue_type), real64)
         Nplus1 = N + 1.0_real64
         deltaU = new%total - old%total                  ! kcal/mol
@@ -253,21 +252,46 @@ contains
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = primary%volume / Nplus1 / lambda**3
+                prefactor = primary%volume / N / lambda**3 ! note: N must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
+
+                ! write (*,*) "creation"
+                ! write (*,*) "beta", beta
+                ! write (*,*) "lambda", lambda
+                ! write (*,*) "deltaU", deltaU
+                ! write (*,*) "mu", mu
+                ! write (*,*) "prefactor", prefactor
+                ! write (*,*) "probability", probability
+                ! write (*,*)
 
             case (TYPE_DELETION)
 
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = N * lambda**3 / (primary%volume)
+                prefactor = Nplus1 * lambda**3 / (primary%volume) ! note: Nplus1 must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
+                ! write (*,*) "deletion"
+                ! write (*,*) "beta", beta
+                ! write (*,*) "lambda", lambda
+                ! write (*,*) "deltaU", deltaU
+                ! write (*,*) "mu", mu
+                ! write (*,*) "prefactor", prefactor
+                ! write (*,*) "probability", probability
+                ! write (*,*)
+
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
                 ! P_acc = min[1, exp(-β * ΔU)]
                 probability = min(1.0_real64, exp(-beta * deltaU))
+
+                ! write (*,*) "move"
+                ! write (*,*) "beta", beta
+                ! write (*,*) "deltaU", deltaU
+                ! write (*,*) "probability", probability
+                ! write (*,*)
+
 
             case default
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
@@ -414,9 +438,10 @@ contains
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
 
-            ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
+            ! #tocheck
+            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            ! old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -428,7 +453,6 @@ contains
             call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, old%intra_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
-            ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -437,7 +461,6 @@ contains
 
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
-
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
 

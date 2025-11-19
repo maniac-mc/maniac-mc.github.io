@@ -13,7 +13,7 @@ program MANIAC
     implicit none
 
     ! Step 1 : Program initialization
-    call ParseCommandLineArguments()    ! Handle -i, -d, -p, -r, -o options
+    call parse_command_line_arguments() ! Handle -i, -d, -p, -r, -o options
     call InitOutput()                   ! Open log file and create output directory
 
     ! Step 2 : Read input files
