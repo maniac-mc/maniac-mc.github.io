@@ -55,3 +55,8 @@ jobs:
       - name: Run all unit tests
         working-directory: tests/units
         run: ./run-test.sh
+
+      # Run CLI tests
+      - name: Run CLI tests
+        working-directory: tests/cli
+        run: ./run-test.sh
