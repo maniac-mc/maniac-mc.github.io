@@ -66,7 +66,6 @@ contains
         character(len=*), intent(in), optional :: filename ! Optional log file name
         integer, intent(in), optional :: unit_number       ! Optional Fortran unit number for log
 
-
         ! Local variables
         character(len=200) :: logname  ! Full log file name
         integer :: ios                 ! I/O status from OPEN
