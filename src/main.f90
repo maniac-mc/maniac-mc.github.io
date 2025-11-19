@@ -17,8 +17,8 @@ program MANIAC
     call setup_output_files()           ! Open log file and create output directory
 
     ! Step 2 : Read input files
-    call ReadInput()                    ! Read the main MANIAC input file
-    call ReadSystemData()               ! Read tpology/data file
+    call read_input_file()              ! Read the main MANIAC input file
+    call ReadSystemData()               ! Read topology/data file
     call ReadParameters()               ! Read simulation parameters (Lennard-Jones, etc.)
 
     ! Step 3 : Simulation preparation

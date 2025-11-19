@@ -8,8 +8,7 @@ module cli_utils
 contains
 
     !-----------------------------------------------------------------------------
-    ! Reads and processes command-line arguments for the MANIAC program.
-    ! Recognized options.
+    ! Reads and processes the command-line arguments
     !-----------------------------------------------------------------------------
     subroutine parse_command_line_arguments()
 
