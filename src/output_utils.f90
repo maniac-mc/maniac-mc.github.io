@@ -749,7 +749,14 @@ contains
             call LogMessage(msg)
 
             if (input%is_active(i) == 1) then
-                write(msg, '("  Fugacity (atm): ", F10.2)') input%fugacity(i)
+                if (input%fugacity(i) > 0) then
+                    write(msg, '("  Fugacity (atm): ", F10.2)') input%fugacity(i)
+                    call LogMessage(msg)
+                end if
+            end if
+
+            if (input%is_active(i) == 1) then
+                write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') input%chemical_potential(i)
                 call LogMessage(msg)
             end if
 

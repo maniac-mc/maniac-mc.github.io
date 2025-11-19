@@ -239,7 +239,6 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-
         N = real(primary%num_residues(residue_type), real64)
         Nplus1 = N + 1.0_real64
         deltaU = new%total - old%total                  ! kcal/mol
@@ -256,6 +255,15 @@ contains
                 prefactor = primary%volume / Nplus1 / lambda**3
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
+                ! write (*,*) "creation"
+                ! write (*,*) "beta", beta
+                ! write (*,*) "lambda", lambda
+                ! write (*,*) "deltaU", deltaU
+                ! write (*,*) "mu", mu
+                ! write (*,*) "prefactor", prefactor
+                ! write (*,*) "probability", probability
+                ! write (*,*)
+
             case (TYPE_DELETION)
 
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
@@ -264,10 +272,26 @@ contains
                 prefactor = N * lambda**3 / (primary%volume)
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
+                ! write (*,*) "deletion"
+                ! write (*,*) "beta", beta
+                ! write (*,*) "lambda", lambda
+                ! write (*,*) "deltaU", deltaU
+                ! write (*,*) "mu", mu
+                ! write (*,*) "prefactor", prefactor
+                ! write (*,*) "probability", probability
+                ! write (*,*)
+
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
                 ! P_acc = min[1, exp(-β * ΔU)]
                 probability = min(1.0_real64, exp(-beta * deltaU))
+
+                ! write (*,*) "move"
+                ! write (*,*) "beta", beta
+                ! write (*,*) "deltaU", deltaU
+                ! write (*,*) "probability", probability
+                ! write (*,*)
+
 
             case default
                 call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
@@ -414,7 +438,16 @@ contains
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
+
+            ! write (*,*) energy%recip_coulomb, old%recip_coulomb
+
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+
+            ! write (*,*) energy%recip_coulomb, old%recip_coulomb
+
+            ! write (*,*)
+
+            ! stop 778
 
             ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
 
@@ -427,6 +460,7 @@ contains
             call ComputeEwaldSelfInteractionSingleMol(residue_type, old%ewald_self)
             call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, old%intra_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
+            
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
             ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
 
