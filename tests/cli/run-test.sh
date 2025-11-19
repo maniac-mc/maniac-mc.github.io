@@ -34,7 +34,6 @@ else
     grep -q "Missing mandatory input arguments" log.maniac && pass "Missing -i detected"
 fi
 
-
 # ---------------------------
 # Test 3: Unknown flag
 # ---------------------------

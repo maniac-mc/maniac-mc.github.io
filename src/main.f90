@@ -2,7 +2,7 @@ program MANIAC
 
     use montecarlo_module
     use parameters_parser
-    use initoutput_utils
+    use output_management
     use tabulated_utils
     use prepare_utils
     use energy_utils
@@ -14,7 +14,7 @@ program MANIAC
 
     ! Step 1 : Program initialization
     call parse_command_line_arguments() ! Handle -i, -d, -p, -r, -o options
-    call InitOutput()                   ! Open log file and create output directory
+    call setup_output_files()           ! Open log file and create output directory
 
     ! Step 2 : Read input files
     call ReadInput()                    ! Read the main MANIAC input file
