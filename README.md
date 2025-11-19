@@ -22,7 +22,7 @@ files and supports the following Monte Carlo moves:
 - Deletion  
 - Swap  
 
-## Why MANIAC?
+## Why the name MANIAC?
 
 The original MANIAC computer (for Mathematical Analyzer, Numerical Integrator, and
 Computer) was built in the early 1950s at Los Alamos National Laboratory. It
