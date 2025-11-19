@@ -269,8 +269,11 @@ contains
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = N * lambda**3 / (primary%volume)
+                prefactor = Nplus1 * lambda**3 / (primary%volume)
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
+
+                ! write (*,*) N
+                ! write (*,*) lambda, prefactor, probability
             
                 ! write (*,*) "deletion"
                 ! write (*,*) "beta", beta
@@ -439,17 +442,9 @@ contains
             old%ewald_self = zero
             old%intra_coulomb = zero
 
-            ! write (*,*) energy%recip_coulomb, old%recip_coulomb
-
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
-
-            ! write (*,*) energy%recip_coulomb, old%recip_coulomb
-
-            ! write (*,*)
-
-            ! stop 778
-
-            ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
+            ! #tocheck
+            !call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -460,9 +455,7 @@ contains
             call ComputeEwaldSelfInteractionSingleMol(residue_type, old%ewald_self)
             call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, old%intra_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
-            
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
-            ! old%recip_coulomb = energy%recip_coulomb ! #tocheck why was ComputeRecipEnergySingleMol commented out ?
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -471,7 +464,6 @@ contains
 
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
-
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
 
