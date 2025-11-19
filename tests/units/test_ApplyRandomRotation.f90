@@ -11,7 +11,7 @@ program test_ApplyRandomRotation
 
     ! Initialize input parameters for rotation
     input%rotation_step_angle = 0.1_real64  ! must be > 0 and <= TWOPI
-    input%temp_K = 300.0_real64            ! Kelvin
+    input%temperature = 300.0_real64            ! Kelvin
     input%fugacity = [0.01_real64]         ! allocate and assign if needed
 
     !--------------------------------------------------

@@ -698,6 +698,8 @@ contains
             tmp_types_per_residue(i) = nb%types_per_residue(k)
             tmp_types_2d(i,:)        = res%types_2d(k,:)
             tmp_names_2d(i,:)        = res%names_2d(k,:)
+            ! tmp_types_2d(i, 1:nb%types_per_residue(k)) = res%types_2d(k, 1:nb%types_per_residue(k))
+            ! tmp_names_2d(i, 1:nb%types_per_residue(k)) = res%names_2d(k, 1:nb%types_per_residue(k))
         end do
 
         ! Copy temporary arrays back into original arrays

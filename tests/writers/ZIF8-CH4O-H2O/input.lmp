@@ -35,6 +35,6 @@ timestep 0.5
 dump mydmp all atom 100 dump.lammpstrj
 thermo 100
 
-run 5000
+run 500
 
-write_data temp.data
+# write_data temp.data
