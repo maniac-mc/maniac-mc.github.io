@@ -462,7 +462,6 @@ contains
         write(UNIT_DATA, *)
 
         ! X bounds
-
         write(UNIT_DATA, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(1,1), box%bounds(1,2)
         write(UNIT_DATA, '(A)') "xlo xhi"
 

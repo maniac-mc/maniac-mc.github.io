@@ -57,9 +57,9 @@ contains
 
             ! Compute thermal de Broglie wavelength λ for each active residue:
             ! λ = h / sqrt(2 π m k_B T)
-            ! H_PLANCK in J s, mass in kg, KB_JK in J/K, T in K
+            ! H_PLANCK in J s, mass in kg, KB in J/K, T in K
             mass = res%mass(val_int) * G_TO_KG / NA ! Mass per residue (kg)
-            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB_JK * input%temperature) ! Thermal de Broglie wavelength
+            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * input%temperature) ! Thermal de Broglie wavelength
             
             ! Convert lambda to Å
             res%lambda(val_int) = res%lambda(val_int) * M_TO_A
