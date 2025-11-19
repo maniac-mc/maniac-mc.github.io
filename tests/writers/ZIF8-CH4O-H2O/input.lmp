@@ -37,4 +37,4 @@ thermo 100
 
 run 500
 
-write_data temp.data
+# write_data temp.data
