@@ -631,23 +631,17 @@ contains
         do type_residue = 1, nb%type_residue
             if (widom_stat%sample(type_residue) > 0) then
 
-                ! ----------------------------------------------------------------
                 ! Compute average Boltzmann factor from Widom sampling
                 ! <exp(-β ΔU)> = sum_weights / N_samples
-                ! ----------------------------------------------------------------
                 avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
 
-                ! ----------------------------------------------------------------
                 ! Compute excess chemical potential (kcal/mol)
                 ! μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
-                ! ----------------------------------------------------------------
                 temperature = input%temperature
                 widom_stat%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
 
-                ! ----------------------------------------------------------------
                 ! Compute ideal gas chemical potential (kcal/mol)
                 ! μ_ideal = k_B * T * ln(ρ * Λ^3)
-                ! ----------------------------------------------------------------
                 lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
                 N = primary%num_residues(type_residue)              ! Number of molecules
                 volume = primary%volume                             ! Box volume (A^3)

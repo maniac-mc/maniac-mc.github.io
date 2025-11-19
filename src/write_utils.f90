@@ -153,29 +153,11 @@ contains
 
         end do
 
-        ! ------------------------------------------------------
-        ! Write to moves.dat
-        ! ------------------------------------------------------
-        open(UNIT=UNIT_MOVES, FILE=trim(output_path) // 'moves.dat', &
-            STATUS=file_status, ACTION='write', POSITION='APPEND')
-        if (current_block == 0) then
-            write(UNIT_MOVES, '(A)') &
-                '# Block   Trial_Trans   Trans_Moves   Trial_Create   Create_Moves   ' // &
-                'Trial_Delete   Delete_Moves   Trial_Rotate   Rotate_Moves   ' // &
-                'Trial_BigMove   Big_Moves'
-        end if
-        write(UNIT_MOVES, '(I12, 1X, I12, 1X, I12, 1X, I12, 1X, I12, 1X, I12, 1X,' // &
-                          'I12, 1X, I12, 1X, I12)') &
-            current_block, &
-            counter%trial_translations, counter%translations, &
-            counter%trial_creations, counter%creations, &
-            counter%trial_deletions, counter%deletions, &
-            counter%trial_rotations, counter%rotations
-        close(UNIT_MOVES)
+        call WriteMoves(current_block, file_status)
 
-        !=========================================================
-        ! Write widom_RESNAME.dat including total chemical potential
-        !=========================================================
+        ! ------------------------------------------------------
+        ! Write widom_RESNAME.dat
+        ! ------------------------------------------------------
         if (proba%widom > 0) then
 
             ! Compute excess and ideal chemical potentials
@@ -212,6 +194,122 @@ contains
         end if
 
     end subroutine WriteEnergyAndCount
+
+    subroutine WriteMoves(current_block, file_status)
+
+        implicit none
+
+        ! Input arguments
+        integer, intent(in) :: current_block
+        character(len=*), intent(in) :: file_status
+
+        ! Local variables
+        character(len=512) :: header, line, tmp
+        logical :: first_block
+        integer :: UNIT_MOVES  = 20
+
+        ! Determine if this is the first block written
+        first_block = (current_block == 0)
+
+        ! Open file
+        open(unit=UNIT_MOVES, file=trim(output_path)//'moves.dat', &
+            status=file_status, action='write', position='append')
+
+        ! -----------------------
+        ! Build header dynamically
+        ! -----------------------
+        if (first_block) then
+            header = ""
+            ! Block column matches I12 numeric
+            write(tmp,'(A12)') "Block"
+            header = trim(tmp)
+
+            ! All other columns: 1 space + 12 characters to match I12 numeric
+            if (proba%translation > 0) then
+                write(tmp,'(1X,A12)') "Trans_Acc"
+                header = trim(header)//tmp
+                write(tmp,'(1X,A12)') "Trans_Trial"
+                header = trim(header)//tmp
+            end if
+
+            if (proba%rotation > 0) then
+                write(tmp,'(1X,A12)') "Rot_Acc"
+                header = trim(header)//tmp
+                write(tmp,'(1X,A12)') "Rot_Trial"
+                header = trim(header)//tmp
+            end if
+
+            if (proba%insertion_deletion > 0) then
+                write(tmp,'(1X,A12)') "Create_Acc"
+                header = trim(header)//tmp
+                write(tmp,'(1X,A12)') "Create_Trial"
+                header = trim(header)//tmp
+                write(tmp,'(1X,A12)') "Delete_Acc"
+                header = trim(header)//tmp
+                write(tmp,'(1X,A12)') "Delete_Trial"
+                header = trim(header)//tmp
+            end if
+
+            if (proba%swap > 0) then
+                write(tmp,'(1X,A12)') "Swap_Acc"
+                header = trim(header)//tmp
+                write(tmp,'(1X,A12)') "Swap_Trial"
+                header = trim(header)//tmp
+            end if
+
+            if (proba%widom > 0) then
+                write(tmp,'(1X,A12)') "Widom_Trial"
+                header = trim(header)//tmp
+            end if
+
+            write(UNIT_MOVES,'(A)') trim(header)
+        end if
+
+        ! -----------------------
+        ! Build numeric line
+        ! -----------------------
+
+        ! Block
+        write(line,'(I12)') current_block
+
+        ! Translation
+        if (proba%translation > 0) then
+            write(tmp,'(1X,I12,1X,I12)') counter%translations, counter%trial_translations
+            line = trim(line)//tmp
+        end if
+
+        ! Rotation
+        if (proba%rotation > 0) then
+            write(tmp,'(1X,I12,1X,I12)') counter%rotations, counter%trial_rotations
+            line = trim(line)//tmp
+        end if
+
+        ! Insertion / Deletion
+        if (proba%insertion_deletion > 0) then
+            write(tmp,'(1X,I12,1X,I12)') counter%creations, counter%trial_creations
+            line = trim(line)//tmp
+            write(tmp,'(1X,I12,1X,I12)') counter%deletions, counter%trial_deletions
+            line = trim(line)//tmp
+        end if
+
+        ! Swap
+        if (proba%swap > 0) then
+            write(tmp,'(1X,I12,1X,I12)') counter%swaps, counter%trial_swaps
+            line = trim(line)//tmp
+        end if
+
+        ! Widom
+        if (proba%widom > 0) then
+            write(tmp,'(1X,I12)') counter%trial_widom
+            line = trim(line)//tmp
+        end if
+
+        ! Write the completed line
+        write(UNIT_MOVES,'(A)') trim(line)
+
+        close(UNIT_MOVES)
+
+    end subroutine WriteMoves
 
     subroutine WriteLAMMPSData(box)
 
