@@ -212,5 +212,17 @@ contains
 
     end subroutine add_first_col
 
+    function join_path(path, filename) result(fullname)
+
+        character(len=*), intent(in) :: path, filename
+        character(len=256) :: fullname
+    
+        if (path(len_trim(path):len_trim(path)) == '/') then
+            fullname = trim(path)//trim(filename)
+        else
+            fullname = trim(path)//'/'//trim(filename)
+        end if
+    
+    end function join_path
 
 end module helper_utils

@@ -13,28 +13,28 @@ module input_parser
 contains
 
     !-----------------------------------------------------------------------------
-    ! Subroutine: ReadInput
-    !
-    ! Purpose:
-    !   Reads the main MANIAC input file in two passes (prescan + actual read).
-    !   Validates and rescales move probabilities if necessary.
+    ! Reads the main MANIAC input file in two passes (prescan + actual read).
     !-----------------------------------------------------------------------------
-    subroutine ReadInput()
+    subroutine read_input_file()
 
         implicit none
 
-        ! STEP 1: Pre-scan input file
-        call PrescanInputFile(maniac_file)
-        ! STEP 2: Allocate required arrays
+        ! Pre-scan input file
+        call prescan_input_file(maniac_file)
+
+        ! Allocate required arrays
         call AllocateAtomArrays()
-        ! STEP 3: Parse input file and populate data
+        
+        ! Parse input file and populate data
         call ReadFullInputFile(maniac_file)
-        ! STEP 4: Validate and rescale move probabilities
+        
+        ! Validate and rescale move probabilities
         call ValidateAndRescaleMoveProbabilities()
-        ! STEP 5: Print summary to log
+        
+        ! Print summary to log
         call PrintInputSummary()
 
-    end subroutine ReadInput
+    end subroutine read_input_file
 
     !---------------------------------------------------------------------------
     ! Subroutine: ReadFullInputFile
@@ -52,60 +52,61 @@ contains
         integer :: ios      ! I/O status returned by open/read operations
 
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
-            call CheckIOStatus(filename, ios)
+            call check_IO_status(filename, ios)
             call ParseInputFile(unit)
         close(unit)
 
     end subroutine ReadFullInputFile
 
     !---------------------------------------------------------------------------
-    ! Subroutine: PrescanInputFile
-    ! Purpose   : Open the main input file, pre-detect sizes and counts for allocation,
-    !             then close the file.
+    ! Open the main input file, pre-detect sizes and counts for allocation,
+    ! then close the file.
     !---------------------------------------------------------------------------
-    subroutine PrescanInputFile(filename)
+    subroutine prescan_input_file(filename)
 
         implicit none
 
         character(len=*), intent(in) :: filename
-        integer :: unit  ! Fortran unit number used to open the input file
-        integer :: ios     ! I/O status returned by open/read operations
+        integer :: unit                             ! Fortran unit number used to open the input file
+        integer :: ios                              ! I/O status returned by open/read operations
 
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
-            call CheckIOStatus(filename, ios)
-            call PredetectNumberInfo(unit)
+
+            call check_IO_status(filename, ios)
+            call predetect_number_info(unit)
+        
         close(unit)
 
-    end subroutine PrescanInputFile
+    end subroutine prescan_input_file
 
     !---------------------------------------------------------------------------
-    ! Subroutine: ValidateAndRescaleMoveProbabilities
-    !
-    ! Purpose:
-    !   Ensures the sum of move probabilities equals 1.0.
-    !   If necessary, rescales all probabilities and warns the user.
-    !   Aborts execution if probabilities are invalid.
+    ! Ensures the sum of move probabilities equals 1.0.
+    ! If necessary, rescales all probabilities and warns the user.
+    ! Aborts execution if probabilities are invalid.
     !---------------------------------------------------------------------------
     subroutine ValidateAndRescaleMoveProbabilities()
 
         use, intrinsic :: iso_fortran_env, only: real64
         implicit none
 
-        real(real64) :: proba_total   ! Sum of all move probabilities (translation, rotation, etc.)
-        real(real64) :: scale_factor  ! Factor used to rescale probabilities so they sum to 1.0
+        real(real64) :: proba_total         ! Sum of all move probabilities (translation, rotation, etc.)
+        real(real64) :: scale_factor        ! Factor used to rescale probabilities so they sum to 1.0
 
         ! Compute total probability
         proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap + proba%widom
 
         ! Rescale if not exactly 1.0
         if (abs(proba_total - one) > error) then
+
             scale_factor = one / proba_total
             proba%translation = proba%translation * scale_factor
             proba%rotation = proba%rotation * scale_factor
             proba%insertion_deletion = proba%insertion_deletion * scale_factor
             proba%swap = proba%swap * scale_factor
             proba%widom = proba%widom * scale_factor
+        
             call WarnUser("Move probabilities rescaled to sum to 1.0")
+        
         end if
 
         ! Recompute total to validate
@@ -119,27 +120,17 @@ contains
     end subroutine ValidateAndRescaleMoveProbabilities
 
     !-----------------------------------------------------------------------------
-    ! Subroutine: PredetectNumberInfo
-    !
-    ! Purpose:
-    !   Pre-scans a residue input file to determine the maximum sizes needed
-    !   for array allocations:
-    !     - Total number of residue types
-    !     - Maximum number of atom types per residue
-    !     - Maximum number of atoms in a residue
+    ! Pre-scans a residue input file to determine the maximum sizes needed
+    ! for array allocations
     !-----------------------------------------------------------------------------
-    subroutine PredetectNumberInfo(INFILE)
+    subroutine predetect_number_info(INFILE)
 
         implicit none
 
-        !-------------------------------
         ! Input parameters
-        !-------------------------------
         integer, intent(in) :: INFILE
 
-        !-------------------------------
         ! Local variables
-        !-------------------------------
         character(len=256) :: line, token, rest_line
         integer :: ios, ios_val
         integer :: pos, len_rest, val, pos_space
@@ -147,17 +138,13 @@ contains
         integer :: max_atom_in_residue
         logical :: in_residue_block
 
-        !-------------------------------
         ! Initialize counters
-        !-------------------------------
         nb%type_residue = 0
         nb%max_type_per_residue = 0
         nb%max_atom_in_residue = 0
         in_residue_block = .false.
 
-        !-------------------------------
         ! Loop over lines in input file
-        !-------------------------------
         do
             read(INFILE, '(A)', iostat=ios) line
             if (ios /= 0) exit  ! End of file or read error
@@ -177,9 +164,7 @@ contains
 
             if (.not. in_residue_block) cycle
 
-            !-------------------------------
             ! Tokenize line: first word and remainder
-            !-------------------------------
             pos_space = index(line, ' ')
             if (pos_space > 0) then
                 token = line(1:pos_space-1)
@@ -189,9 +174,7 @@ contains
                 rest_line = ''
             end if
 
-            !-------------------------------
             ! Count atom types per residue
-            !-------------------------------
             if (trim(token) == 'types') then
                 len_rest = len_trim(rest_line)
                 pos = 1
@@ -213,9 +196,7 @@ contains
                 end if
             end if
 
-            !-------------------------------
             ! Determine max number of atoms per residue
-            !-------------------------------
             pos = index(line, ' ')
             if (pos > 0) then
                 token = line(1:pos-1)
@@ -226,15 +207,17 @@ contains
             end if
 
             if (trim(token) == 'nb-atoms') then
+
                 read(rest_line, *, iostat=ios) max_atom_in_residue
                 if (max_atom_in_residue > nb%max_atom_in_residue) then
                     nb%max_atom_in_residue = max_atom_in_residue
                 end if
+            
             end if
 
         end do
 
-    end subroutine PredetectNumberInfo
+    end subroutine predetect_number_info
 
     subroutine AllocateAtomArrays()
 
@@ -292,11 +275,8 @@ contains
     end subroutine AllocateAtomArrays
 
     !-----------------------------------------------------------------------------
-    ! Subroutine: ParseInputFile
-    !
-    ! Purpose:
-    !   Reads the MANIAC input file, parses global parameters and residue blocks,
-    !   validates required values, and initializes simulation probabilities and states.
+    ! Reads the MANIAC input file, parses global parameters and residue blocks,
+    ! validates required values, and initializes simulation probabilities and states.
     !-----------------------------------------------------------------------------
     subroutine ParseInputFile(INFILE)
 
@@ -718,14 +698,11 @@ contains
 
     end subroutine SortResidues
 
+    !-----------------------------------------------------------------------------    !
+    ! Checks the I/O status returned by Fortran read/open/write operations
+    ! and aborts the program with a message if an error occurred.
     !-----------------------------------------------------------------------------
-    ! Subroutine: CheckIOStatus
-    !
-    ! Purpose:
-    !   Checks the I/O status returned by Fortran read/open/write operations
-    !   and aborts the program with a message if an error occurred.
-    !-----------------------------------------------------------------------------
-    subroutine CheckIOStatus(filename, ios)
+    subroutine check_IO_status(filename, ios)
 
         implicit none
 
@@ -736,6 +713,6 @@ contains
             call AbortRun("I/O error on file: "//trim(filename), ios)
         end if
 
-    end subroutine CheckIOStatus
+    end subroutine check_IO_status
 
 end module input_parser
