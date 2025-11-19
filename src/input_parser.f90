@@ -275,11 +275,8 @@ contains
     end subroutine AllocateAtomArrays
 
     !-----------------------------------------------------------------------------
-    ! Subroutine: ParseInputFile
-    !
-    ! Purpose:
-    !   Reads the MANIAC input file, parses global parameters and residue blocks,
-    !   validates required values, and initializes simulation probabilities and states.
+    ! Reads the MANIAC input file, parses global parameters and residue blocks,
+    ! validates required values, and initializes simulation probabilities and states.
     !-----------------------------------------------------------------------------
     subroutine ParseInputFile(INFILE)
 
