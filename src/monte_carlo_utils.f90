@@ -252,7 +252,7 @@ contains
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = primary%volume / Nplus1 / lambda**3
+                prefactor = primary%volume / N / lambda**3 ! note: N must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
                 ! write (*,*) "creation"
@@ -269,11 +269,8 @@ contains
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = Nplus1 * lambda**3 / (primary%volume)
+                prefactor = Nplus1 * lambda**3 / (primary%volume) ! note: Nplus1 must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
-
-                ! write (*,*) N
-                ! write (*,*) lambda, prefactor, probability
             
                 ! write (*,*) "deletion"
                 ! write (*,*) "beta", beta
