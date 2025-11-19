@@ -92,17 +92,15 @@ contains
 
     end subroutine WriteLAMMPSTRJ
 
+    !------------------------------------------------------------------------------
+    ! Central wrapper to write all simulation output files for the current block.
+    !------------------------------------------------------------------------------
     subroutine WriteEnergyAndCount()
 
         implicit none
 
-        integer :: UNIT_ENERGY = 18
-        integer :: UNIT_COUNT  = 19
-        integer :: UNIT_MOVES  = 20
-        integer :: UNIT_WIDOM = 21
+        ! Local variables
         character(len=8) :: file_status
-        character(len=:), allocatable :: filename
-        integer :: resi
         integer :: type_residue
 
         ! Decide whether to create new files or append
@@ -114,75 +112,102 @@ contains
             file_status = 'OLD'
         end if
 
-        ! ------------------------------------------------------
-        ! Write to energy.dat
-        ! ------------------------------------------------------
-        open(UNIT=UNIT_ENERGY, FILE=trim(output_path) // 'energy.dat', &
-            STATUS=file_status, ACTION='write', POSITION='APPEND')
-        if (current_block == 0) then
-            write(UNIT_ENERGY, '(A)') '#    block        total        recipCoulomb' // &
-                                    '     non-coulomb      coulomb     ewald_self    intramolecular-coulomb'
-        end if
-        write(UNIT_ENERGY, '(I10, 1X, F16.6, 1X, F16.6, 1X, F16.6, 1X, F16.6, 1X, F16.6, 1X, F16.6)') &
-            current_block, energy%total, energy%recip_coulomb, energy%non_coulomb, &
-            energy%coulomb , energy%ewald_self, energy%intra_coulomb 
-        close(UNIT_ENERGY)
+        call WriteEnergyData(current_block, file_status)
 
-        ! ------------------------------------------------------
-        ! Loop over residues and write to number_RESNAME.dat
-        ! ------------------------------------------------------
-        do resi = 1, nb%type_residue
-
-            if (input%is_active(resi) == 1) then
-                ! Construct the filename for this residue
-                filename = trim(output_path) // 'number_' // trim(res%names_1d(resi)) // '.dat'
-
-                ! Open file for append (create if not exists)
-                open(UNIT=UNIT_COUNT, FILE=filename, STATUS=file_status, ACTION='write', POSITION='APPEND')
-
-                ! Write header only once (when current_block == 0)
-                if (current_block == 0) then
-                    write(UNIT_COUNT, '(A)') '# Block   Active_Molecules'
-                end if
-
-                ! Write the block number and count for this residue
-                write(UNIT_COUNT, '(I10, 1X, I10)') current_block, primary%num_residues(resi)
-
-                close(UNIT_COUNT)
-            end if
-
-        end do
+        call WriteResidueCounts(current_block, file_status)
 
         call WriteMoves(current_block, file_status)
 
-        ! ------------------------------------------------------
-        ! Write widom_RESNAME.dat
-        ! ------------------------------------------------------
+        call WriteWidomData(current_block, file_status)
+
+    end subroutine WriteEnergyAndCount
+
+    !------------------------------------------------------------------------------
+    ! Write energy.dat. Outputs total energy, Coulomb, non-Coulomb,
+    ! intramolecular, and Ewald contributions.
+    !------------------------------------------------------------------------------
+    subroutine WriteEnergyData(current_block, file_status)
+
+        implicit none
+
+        ! Input arguments
+        integer, intent(in) :: current_block
+        character(len=*), intent(in) :: file_status
+
+        ! Local variables
+        character(len=512) :: line
+        character(len=256) :: header
+        integer :: UNIT_ENERGY = 18
+
+        ! Open energy.dat in append mode
+        open(unit=UNIT_ENERGY, file=trim(output_path) // 'energy.dat', &
+            status=file_status, action='write', position='append')
+
+        ! Write header only at first block
+        if (current_block == 0) then
+            header = '#    block        total        recipCoulomb' // &
+                    '     non-coulomb      coulomb     ewald_self    intramolecular-coulomb'
+            write(UNIT_ENERGY, '(A)') trim(header)
+        end if
+
+        ! Build data line with proper formatting
+        write(line,'(I10,1X,F16.6,1X,F16.6,1X,F16.6,1X,F16.6,1X,F16.6,1X,F16.6)') &
+            current_block, energy%total, energy%recip_coulomb, energy%non_coulomb, &
+            energy%coulomb, energy%ewald_self, energy%intra_coulomb
+        write(UNIT_ENERGY,'(A)') trim(line)
+
+        ! Close file
+        close(UNIT_ENERGY)
+
+    end subroutine WriteEnergyData
+
+    !------------------------------------------------------------------------------
+    ! Write widom_RESNAME.dat for active residues if Widom sampling is enabled.
+    ! Outputs block number, excess chemical potential, total chemical potential,
+    ! and number of Widom samples. Header written only for first block.
+    !------------------------------------------------------------------------------
+    subroutine WriteWidomData(current_block, file_status)
+
+        implicit none
+
+        ! Input arguments
+        integer, intent(in) :: current_block
+        character(len=*), intent(in) :: file_status
+
+        ! Local variables
+        integer :: type_residue
+        character(len=256) :: filename
+        character(len=64) :: line
+        integer :: UNIT_WIDOM = 21
+
+        ! Check if Widom calculation is active
         if (proba%widom > 0) then
 
-            ! Compute excess and ideal chemical potentials
+            ! Compute excess and total chemical potentials
             call CalculateExcessMu()
 
+            ! Loop over residue types
             do type_residue = 1, nb%type_residue
 
                 if (input%is_active(type_residue) > 0) then
 
-                    ! Construct file name
-                    filename = trim(output_path)//'widom_'//trim(res%names_1d(type_residue))//'.dat'
+                    ! Construct the file name
+                    filename = trim(output_path) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
 
                     ! Open file in append mode
-                    open(UNIT=UNIT_WIDOM, FILE=filename, STATUS=file_status, &
-                        ACTION='write', POSITION='APPEND')
+                    open(unit=UNIT_WIDOM, file=filename, status=file_status, action='write', position='append')
 
                     ! Write header only at the first block
                     if (current_block == 0) then
-                        write(UNIT_WIDOM,'(A)') '# Block   Excess_Mu_kcalmol   Total_Mu_kcalmol   Widom_Samples'
+                        write(line,'(A10,1X,A16,1X,A16,1X,A16)') '# Block', 'Excess_Mu_kcalmol', 'Total_Mu_kcalmol', 'Widom_Samples'
+                        write(UNIT_WIDOM,'(A)') trim(line)
                     end if
 
-                    ! Write data line: block, excess mu, total mu, number of samples
-                    write(UNIT_WIDOM,'(I10,1X,F16.6,1X,F16.6,1X,I12)') current_block, &
+                    ! Write the data line: block, excess mu, total mu, number of samples
+                    write(line,'(I10,1X,F16.6,1X,F16.6,1X,I12)') current_block, &
                         widom_stat%mu_ex(type_residue), widom_stat%mu_tot(type_residue), &
                         widom_stat%sample(type_residue)
+                    write(UNIT_WIDOM,'(A)') trim(line)
 
                     ! Close file
                     close(UNIT_WIDOM)
@@ -193,8 +218,58 @@ contains
 
         end if
 
-    end subroutine WriteEnergyAndCount
+    end subroutine WriteWidomData
 
+    !------------------------------------------------------------------------------
+    ! Write number_RESNAME.dat for each active residue. Tracks block number
+    ! and number of active molecules. Header is written only for the first block.
+    !------------------------------------------------------------------------------
+    subroutine WriteResidueCounts(current_block, file_status)
+
+        implicit none
+
+        ! Input arguments
+        integer, intent(in) :: current_block
+        character(len=*), intent(in) :: file_status
+
+        ! Local variables
+        integer :: resi
+        character(len=256) :: filename
+        character(len=32) :: line
+        integer :: UNIT_COUNT  = 19
+
+        ! Loop over residues
+        do resi = 1, nb%type_residue
+
+            if (input%is_active(resi) == 1) then
+                ! Construct the filename for this residue
+                filename = trim(output_path) // 'number_' // trim(res%names_1d(resi)) // '.dat'
+
+                ! Open file for append (create if not exists)
+                open(unit=UNIT_COUNT, file=filename, status=file_status, action='write', position='append')
+
+                ! Write header only once (when current_block == 0)
+                if (current_block == 0) then
+                    write(line,'(A10,1X,A10)') '# Block', 'Active_Molecules'
+                    write(UNIT_COUNT,'(A)') trim(line)
+                end if
+
+                ! Write the block number and count for this residue
+                write(line,'(I10,1X,I10)') current_block, primary%num_residues(resi)
+                write(UNIT_COUNT,'(A)') trim(line)
+
+                close(UNIT_COUNT)
+            end if
+
+        end do
+
+    end subroutine WriteResidueCounts
+
+    !------------------------------------------------------------------------------
+    ! Write moves_new.dat. Tracks move accuracies and trials for translation,
+    ! rotation, creation/deletion, swap, and Widom moves. Header generated
+    ! dynamically based on which move types are enabled.
+    !------------------------------------------------------------------------------
     subroutine WriteMoves(current_block, file_status)
 
         implicit none
