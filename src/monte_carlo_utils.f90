@@ -440,8 +440,8 @@ contains
             old%intra_coulomb = zero
 
             ! #tocheck
-            !call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
-            old%recip_coulomb = energy%recip_coulomb
+            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            ! old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
