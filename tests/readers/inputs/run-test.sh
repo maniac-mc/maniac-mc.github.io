@@ -1,5 +1,4 @@
 #!/bin/bash
-set -euo pipefail
 
 topology_path="../../../mc-topology/testcase-adsorption/ZIF8-CH4O-H2O/"
 build_path="../../../build/maniac"
@@ -17,7 +16,7 @@ for input in good-input-*.maniac; do
 
     # Run silently (everything goes into log.maniac)
     $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > log.maniac 2>&1
-
+    
     # === Test: program termination
     if grep -q "Simulation Completed" log.maniac; then
         echo "✅ [PASS] $input : Simulation terminated normally"
@@ -29,6 +28,7 @@ done
 
 # Run bad inputs (expect failure)
 for input in bad-input-*.maniac; do
+
     rm -rf "$outputs"
     mkdir -p "$outputs"
 

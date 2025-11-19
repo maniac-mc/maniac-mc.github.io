@@ -228,7 +228,7 @@ contains
         type(energy_state), intent(in) :: new   ! New energy states
         integer, intent(in) :: move_type        ! MC move type (TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, or TYPE_ROTATION)
         integer, intent(in) :: residue_type     ! Index of the residue type
-        
+
         ! Local variables
         real(real64) :: N, Nplus1               ! Number of residues of this type, and Number + 1
         real(real64) :: mu                      ! Chemical potential
@@ -239,9 +239,9 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
+
         N = real(primary%num_residues(residue_type), real64)
         Nplus1 = N + 1.0_real64
-        lambda = res%lambda(residue_type)               ! Thermal de Broglie wavelength (A)
         deltaU = new%total - old%total                  ! kcal/mol
         mu = input%chemical_potential(residue_type)     ! kcal/mol
 
@@ -252,6 +252,7 @@ contains
                 ! P_acc(N -> N+1) = min[1, (V / ((N+1) λ³)) * exp(-β * (ΔU - μ))]
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
+                lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
                 prefactor = primary%volume / Nplus1 / lambda**3
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
@@ -259,6 +260,7 @@ contains
 
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
+                lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
                 prefactor = N * lambda**3 / (primary%volume)
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
             
