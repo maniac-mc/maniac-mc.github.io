@@ -345,14 +345,13 @@ contains
     !   Compute the updated energy of a single molecule after a trial move
     !   for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
-    subroutine ComputeNewEnergy(residue_type, molecule_index, new, is_creation, is_deletion)
+    subroutine compute_new_energy(residue_type, molecule_index, is_creation, is_deletion)
 
         implicit none
 
         ! Input arguments
         integer, intent(in) :: residue_type         ! Residue type to be moved
         integer, intent(in) :: molecule_index       ! Index of the molecule to move
-        type(energy_state), intent(out) :: new      ! New energy states
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
 
@@ -404,7 +403,7 @@ contains
 
         end if
 
-    end subroutine ComputeNewEnergy
+    end subroutine compute_new_energy
 
     !---------------------------------------------------------------------------
     ! Compute the previous energy of a single molecule before a trial move
@@ -502,7 +501,7 @@ contains
         integer :: natoms
 
         ! Save Fourier terms
-        call SaveSingleMolFourierTerms(res_type, mol_index)
+        call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Save center-of-mass if requested (translation)
         if (present(com_old)) then

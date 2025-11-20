@@ -57,7 +57,7 @@ contains
         call ApplyRandomRotation(residue_type, molecule_index)
 
         ! Recompute energies
-        call ComputeNewEnergy(residue_type, molecule_index, new)
+        call compute_new_energy(residue_type, molecule_index)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_ROTATION)

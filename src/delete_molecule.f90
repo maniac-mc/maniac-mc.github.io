@@ -73,7 +73,7 @@ contains
         primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
 
         ! Calculate new energy
-        call ComputeNewEnergy(residue_type, molecule_index, new, is_deletion = is_deletion)
+        call compute_new_energy(residue_type, molecule_index, is_deletion = is_deletion)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_DELETION)

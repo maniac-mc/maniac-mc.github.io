@@ -90,14 +90,11 @@ contains
     end subroutine ComputePhaseFactors1D
 
     !--------------------------------------------------------------------
-    ! SaveSingleMolFourierTerms
-    !
-    ! Purpose:
-    !   Saves the current Fourier-space phase factors and reciprocal amplitudes
-    !   for a specific molecule or residue. This enables rollback after a
-    !   rejected Monte Carlo or molecular dynamics move.
+    ! Saves the current Fourier-space phase factors and reciprocal amplitudes
+    ! for a specific molecule or residue. This enables rollback after a
+    ! rejected Monte Carlo or molecular dynamics move.
     !--------------------------------------------------------------------
-    subroutine SaveSingleMolFourierTerms(residue_type, molecule_index)
+    subroutine save_single_mol_fourier_terms(residue_type, molecule_index)
 
         implicit none
 
@@ -140,14 +137,14 @@ contains
         end do
 
         !------------------------------------------------------
-        ! Step 2: Save reciprocal amplitudes A(k)
-        !         Loop directly over precomputed valid k-vectors
+        ! Save reciprocal amplitudes A(k)
+        ! Loop directly over precomputed valid k-vectors
         !------------------------------------------------------
         do idx = 1, ewald%num_kvectors
             ewald%recip_amplitude_old(idx) = ewald%recip_amplitude(idx)
         end do
 
-    end subroutine SaveSingleMolFourierTerms
+    end subroutine save_single_mol_fourier_terms
 
     !--------------------------------------------------------------------
     ! RestoreSingleMolFourier

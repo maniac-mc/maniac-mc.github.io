@@ -60,7 +60,7 @@ contains
         call RandomTranslation(residue_type, molecule_index)
 
         ! Compute new energy after the proposed move
-        call ComputeNewEnergy(residue_type, molecule_index, new)
+        call compute_new_energy(residue_type, molecule_index)
 
         ! Compute Metropolis acceptance probability
         ! probability = min(1, exp(-(new - old)/kT))

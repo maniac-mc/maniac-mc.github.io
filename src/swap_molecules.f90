@@ -96,7 +96,7 @@ contains
 
         ! Compute new energy
         is_creation = .true.
-        call ComputeNewEnergy(residue_type_bis, molecule_index_bis, new, is_creation = is_creation)
+        call compute_new_energy(residue_type_bis, molecule_index_bis, is_creation = is_creation)
 
         ! STEP 3 - Accept or reject move
 

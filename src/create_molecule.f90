@@ -65,13 +65,13 @@ contains
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
 
         ! Save current Fourier terms (should be all zeros here)
-        call SaveSingleMolFourierTerms(residue_type, molecule_index)
+        call save_single_mol_fourier_terms(residue_type, molecule_index)
 
         ! Generate random insertion position within the simulation box
         call insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
 
         ! Compute new energy
-        call ComputeNewEnergy(residue_type, molecule_index, new, is_creation = is_creation)
+        call compute_new_energy(residue_type, molecule_index, is_creation = is_creation)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_CREATION)
