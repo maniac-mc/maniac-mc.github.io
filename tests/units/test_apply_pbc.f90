@@ -1,4 +1,4 @@
-program test_ApplyPBC
+program test_apply_PBC
     use, intrinsic :: iso_fortran_env, only: real64
     use geometry_utils
     implicit none
@@ -26,7 +26,7 @@ program test_ApplyPBC
 
     ! Position outside [0,1)
     pos = [1.2_real64, -0.3_real64, 2.7_real64]
-    call ApplyPBC(pos, box)
+    call apply_PBC(pos, box)
 
     expected = modulo(pos, 1.0_real64)
     pass1 = all(abs(pos - expected) < tol)
@@ -48,7 +48,7 @@ program test_ApplyPBC
     box%matrix(3,3) = 4.0_real64
 
     pos = [2.5_real64, -1.6_real64, 9.0_real64]
-    call ApplyPBC(pos, box)
+    call apply_PBC(pos, box)
 
     do i = 1,3
         expected(i) = box%bounds(i,1) + modulo(pos(i) - box%bounds(i,1), box%matrix(i,i))
@@ -77,7 +77,7 @@ program test_ApplyPBC
     box%reciprocal = recip
 
     pos = [1.2_real64, 0.3_real64, -0.6_real64]
-    call ApplyPBC(pos, box)
+    call apply_PBC(pos, box)
 
     ! Compute expected using fractional coordinates
     expected = box%bounds(:,1) + matmul(box%matrix, modulo(matmul(box%reciprocal, pos - box%bounds(:,1)), 1.0_real64))
@@ -116,4 +116,4 @@ contains
         inv(3,3) =  (mat(1,1)*mat(2,2)-mat(1,2)*mat(2,1))/det
     end function inverse
 
-end program test_ApplyPBC
+end program test_apply_PBC
