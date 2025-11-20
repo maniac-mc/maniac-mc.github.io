@@ -39,7 +39,7 @@ contains
         real(real64) :: deltaU                  ! Energy difference
         real(real64) :: weight                  ! Bolzmann weight
 
-        call CheckMoleculeIndex(molecule_index, NB_MAX_MOLECULE)
+        call check_molecule_index(molecule_index)
 
         ! Count trial move (success + fail)
         counter%trial_widom = counter%trial_widom + 1

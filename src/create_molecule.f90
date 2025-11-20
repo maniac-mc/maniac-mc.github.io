@@ -51,7 +51,7 @@ contains
         real(real64) :: probability             ! Acceptance probability of creation move
         logical :: is_creation                  ! Flag indicating creation
 
-        call CheckMoleculeIndex(molecule_index, NB_MAX_MOLECULE)
+        call check_molecule_index(molecule_index)
 
         ! Count trial move (success + fail)
         counter%trial_creations = counter%trial_creations + 1

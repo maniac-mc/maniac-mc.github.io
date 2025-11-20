@@ -407,9 +407,8 @@ contains
     end subroutine ComputeNewEnergy
 
     !---------------------------------------------------------------------------
-    ! Purpose:
-    !   Compute the previous energy of a single molecule before a trial move
-    !   for use in the Monte Carlo acceptance test.
+    ! Compute the previous energy of a single molecule before a trial move
+    ! for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
     subroutine compute_old_energy(residue_type, molecule_index, is_creation, is_deletion)
 
@@ -418,7 +417,6 @@ contains
         ! Input variables
         integer, intent(in) :: residue_type         ! Residue type to be moved
         integer, intent(in) :: molecule_index       ! Index of the molecule to move
-        ! type(energy_state), intent(out) :: old      ! Old energy states
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
 
@@ -433,15 +431,11 @@ contains
 
             ! Note: Most energy terms in the absence of a molecule are 0
             ! --> One must only recalculate energy%recip_coulomb
-
             old%non_coulomb = zero
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
-
-            ! #tocheck
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
-            ! old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -472,17 +466,8 @@ contains
     end subroutine compute_old_energy
 
     !---------------------------------------------------------------------------
-    ! Purpose:
-    !   Update the global system energy and Monte Carlo counters after
-    !   accepting a trial move (translation or rotation) of a molecule.
-    !
-    ! Inputs:
-    !   old         - Type(energy_state): Energy of the molecule before the move
-    !   new         - Type(energy_state): Energy of the molecule after the move
-    !
-    ! Input/Output:
-    !   counter_var - Integer: Monte Carlo counter for successful moves
-    !                 (e.g., translations or rotations), incremented if move accepted
+    ! Update the global system energy and Monte Carlo counters after
+    ! accepting a trial move (translation or rotation) of a molecule.
     !---------------------------------------------------------------------------
     subroutine AcceptMove(old, new, counter_var)
 

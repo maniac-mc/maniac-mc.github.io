@@ -635,15 +635,19 @@ contains
 
     end subroutine InfoMessage
 
-    subroutine CheckMoleculeIndex(molecule_index, NB_MAX_MOLECULE)
+    !-----------------------------------------------------------------------------
+    ! Validates that the given molecule index does not exceed the maximum allowed
+    ! number of molecules (NB_MAX_MOLECULE). Aborts the run with an informative
+    ! message if the index is out of bounds.
+    !-----------------------------------------------------------------------------
+    subroutine check_molecule_index(molecule_index)
 
         implicit none
 
-        ! Input arguments
+        ! Input argument
         integer, intent(in) :: molecule_index       ! Index of molecule being created
-        integer, intent(in) :: NB_MAX_MOLECULE      ! Maximum allowed number of molecules
 
-        ! Local
+        ! Local variable
         character(len=200) :: formatted_msg         ! Buffer for constructing formatted log or error messages
 
         if (molecule_index > NB_MAX_MOLECULE) then
@@ -655,14 +659,11 @@ contains
                         "Increase 'NB_MAX_MOLECULE' in src/parameters.f90 and recompile.")
         end if
 
-    end subroutine CheckMoleculeIndex
+    end subroutine check_molecule_index
 
     !-----------------------------------------------------------------------------
-    ! Function: to_string
-    !
-    ! Purpose:
-    !   Converts an integer input to a trimmed character string.
-    !   Returns an allocatable string of minimal length.
+    ! Converts an integer input to a trimmed character string.
+    ! Returns an allocatable string of minimal length.
     !-----------------------------------------------------------------------------
     pure function to_string(i) result(str)
 
@@ -678,11 +679,8 @@ contains
     end function to_string
 
     !-----------------------------------------------------------------------------
-    ! Subroutine: PrintInputSummary
-    !
-    ! Purpose:
-    !   Logs a summary of the parsed input, including global simulation parameters,
-    !   Monte Carlo settings, and detailed residue information.
+    ! Logs a summary of the parsed input, including global simulation parameters,
+    ! Monte Carlo settings, and detailed residue information.
     !-----------------------------------------------------------------------------
     subroutine PrintInputSummary()
 
