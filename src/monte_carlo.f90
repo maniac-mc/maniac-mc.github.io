@@ -52,7 +52,7 @@ contains
                 if (random_draw <= proba%translation) then
 
                     ! Case 1: Small translation move
-                    call Translation(residue_type, molecule_index)
+                    call attempt_translation_move(residue_type, molecule_index)
 
                 else if (random_draw <= proba%rotation+proba%translation) then
 

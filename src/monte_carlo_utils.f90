@@ -16,8 +16,6 @@ module monte_carlo_utils
 contains
 
     !========================================================
-    ! Subroutine: ApplyRandomRotation
-    !
     ! Rotates all atoms of a residue around a randomly chosen
     ! axis (X, Y, or Z) by a random angle. Angle can be a
     ! small perturbation or a full 0-2π rotation.
@@ -28,8 +26,6 @@ contains
     !   full_rotation - optional logical, if .true. use full rotation
     !========================================================
     subroutine ApplyRandomRotation(res_type, mol_index, full_rotation)
-
-        implicit none
 
         ! Input arguments
         integer, intent(in) :: res_type           ! Index of the residue type
@@ -69,8 +65,6 @@ contains
     ! Returns a random rotation angle (radians); small-step if use_full_rotation=.false., full [0,2π] if .true.
     function ChooseRotationAngle(use_full_rotation) result(theta)
 
-        implicit none
-
         ! Input variables
         logical, intent(in) :: use_full_rotation
 
@@ -109,8 +103,6 @@ contains
     !     TARGET = desired acceptance probability
     !----------------------------------------------------------------------
     subroutine AdjustMoveStepSizes()
-
-        implicit none
 
         ! Local variables
         real(real64) :: acc_trans, acc_rot
@@ -153,8 +145,6 @@ contains
     ! available types in [1, active_residue_count].
     !----------------------------------------------------------------------
     function PickRandomResidueType(is_active) result(residue_type)
-
-        implicit none
 
         integer, dimension(:), intent(in) :: is_active
         integer :: residue_type
@@ -220,8 +210,6 @@ contains
     ! canonical Monte Carlo simulation.
     !----------------------------------------------------------------------
     function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
-
-        implicit none
 
         ! Input arguments
         type(energy_state), intent(in) :: old   ! Old energy states
@@ -308,8 +296,6 @@ contains
     !---------------------------------------------------------------------- 
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
-        implicit none
-
         ! Arguments
         type(energy_state), intent(in) :: old   ! Energy of system with old molecule
         type(energy_state), intent(in) :: new   ! Energy of system with new molecule
@@ -346,8 +332,6 @@ contains
     !   for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
     subroutine compute_new_energy(residue_type, molecule_index, is_creation, is_deletion)
-
-        implicit none
 
         ! Input arguments
         integer, intent(in) :: residue_type         ! Residue type to be moved
@@ -411,8 +395,6 @@ contains
     !---------------------------------------------------------------------------
     subroutine compute_old_energy(residue_type, molecule_index, is_creation, is_deletion)
 
-        implicit none
-
         ! Input variables
         integer, intent(in) :: residue_type         ! Residue type to be moved
         integer, intent(in) :: molecule_index       ! Index of the molecule to move
@@ -468,7 +450,7 @@ contains
     ! Update the global system energy and Monte Carlo counters after
     ! accepting a trial move (translation or rotation) of a molecule.
     !---------------------------------------------------------------------------
-    subroutine AcceptMove(old, new, counter_var)
+    subroutine accept_molecule_move(old, new, counter_var)
 
         ! Input arguments
         type(energy_state), intent(in) :: old, new  ! Old and new energy states
@@ -480,16 +462,14 @@ contains
         energy%total = energy%total + new%total - old%total
         counter_var = counter_var + 1
 
-    end subroutine
+    end subroutine accept_molecule_move
 
     !---------------------------------------------------------------------------
     ! Save the current state of a molecule for a Monte Carlo move. For
     ! translation: saves center-of-mass (COM). For rotation: saves site offsets.
     ! Also saves Fourier terms for later restoration if the move is rejected
     !---------------------------------------------------------------------------
-    subroutine SaveMoleculeState(res_type, mol_index, com_old, offset_old)
-
-        implicit none
+    subroutine save_molecule_state(res_type, mol_index, com_old, offset_old)
 
         ! Input arguments
         integer, intent(in) :: res_type         ! Residue type of the molecule
@@ -514,15 +494,15 @@ contains
             offset_old(:, 1:natoms) = primary%site_offset(:, res_type, mol_index, 1:natoms)
         end if
 
-    end subroutine SaveMoleculeState
+    end subroutine save_molecule_state
 
     !---------------------------------------------------------------------------
     ! Restore a molecule's previous state (COM or site offsets) and Fourier terms
     ! if a Monte Carlo move is rejected.
     !---------------------------------------------------------------------------
-    subroutine RejectMoleculeMove(res_type, mol_index, com_old, site_offset_old)
-        implicit none
+    subroutine reject_molecule_move(res_type, mol_index, com_old, site_offset_old)
 
+        ! Input parameters
         integer, intent(in) :: res_type       ! Residue type of the molecule
         integer, intent(in) :: mol_index      ! Index of the molecule
         real(real64), intent(in), optional :: com_old(3) ! Previous COM (translation)
@@ -546,7 +526,7 @@ contains
         ! Restore Fourier states
         call RestoreSingleMolFourier(res_type, mol_index)
 
-    end subroutine RejectMoleculeMove
+    end subroutine reject_molecule_move
 
     !---------------------------------------------------------------------------
     ! Generates a random position for the new molecule and copies/orients
@@ -554,8 +534,6 @@ contains
     ! a random rotation if no reservoir exists.
     !---------------------------------------------------------------------------
     subroutine insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
-
-        implicit none
 
         ! Input arguments
         integer, intent(in) :: residue_type     ! Residue type to be moved
@@ -610,8 +588,6 @@ contains
     !---------------------------------------------------------------------------
     subroutine reject_creation_move(residue_type, molecule_index)
 
-        implicit none
-
         integer, intent(in) :: residue_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
 
@@ -630,8 +606,6 @@ contains
     ! potential (μ_ideal) for reporting purposes.
     !------------------------------------------------------------------------------
     subroutine CalculateExcessMu()
-
-        implicit none
 
         ! Local variables
         integer :: type_residue     ! Residue type index

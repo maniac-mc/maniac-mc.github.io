@@ -14,26 +14,12 @@ module molecule_rotation
 
 contains
 
-    !---------------------------------------------------------------------------
-    ! Subroutine: Rotation
-    !
-    ! Purpose:
-    !   Performs a trial rotation of a molecule around a random axis by a random
-    !   angle. The move is accepted or rejected based on the Metropolis
-    !   criterion using energy differences.
-    !
-    ! Inputs:
-    !   residue_type   - Integer: Residue type of the molecule
-    !   molecule_index - Integer: Index of the molecule
-    !
-    ! Outputs:
-    !   Updates primary%site_offset if move accepted
-    !   Updates energy totals if move accepted
-    !   Updates Monte Carlo counters
+    !---------------------------------------------------------------------------    !
+    ! Performs a trial rotation of a molecule around a random axis by a random
+    ! angle. The move is accepted or rejected based on the Metropolis
+    ! criterion using energy differences.
     !---------------------------------------------------------------------------
     subroutine Rotation(residue_type, molecule_index)
-
-        implicit none
 
         ! Input arguments
         integer, intent(in) :: residue_type             ! Residue type to be moved
@@ -48,7 +34,7 @@ contains
         ! Count trial move (success + fail)
         counter%trial_rotations = counter%trial_rotations + 1
 
-        call SaveMoleculeState(residue_type, molecule_index, offset_old = res%site_offset_old)
+        call save_molecule_state(residue_type, molecule_index, offset_old = res%site_offset_old)
 
         ! Compute previous energy
         call compute_old_energy(residue_type, molecule_index)
@@ -63,14 +49,12 @@ contains
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_ROTATION)
 
         ! Accept or reject
-        if (rand_uniform() <= probability) then ! Accept move
-
-            call AcceptMove(old, new, counter%rotations)
-
+        if (rand_uniform() <= probability) then
+            ! Accept move: update system state
+            call accept_molecule_move(old, new, counter%rotations)
         else ! Reject move
-
-            call RejectMoleculeMove(residue_type, molecule_index, site_offset_old = res%site_offset_old)
-
+            ! Reject move: restore previous orientation
+            call reject_molecule_move(residue_type, molecule_index, site_offset_old = res%site_offset_old)
         end if
 
     end subroutine Rotation

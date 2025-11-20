@@ -12,34 +12,20 @@ module molecule_translation
 
     implicit none
 
-    private
-    public :: Translation
+    private :: propose_translation_move
 
 contains
 
     !---------------------------------------------------------------------------
-    ! Subroutine: Translation
-    !
-    ! Purpose:
-    !   Perform a trial translation of a molecule by a random displacement
-    !   vector.
-    !
-    ! Input arguments:
-    !   residue_type   - Residue type to be translated
-    !   molecule_index - Molecule ID to move
-    !
-    ! Notes:
-    !   - Uses Monte Carlo Metropolis criterion for acceptance/rejection
-    !   - Updates energy and Fourier terms as needed
-    !   - Applies minimum image convention to new positions
+    ! Perform a trial translation of a molecule by a random displacement
+    ! vector.
     !---------------------------------------------------------------------------
-    subroutine Translation(residue_type, molecule_index)
-
-        implicit none
+    subroutine attempt_translation_move(residue_type, molecule_index)
 
         ! Input arguments
         integer, intent(in) :: residue_type         ! Residue type to be moved
         integer, intent(in) :: molecule_index       ! Molecule ID
+
         ! Local variables
         real(real64), dimension(3) :: com_old       ! Previous X, Y, Z coordinate of molecule
         real(real64) :: probability                 ! Acceptance probability of move
@@ -51,13 +37,13 @@ contains
         counter%trial_translations = counter%trial_translations + 1
 
         ! Save the current state of the molecule
-        call SaveMoleculeState(residue_type, molecule_index, com_old = com_old)
+        call save_molecule_state(residue_type, molecule_index, com_old = com_old)
 
         ! Compute old energy of the molecule/system
         call compute_old_energy(residue_type, molecule_index)
 
         ! Propose a random translation move
-        call RandomTranslation(residue_type, molecule_index)
+        call propose_translation_move(residue_type, molecule_index)
 
         ! Compute new energy after the proposed move
         call compute_new_energy(residue_type, molecule_index)
@@ -68,31 +54,23 @@ contains
 
         ! Accept or reject
         if (rand_uniform() <= probability) then
-
             ! Accept move: update system state
-            call AcceptMove(old, new, counter%translations)
-
+            call accept_molecule_move(old, new, counter%translations)
         else
-
             ! Reject move: restore previous position
-            call RejectMoleculeMove(residue_type, molecule_index, com_old = com_old)
-
+            call reject_molecule_move(residue_type, molecule_index, com_old = com_old)
         end if
 
-    end subroutine Translation
+    end subroutine attempt_translation_move
 
     !-----------------------------------------------------------------------
-    !> RandomTranslation
-    !!
-    !! Generate a trial translation move for a selected molecule of a given
-    !! residue type. A random displacement vector is drawn uniformly from
-    !! [-translation_step/2, translation_step/2) along each coordinate axis,
-    !! added to the molecule's previous center of mass, and wrapped into
-    !! the simulation box using the minimum image convention.
+    ! Generate a trial translation move for a selected molecule of a given
+    ! residue type. A random displacement vector is drawn uniformly from
+    ! [-translation_step/2, translation_step/2) along each coordinate axis,
+    ! added to the molecule's previous center of mass, and wrapped into
+    ! the simulation box using the minimum image convention.
     !-----------------------------------------------------------------------
-    subroutine RandomTranslation(res_type, mol_index)
-
-        implicit none
+    subroutine propose_translation_move(res_type, mol_index)
 
         ! Input variables
         integer, intent(in) :: res_type             ! Residue type to be moved
@@ -108,8 +86,8 @@ contains
         primary%mol_com(:, res_type, mol_index) = primary%mol_com(:, res_type, mol_index) + trial_pos(:)
 
         ! Apply minimum image convension
-        call ApplyPBC(primary%mol_com(:, res_type, mol_index), primary)
+        call apply_PBC(primary%mol_com(:, res_type, mol_index), primary)
 
-    end subroutine RandomTranslation
+    end subroutine propose_translation_move
 
 end module molecule_translation
