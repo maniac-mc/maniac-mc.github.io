@@ -1467,7 +1467,7 @@ contains
                     original_com = com ! Save the CoM
 
                     ! Ensure CoM is inside simulation box
-                    call ApplyPBC(com, box)
+                    call apply_PBC(com, box)
 
                     ! Sanity check (division by zero or corrupted input)
                     if (.not. all(ieee_is_finite(com))) then

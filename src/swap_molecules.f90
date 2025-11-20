@@ -69,8 +69,8 @@ contains
 
         ! Energy of the previous configuration
         is_deletion = .true.
-        call ComputeOldEnergy(residue_type, molecule_index, old, is_deletion = is_deletion)
-        call SaveMoleculeState(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
+        call compute_old_energy(residue_type, molecule_index, is_deletion = is_deletion)
+        call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
 
         ! Record the index of the last molecule of type "residue_type"
         last_molecule_index = primary%num_residues(residue_type)
@@ -96,7 +96,7 @@ contains
 
         ! Compute new energy
         is_creation = .true.
-        call ComputeNewEnergy(residue_type_bis, molecule_index_bis, new, is_creation = is_creation)
+        call compute_new_energy(residue_type_bis, molecule_index_bis, is_creation = is_creation)
 
         ! STEP 3 - Accept or reject move
 

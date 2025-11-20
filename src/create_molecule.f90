@@ -51,27 +51,27 @@ contains
         real(real64) :: probability             ! Acceptance probability of creation move
         logical :: is_creation                  ! Flag indicating creation
 
-        call CheckMoleculeIndex(molecule_index, NB_MAX_MOLECULE)
+        call check_molecule_index(molecule_index)
 
         ! Count trial move (success + fail)
         counter%trial_creations = counter%trial_creations + 1
 
         ! Compute old energy
         is_creation = .true.
-        call ComputeOldEnergy(residue_type, molecule_index, old, is_creation = is_creation)
+        call compute_old_energy(residue_type, molecule_index, is_creation = is_creation)
 
         ! Increase the residue and atom counts
         primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
 
         ! Save current Fourier terms (should be all zeros here)
-        call SaveSingleMolFourierTerms(residue_type, molecule_index)
+        call save_single_mol_fourier_terms(residue_type, molecule_index)
 
         ! Generate random insertion position within the simulation box
-        call InsertAndOrientMolecule(residue_type, molecule_index, rand_mol_index)
+        call insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
 
         ! Compute new energy
-        call ComputeNewEnergy(residue_type, molecule_index, new, is_creation = is_creation)
+        call compute_new_energy(residue_type, molecule_index, is_creation = is_creation)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_CREATION)
@@ -80,7 +80,7 @@ contains
         if (rand_uniform() <= probability) then ! Accept move
             call AcceptCreationMove(residue_type, rand_mol_index, old, new)
         else ! Reject move
-            call RejectCreationMove(residue_type, molecule_index)
+            call reject_creation_move(residue_type, molecule_index)
         end if
 
     end subroutine CreateMolecule

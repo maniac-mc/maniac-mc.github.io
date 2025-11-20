@@ -170,9 +170,7 @@ contains
 
     end subroutine ComputeCellProperties
 
-    !-----------------------------------------------------------
-    ! Subroutine: ApplyPBC
-    !
+    !-----------------------------------------------------------    !
     ! Wraps a Cartesian position into the simulation box using
     ! periodic boundary conditions (PBC). Supports orthogonal
     ! and triclinic boxes.
@@ -181,7 +179,7 @@ contains
     ! Triclinic : fractional coordinates s = H^{-1}·(r - r0),
     !             wrap s into [0,1), then r' = r0 + H·s
     !-----------------------------------------------------------
-    subroutine ApplyPBC(pos, box)
+    subroutine apply_PBC(pos, box)
 
         implicit none
 
@@ -235,7 +233,7 @@ contains
 
         end if
 
-    end subroutine ApplyPBC
+    end subroutine apply_PBC
 
     !-----------------------------------------------------------
     ! Ensures a position is inside the simulation box using the

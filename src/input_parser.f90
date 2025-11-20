@@ -23,7 +23,7 @@ contains
         call prescan_input_file(maniac_file)
 
         ! Allocate required arrays
-        call AllocateAtomArrays()
+        call allocate_atom_arrays()
         
         ! Parse input file and populate data
         call ReadFullInputFile(maniac_file)
@@ -219,60 +219,75 @@ contains
 
     end subroutine predetect_number_info
 
-    subroutine AllocateAtomArrays()
+    !-----------------------------------------------------------------------------
+    ! Allocates all arrays for atoms, residues, molecules, and interaction parameters
+    ! for both primary system and reservoir, based on system sizes and residue types.
+    !-----------------------------------------------------------------------------
+    subroutine allocate_atom_arrays()
 
         implicit none
 
-        ! Allocate atom arrays
-        ! 2 = system + reservoir
-        ! 3 = x, y, z
-        allocate(primary%atom_charges(nb%type_residue, nb%max_atom_in_residue))
-        allocate(primary%atom_masses(nb%type_residue, nb%max_atom_in_residue))
-        allocate(primary%atom_names(nb%type_residue, nb%max_atom_in_residue))
-        allocate(primary%atom_types(nb%type_residue, nb%max_atom_in_residue))
-        allocate(primary%atom_ids(nb%type_residue, nb%max_atom_in_residue))
-        allocate(primary%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
-        allocate(primary%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_residue))
-        allocate(primary%num_residues(nb%type_residue))
-        allocate(reservoir%atom_charges(nb%type_residue, nb%max_atom_in_residue))
-        allocate(reservoir%atom_masses(nb%type_residue, nb%max_atom_in_residue))
-        allocate(reservoir%atom_names(nb%type_residue, nb%max_atom_in_residue))
-        allocate(reservoir%atom_types(nb%type_residue, nb%max_atom_in_residue))
-        allocate(reservoir%atom_ids(nb%type_residue, nb%max_atom_in_residue))
-        allocate(reservoir%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
-        allocate(reservoir%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_residue))
-        allocate(reservoir%num_residues(nb%type_residue))
+        ! Allocate atom arrays for primary and reservoir
+        call allocate_atom_block(primary)
+        call allocate_atom_block(reservoir)
+
+        ! Allocate residue-level arrays
         allocate(res%mass(nb%type_residue))
         allocate(res%lambda(nb%type_residue))
-
-        ! Allocate parameter arrays
-        allocate(coeff%sigma(nb%type_residue, nb%type_residue,&
-                                nb%max_atom_in_residue, nb%max_atom_in_residue))
-        allocate(coeff%epsilon(nb%type_residue, nb%type_residue,&
-                                nb%max_atom_in_residue, nb%max_atom_in_residue))
-
         allocate(res%types_2d(nb%type_residue, nb%max_type_per_residue))
         allocate(res%names_2d(nb%type_residue, nb%max_type_per_residue))
+        allocate(res%names_1d(nb%type_residue))
+        allocate(res%bond_type_2d(nb%type_residue, NB_MAX_BOND, 3))
+        allocate(res%angle_type_2d(nb%type_residue, NB_MAX_ANGLE, 4))
+        allocate(res%dihedral_type_2d(nb%type_residue, NB_MAX_DIHEDRAL, 5))
+        allocate(res%improper_type_2d(nb%type_residue, NB_MAX_IMPROPER, 5))
+
+        ! Allocate interaction parameters
+        allocate(coeff%sigma(nb%type_residue, nb%type_residue, &
+                            nb%max_atom_in_residue, nb%max_atom_in_residue))
+        allocate(coeff%epsilon(nb%type_residue, nb%type_residue, &
+                            nb%max_atom_in_residue, nb%max_atom_in_residue))
+
+        ! Allocate input arrays
         allocate(input%fugacity(nb%type_residue))
         allocate(input%chemical_potential(nb%type_residue))
+        allocate(input%is_active(nb%type_residue))
+
+        ! Allocate system bookkeeping arrays
         allocate(nb%types_per_residue(nb%type_residue))
         allocate(nb%atom_in_residue(nb%type_residue))
         allocate(nb%bonds_per_residue(nb%type_residue))
         allocate(nb%angles_per_residue(nb%type_residue))
         allocate(nb%dihedrals_per_residue(nb%type_residue))
         allocate(nb%impropers_per_residue(nb%type_residue))
-
-        allocate(res%names_1d(nb%type_residue))
-        allocate(input%is_active(nb%type_residue))
-
-        allocate(res%bond_type_2d(nb%type_residue, NB_MAX_BOND, 3))
-        allocate(res%angle_type_2d(nb%type_residue, NB_MAX_ANGLE, 4))
-        allocate(res%dihedral_type_2d(nb%type_residue, NB_MAX_DIHEDRAL, 5))
-        allocate(res%improper_type_2d(nb%type_residue, NB_MAX_IMPROPER, 5))
-
         allocate(nb%types_pattern(nb%type_residue, nb%max_atom_in_residue))
 
-    end subroutine AllocateAtomArrays
+    end subroutine allocate_atom_arrays
+
+    !-----------------------------------------------------------------------------
+    ! Allocates all atom-level arrays for a given system, including charges, masses,
+    ! types, IDs, molecular coordinates, and residue counters.
+    ! This subroutine is used for both primary system and reservoir.
+    !-----------------------------------------------------------------------------
+    subroutine allocate_atom_block(system)
+
+        type(type_box), intent(inout) :: system
+
+        ! Allocate basic atom properties
+        allocate(system%atom_charges(nb%type_residue, nb%max_atom_in_residue))
+        allocate(system%atom_masses(nb%type_residue, nb%max_atom_in_residue))
+        allocate(system%atom_names(nb%type_residue, nb%max_atom_in_residue))
+        allocate(system%atom_types(nb%type_residue, nb%max_atom_in_residue))
+        allocate(system%atom_ids(nb%type_residue, nb%max_atom_in_residue))
+
+        ! Allocate molecular coordinates
+        allocate(system%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
+        allocate(system%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_residue))
+
+        ! Allocate residue counters
+        allocate(system%num_residues(nb%type_residue))
+
+    end subroutine allocate_atom_block
 
     !-----------------------------------------------------------------------------
     ! Reads the MANIAC input file, parses global parameters and residue blocks,
@@ -457,9 +472,7 @@ contains
                 cycle
             end select
 
-            ! ===============================
             ! Residue parsing (types, names, fugacity, chemical potential nb-atoms)
-            ! ===============================
             if (in_residue_block) then
 
                 ! First, try to read the first two words from the line:
@@ -555,8 +568,6 @@ contains
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
             end if
-            ! ===============================
-
         end do
 
         ! Validate fugacity for active residues
