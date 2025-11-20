@@ -51,7 +51,7 @@ contains
         call SaveMoleculeState(residue_type, molecule_index, offset_old = res%site_offset_old)
 
         ! Compute previous energy
-        call ComputeOldEnergy(residue_type, molecule_index, old)
+        call compute_old_energy(residue_type, molecule_index)
 
         ! Rotate the molecule randomly
         call ApplyRandomRotation(residue_type, molecule_index)

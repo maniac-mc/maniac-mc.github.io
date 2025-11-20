@@ -411,14 +411,14 @@ contains
     !   Compute the previous energy of a single molecule before a trial move
     !   for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
-    subroutine ComputeOldEnergy(residue_type, molecule_index, old, is_creation, is_deletion)
+    subroutine compute_old_energy(residue_type, molecule_index, is_creation, is_deletion)
 
         implicit none
 
         ! Input variables
         integer, intent(in) :: residue_type         ! Residue type to be moved
         integer, intent(in) :: molecule_index       ! Index of the molecule to move
-        type(energy_state), intent(out) :: old      ! Old energy states
+        ! type(energy_state), intent(out) :: old      ! Old energy states
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
 
@@ -469,7 +469,7 @@ contains
 
         end if
 
-    end subroutine ComputeOldEnergy
+    end subroutine compute_old_energy
 
     !---------------------------------------------------------------------------
     ! Purpose:
@@ -569,14 +569,14 @@ contains
     ! its atomic geometry. Can take geometry from a reservoir or apply
     ! a random rotation if no reservoir exists.
     !---------------------------------------------------------------------------
-    subroutine InsertAndOrientMolecule(residue_type, molecule_index, rand_mol_index)
+    subroutine insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
 
         implicit none
 
         ! Input arguments
         integer, intent(in) :: residue_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
-        integer, intent(out) :: rand_mol_index  ! Randomly selected molecule index from the reservoir
+        integer, intent(out), optional :: rand_mol_index ! Randomly selected molecule index from the reservoir
 
         ! Local variables
         logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
@@ -591,13 +591,20 @@ contains
         ! Copy geometry from reservoir or rotate if no reservoir
         if (has_reservoir) then
 
-            ! Pick a random (and existing) molecule in the reservoir
-            call random_number(random_nmb) ! generates random_nmb in [0,1)
-            rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1 ! random integer in [1, N]
+                if (present(rand_mol_index)) then
+                    ! Pick a random (and existing) molecule in the reservoir
+                    call random_number(random_nmb)
+                    rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1
 
-            ! Copy site offsets from the chosen molecule
-            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+                    ! Copy site offsets from the chosen molecule
+                    primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                        reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+
+                else
+
+                    ! Error: reservoir exists but no output index provided
+                    call AbortRun("Rand mol index must be provided when reservoir exists.", 1)
+                end if
 
         else
 
@@ -611,13 +618,13 @@ contains
 
         end if
 
-    end subroutine InsertAndOrientMolecule
+    end subroutine insert_and_orient_molecule
 
     !---------------------------------------------------------------------------
     ! Restores molecule and atom counts, and resets Fourier states if a
     ! creation move is rejected.
     !---------------------------------------------------------------------------
-    subroutine RejectCreationMove(residue_type, molecule_index)
+    subroutine reject_creation_move(residue_type, molecule_index)
 
         implicit none
 
@@ -631,7 +638,7 @@ contains
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
         call RestoreSingleMolFourier(residue_type, molecule_index)
 
-    end subroutine RejectCreationMove
+    end subroutine reject_creation_move
 
     !------------------------------------------------------------------------------
     ! Compute the excess chemical potential (μ_ex) for each residue type

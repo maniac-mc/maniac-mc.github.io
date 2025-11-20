@@ -86,7 +86,7 @@ contains
                     else ! Widom
 
                         molecule_index = primary%num_residues(residue_type) + 1
-                        call WidomTest(residue_type, molecule_index)
+                        call widom_trial(residue_type, molecule_index)
 
                     end if
 

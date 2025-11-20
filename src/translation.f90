@@ -54,7 +54,7 @@ contains
         call SaveMoleculeState(residue_type, molecule_index, com_old = com_old)
 
         ! Compute old energy of the molecule/system
-        call ComputeOldEnergy(residue_type, molecule_index, old)
+        call compute_old_energy(residue_type, molecule_index)
 
         ! Propose a random translation move
         call RandomTranslation(residue_type, molecule_index)
