@@ -7,17 +7,18 @@ module data_parser
     use check_utils
     use readers_utils
     use, intrinsic :: iso_fortran_env, only: real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
     implicit none
 
     ! 1D atom information
-    real(real64), allocatable :: atom_x_1d(:), atom_y_1d(:), atom_z_1d(:) ! Array of X Y Z coordinate of atoms
-    real(real64), allocatable :: atom_charges_1d(:) ! Partial charges on sites
-    real(real64), allocatable :: atom_masses_1d(:) ! Masses of atoms
-    integer, allocatable :: atom_types_1d(:) ! Array of atom types
-    integer, allocatable :: atom_ids_1d(:) ! Atom_id
-    integer, allocatable :: atom_original_1d(:) ! Atom_id (from data file)
-    character(10), allocatable :: atom_names_1d(:) ! Array of atom names
+    real(real64), allocatable :: atom_x_1d(:), atom_y_1d(:), atom_z_1d(:)   ! Array of X Y Z coordinate of atoms
+    real(real64), allocatable :: atom_charges_1d(:)                         ! Partial charges on sites
+    real(real64), allocatable :: atom_masses_1d(:)                          ! Masses of atoms
+    integer, allocatable :: atom_types_1d(:)                                ! Array of atom types
+    integer, allocatable :: atom_ids_1d(:)                                  ! Atom_id
+    integer, allocatable :: atom_original_1d(:)                             ! Atom_id (from data file)
+    character(10), allocatable :: atom_names_1d(:)                          ! Array of atom names
 
     integer, allocatable :: bond_ids_1d(:)
     integer, allocatable :: bond_types_1d(:)
@@ -1260,12 +1261,9 @@ contains
     end subroutine DetectMolecules
 
     !-----------------------------------------------------------------------
-    !  RepairActiveMolecules
-    !
-    !  Purpose:
-    !    Loop through all molecules in the box and, for those marked as active,
-    !    extract their coordinates, apply a repair procedure, and write the
-    !    updated coordinates back into the global arrays.
+    ! Loop through all molecules in the box and, for those marked as active,
+    ! extract their coordinates, apply a repair procedure, and write the
+    ! updated coordinates back into the global arrays.
     !-----------------------------------------------------------------------
     subroutine RepairActiveMolecules(box)
 
@@ -1320,6 +1318,7 @@ contains
                             dist = sqrt((tmp_x(l)-tmp_x(m))**2 + &
                                         (tmp_y(l)-tmp_y(m))**2 + &
                                         (tmp_z(l)-tmp_z(m))**2)
+                            ! do to : do not hardcode these value
                             if (dist > 10.0_real64) then
                                 call WarnUser("Unusually large distance (> 1 nm) detected in active residue")
                             else if (dist < 1.0e-5_real64) then
@@ -1353,8 +1352,6 @@ contains
     ! with respect to the molecule's center of mass (CoM).
     !---------------------------------------------------------------
     subroutine TransformCoordinate(box)
-
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -1423,7 +1420,7 @@ contains
                     end do
 
                     ! Compute Center of Mass
-                    call ComputeCOM(tmp_atom_x_1d, tmp_atom_y_1d, tmp_atom_z_1d, &
+                    call compute_COM(tmp_atom_x_1d, tmp_atom_y_1d, tmp_atom_z_1d, &
                                     nb%atom_in_residue(i), tmp_atom_masses_1d, &
                                     com(1), com(2), com(3))
 

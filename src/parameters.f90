@@ -31,17 +31,17 @@ module parameters
     real(real64), parameter :: ATM_TO_PA = 1.01325d5    ! Conversion factor: 1 atm → 1.01325 × 10^5 Pa
     real(real64), parameter :: G_TO_KG = 1.0d-3         ! Conversion factor: 1 g → 1.0E-3 km
 
-    real(real64), parameter :: J_to_kcal  = 0.000239005736        ! 1 J = 0.239005736 cal
+    real(real64), parameter :: J_to_kcal  = 0.000239005736  ! 1 J = 0.239005736 cal
     real(real64), parameter :: cal_to_kcal = 1.0e-3
 
     ! File names
     character(len=*), parameter :: data_filename = 'topology.data' ! Topology data file
 
     ! Define constants for move types
-    integer, parameter :: TYPE_CREATION = 1 ! Move type: molecule creation
-    integer, parameter :: TYPE_DELETION = 2 ! Move type: molecule deletion
-    integer, parameter :: TYPE_TRANSLATION = 3 ! Move type: molecular translation
-    integer, parameter :: TYPE_ROTATION = 4 ! Move type: molecular rotation
+    integer, parameter :: TYPE_CREATION = 1             ! Move type: molecule creation
+    integer, parameter :: TYPE_DELETION = 2             ! Move type: molecule deletion
+    integer, parameter :: TYPE_TRANSLATION = 3          ! Move type: molecular translation
+    integer, parameter :: TYPE_ROTATION = 4             ! Move type: molecular rotation
 
     ! In module parameters
     integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions

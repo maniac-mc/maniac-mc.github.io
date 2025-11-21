@@ -8,60 +8,67 @@ module readers_utils
 
 contains
 
-    subroutine ComputeCOM(x, y, z, nb_atoms, mass, com_x, com_y, com_z)
+    !---------------------------------------------------------------------------
+    ! Computes the center of mass from atomic coordinates and masses.
+    !---------------------------------------------------------------------------
+    subroutine compute_COM(x, y, z, nb_atoms, mass, com_x, com_y, com_z)
 
-        implicit none
+        ! Input parameters
+        integer, intent(in)  :: nb_atoms                            ! number of atoms
+        real(real64), intent(in)  :: x(nb_atoms), y(nb_atoms), z(nb_atoms) ! coordinates
+        real(real64), intent(in)  :: mass(nb_atoms)                 ! masses
+        real(real64), intent(out) :: com_x, com_y, com_z            ! COM components
 
-        integer, intent(in) :: nb_atoms
-        real(real64), intent(in) :: x(nb_atoms), y(nb_atoms), z(nb_atoms), mass(nb_atoms)
-        real(real64), intent(out) :: com_x, com_y, com_z
-        real(real64) :: total_mass
-        character(len=32) :: mass_str
-        integer :: i
+        ! Local variables
+        real(real64) :: total_mass                                  ! accumulated mass
+        character(len=32) :: mass_str                               ! mass formatted string
+        integer :: iat                                              ! atom index
 
-        com_x = 0.d0
-        com_y = 0.d0
-        com_z = 0.d0
-        total_mass = 0.d0
+        com_x = 0.0_real64
+        com_y = 0.0_real64
+        com_z = 0.0_real64
+        total_mass = 0.0_real64
 
-        do i = 1, nb_atoms
-            com_x = com_x + mass(i) * x(i)
-            com_y = com_y + mass(i) * y(i)
-            com_z = com_z + mass(i) * z(i)
-            total_mass = total_mass + mass(i)
+        do iat = 1, nb_atoms
+            com_x = com_x + mass(i) * x(iat)
+            com_y = com_y + mass(i) * y(iat)
+            com_z = com_z + mass(i) * z(iat)
+            total_mass = total_mass + mass(iat)
         end do
 
-        if (total_mass <= 0.0d0) then
+        if (total_mass <= 0.0_real64) then
             write(mass_str, '(F12.5)') total_mass
             call AbortRun("Total mass is zero or negative: " // trim(mass_str), 1)
         end if
 
-        if (total_mass > 0.d0) then
+        if (total_mass > 0.0_real64) then
             com_x = com_x / total_mass
             com_y = com_y / total_mass
             com_z = com_z / total_mass
         end if
 
-    end subroutine ComputeCOM
+    end subroutine compute_COM
 
-    function ComputeMass(nb_atoms, mass) result(total_mass)
+    !---------------------------------------------------------------------------
+    ! Computes the total mass from the array of atomic masses.
+    !---------------------------------------------------------------------------
+    function compute_mass(nb_atoms, mass) result(total_mass)
 
-        use, intrinsic :: iso_fortran_env, only: real64
-        implicit none
+        ! Input parameters
+        integer,          intent(in) :: nb_atoms              ! number of atoms
+        real(real64),     intent(in) :: mass(nb_atoms)        ! mass array
 
-        integer, intent(in)           :: nb_atoms
-        real(real64), intent(in)      :: mass(nb_atoms)
+        ! Local variables
+        real(real64) :: total_mass                            ! accumulated mass
+        integer :: iat                                        ! atom index
 
-        real(real64) :: total_mass
-        integer      :: i
+        total_mass = 0.0_real64
 
-        total_mass = zero
-
-        do i = 1, nb_atoms
+        do iat = 1, nb_atoms
             total_mass = total_mass + mass(i)
         end do
 
-    end function ComputeMass
+    end function compute_mass
 
     ! Read header info (e.g., number of atoms, atom types) from LAMMPS data file
     subroutine ReadLMPHeaderInfo(INFILE, box)
