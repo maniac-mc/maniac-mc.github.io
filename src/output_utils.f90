@@ -9,19 +9,16 @@ module output_utils
 
     use simulation_state
     use helper_utils
-    use, intrinsic :: iso_fortran_env, only: real64
+    use, intrinsic :: iso_fortran_env, only: real64, output_unit
 
     implicit none
 
 contains
 
     !---------------------------------------------------------------------------
-    ! Subroutine: CloseOutput
-    ! Purpose   : Close the main output file.
+    ! Close the main output file.
     !---------------------------------------------------------------------------
     subroutine CloseOutput()
-
-        implicit none
 
         call PrintTerminationMessage()
 
@@ -30,13 +27,11 @@ contains
     end subroutine CloseOutput
 
     !---------------------------------------------------------------------------
-    ! Subroutine: LogMessage
-    ! Purpose   : Write a custom message to the specified output unit.
+    ! Write a custom message to the specified output unit.
     !---------------------------------------------------------------------------
     subroutine LogMessage(msg)
 
-        implicit none
-
+        ! Input parameter
         character(*), intent(in) :: msg
 
         write(*,*) trim(msg)
@@ -45,11 +40,10 @@ contains
 
     end subroutine LogMessage
 
-    ! Subroutine: LogStartMC
-    ! Purpose   : Log the start of the Monte Carlo loop with a modern ASCII style
+    !---------------------------------------------------------------------------
+    !  Log the start of the Monte Carlo loop with a modern ASCII style
+    !---------------------------------------------------------------------------
     subroutine LogStartMC()
-
-        implicit none
 
         ! Blank line before message
         call LogMessage("")
@@ -91,12 +85,9 @@ contains
     end subroutine BoxLine
 
     !---------------------------------------------------------------------------
-    ! Subroutine: PrintTerminationMessage
-    ! Purpose   : Print a formatted termination footer with Monte Carlo summary
+    ! Print a formatted termination footer with Monte Carlo summary
     !---------------------------------------------------------------------------
     subroutine PrintTerminationMessage()
-
-        implicit none
 
         integer :: type_residue
         character(len=256) :: line
@@ -168,8 +159,7 @@ contains
 
     subroutine PrintStatus()
 
-        implicit none
-
+        ! Local variables
         integer :: nb_type_residue
         character(len=64)  :: tmp
         character(len=1024) :: header_msg
@@ -264,8 +254,6 @@ contains
     !------------------------------------------------------------------------------
     subroutine FinalReport()
 
-        implicit none
-
         ! Energy components in kcal/mol
         real(real64) :: e_tot          ! Total energy for reporting (computed)
         real(real64) :: e_coul         ! Coulombic energy including intra-molecular interactions
@@ -309,8 +297,6 @@ contains
     end subroutine FinalReport
 
     subroutine LogParameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
-
-        implicit none
 
         character(len=*), intent(in) :: input_file_name         ! Name of the parameter input file being processed
         integer, intent(out) :: n_pairs                         ! Counter for the number of unique atom type pairs
@@ -377,8 +363,6 @@ contains
 
     subroutine LogData(data_file_name, box, is_primary)
 
-        implicit none
-
         ! Input parameters
         type(type_box), intent(inout) :: box
         logical, intent(in) :: is_primary
@@ -440,8 +424,6 @@ contains
     end subroutine LogData
 
     subroutine LogConnectivity(box)
-
-        implicit none
 
         ! Input
         type(type_box), intent(inout) :: box
@@ -568,13 +550,11 @@ contains
 
     subroutine AbortRun(error_msg, exit_code)
 
-        use, intrinsic :: iso_fortran_env, only: output_unit
-
-        implicit none
-
+        ! Input parameters
         character(len=*), intent(in) :: error_msg   ! Error description
         integer, intent(in), optional :: exit_code  ! Exit code (default = 1)
 
+        ! Local variable
         integer :: code
 
         if (present(exit_code)) then
@@ -593,17 +573,13 @@ contains
         call flush(output_unit)
 
         stop code
+
     end subroutine AbortRun
 
-    !===============================================================
-    ! Subroutine: WarnUser
-    ! Purpose:
-    !   Print a standardized warning message without terminating
-    !===============================================================
+    !-----------------------------------------------------------------------------
+    ! Print a standardized warning message without terminating
+    !-----------------------------------------------------------------------------
     subroutine WarnUser(warn_msg)
-
-        use, intrinsic :: iso_fortran_env, only: output_unit
-        implicit none
 
         character(len=*), intent(in) :: warn_msg   ! Warning description
 
@@ -618,15 +594,10 @@ contains
 
     end subroutine WarnUser
 
-    !===============================================================
-    ! Subroutine: InfoMessage
-    ! Purpose:
-    !   Print a standardized informational message
-    !===============================================================
+    !-----------------------------------------------------------------------------
+    ! Print a standardized informational message
+    !-----------------------------------------------------------------------------
     subroutine InfoMessage(info_msg)
-
-        use, intrinsic :: iso_fortran_env, only: output_unit
-        implicit none
 
         character(len=*), intent(in) :: info_msg   ! Information description
 
@@ -641,8 +612,6 @@ contains
     ! message if the index is out of bounds.
     !-----------------------------------------------------------------------------
     subroutine check_molecule_index(molecule_index)
-
-        implicit none
 
         ! Input argument
         integer, intent(in) :: molecule_index       ! Index of molecule being created
@@ -667,8 +636,6 @@ contains
     !-----------------------------------------------------------------------------
     pure function to_string(i) result(str)
 
-        implicit none
-
         integer, intent(in) :: i
         character(len=:), allocatable :: str
         character(len=32) :: tmp                ! big enough for most integers
@@ -683,8 +650,6 @@ contains
     ! Monte Carlo settings, and detailed residue information.
     !-----------------------------------------------------------------------------
     subroutine PrintInputSummary()
-
-        implicit none
 
         ! Locals
         integer :: i, j

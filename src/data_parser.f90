@@ -38,15 +38,10 @@ module data_parser
 contains
 
     !-----------------------------------------------------------------------------
-    ! Subroutine: ReadSystemData
-    !
-    ! Purpose:
-    !   Reads the main system (primary) data file and optionally a reservoir file.
-    !   Ensures consistency between primary and reservoir if applicable.
+    ! Reads the main system (primary) data file and optionally a reservoir file.
+    ! Ensures consistency between primary and reservoir if applicable.
     !-----------------------------------------------------------------------------
     subroutine ReadSystemData()
-
-        implicit none
 
         !-----------------------------
         ! Read primary system
@@ -185,13 +180,10 @@ contains
     end subroutine ReadLMPData
 
     !-----------------------------------------------------------------------------
-    ! subroutine ReadLAMMPSMasses(INFILE, box)
-    !
     ! Reads atomic masses from the "Masses" section of a LAMMPS data file and maps them
     ! into a 2D mass array for each atom type and residue type.
     !-----------------------------------------------------------------------------
     subroutine ReadLAMMPSMasses(INFILE, box)
-        implicit none
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -292,8 +284,6 @@ contains
 
     subroutine AssignAtomNames(box)
 
-        implicit none
-
         type(type_box), intent(inout) :: box
 
         integer :: i, j, k
@@ -318,8 +308,6 @@ contains
     end subroutine AssignAtomNames
 
     subroutine DetectBondPerResidue(box)
-
-        implicit none
 
         type(type_box), intent(inout) :: box
 
@@ -376,8 +364,6 @@ contains
 
     subroutine DetectAnglePerResidue(box)
 
-        implicit none
-
         type(type_box), intent(inout) :: box
 
         integer :: i, j, k, l, m
@@ -430,8 +416,6 @@ contains
     end subroutine DetectAnglePerResidue
 
     subroutine DetectDihedralPerResidue(box)
-
-        implicit none
 
         type(type_box), intent(inout) :: box
 
@@ -491,8 +475,6 @@ contains
 
     subroutine DetectImproperPerResidue(box)
 
-        implicit none
-
         type(type_box), intent(inout) :: box
 
         integer :: i, j, k, l, m, n
@@ -550,7 +532,6 @@ contains
     end subroutine DetectImproperPerResidue
 
     subroutine ReadLAMMPSAtoms(INFILE, data_file_name, box)
-        implicit none
 
         ! Input
         integer, intent(in) :: INFILE
@@ -671,7 +652,6 @@ contains
     end subroutine ReadLAMMPSAtoms
 
     subroutine ReadLAMMPSBonds(INFILE, data_file_name, box)
-        implicit none
 
         ! Input
         integer, intent(in) :: INFILE
@@ -765,7 +745,6 @@ contains
     end subroutine ReadLAMMPSBonds
 
     subroutine ReadLAMMPSAngles(INFILE, data_file_name, box)
-        implicit none
 
         ! Input
         integer, intent(in) :: INFILE
@@ -859,7 +838,6 @@ contains
     end subroutine ReadLAMMPSAngles
 
     subroutine ReadLAMMPSDihedrals(INFILE, data_file_name, box)
-        implicit none
 
         ! Input
         integer, intent(in) :: INFILE
@@ -957,7 +935,6 @@ contains
     end subroutine ReadLAMMPSDihedrals
 
     subroutine ReadLAMMPSImpropers(INFILE, data_file_name, box)
-        implicit none
 
         ! Input
         integer, intent(in) :: INFILE
@@ -1053,8 +1030,6 @@ contains
     end subroutine ReadLAMMPSImpropers
 
     subroutine SortAtomsByOriginalID(box)
-
-        implicit none
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -1204,8 +1179,6 @@ contains
     !-----------------------------------------------------------------------
     subroutine DetectMolecules(box)
 
-        implicit none
-
         ! Input parameters
         type(type_box), intent(inout) :: box
 
@@ -1296,8 +1269,6 @@ contains
     !-----------------------------------------------------------------------
     subroutine RepairActiveMolecules(box)
 
-        implicit none
-
         ! Input parameters
         type(type_box), intent(inout) :: box
 
@@ -1377,17 +1348,13 @@ contains
 
     end subroutine RepairActiveMolecules
 
-    !===============================================================
-    ! Subroutine: TransformCoordinate
-    ! Purpose:
-    !   Transform absolute atom coordinates into relative coordinates
-    !   with respect to the molecule's center of mass (CoM).
-    !===============================================================
+    !---------------------------------------------------------------
+    ! Transform absolute atom coordinates into relative coordinates
+    ! with respect to the molecule's center of mass (CoM).
+    !---------------------------------------------------------------
     subroutine TransformCoordinate(box)
 
         use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
-
-        implicit none
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -1514,8 +1481,8 @@ contains
 
     end subroutine TransformCoordinate
 
-    !===============================================================
-    !> Check if a given atom ID belongs to a specific residue.
+    !---------------------------------------------------------------
+    ! Check if a given atom ID belongs to a specific residue.
     !---------------------------------------------------------------
     logical function isInResidue(box, res, atom_id)
 
@@ -1537,8 +1504,8 @@ contains
 
     end function isInResidue
 
-    !===============================================================
-    !> Get the local index of an atom within a residue.
+    !---------------------------------------------------------------
+    !Get the local index of an atom within a residue.
     !---------------------------------------------------------------
     integer function atomIndexInResidue(box, res, atom_id)
 
@@ -1554,6 +1521,7 @@ contains
                 return
             end if
         end do
+
     end function atomIndexInResidue
 
 end module data_parser

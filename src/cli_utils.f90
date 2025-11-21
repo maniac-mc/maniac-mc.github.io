@@ -12,8 +12,6 @@ contains
     !-----------------------------------------------------------------------------
     subroutine parse_command_line_arguments()
 
-        implicit none
-
         ! Set default CLI values
         call set_default_CLI_values()
 
@@ -33,8 +31,6 @@ contains
     !-----------------------------------------------------------------
     subroutine set_default_CLI_values()
 
-        implicit none
-
         maniac_file = ''
         data_file = ''
         inc_file = ''
@@ -47,8 +43,6 @@ contains
     ! Read command-line arguments into global variables
     !-----------------------------------------------------------------
     subroutine read_command_line_args()
-
-        implicit none
     
         ! Local variables
         character(len=256) :: arg
@@ -122,8 +116,6 @@ contains
     !-----------------------------------------------------------------
     subroutine validate_CLI_arguments()
 
-        implicit none
-
         if (trim(maniac_file) == '' .or. trim(data_file) == '' .or. trim(inc_file) == '') then
             call AbortRun("Missing mandatory input arguments: -i, -d, -p required.", 1)
         end if
@@ -151,8 +143,6 @@ contains
     !-----------------------------------------------------------------
     subroutine normalize_output_path()
 
-        implicit none
-
         if (len_trim(output_path) > 0) then
 
             if (output_path(len_trim(output_path):len_trim(output_path)) /= '/') then
@@ -166,8 +156,6 @@ contains
     ! Utility function to check if a file exists
     !-----------------------------------------------------------------
     logical function file_exists(filename)
-
-        implicit none
 
         ! Input parameters
         character(len=*), intent(in) :: filename
@@ -184,8 +172,6 @@ contains
     ! Reads the value following a CLI flag and validates it.
     !-----------------------------------------------------------------
     subroutine expect_value(idx, nargs, flag, value_out)
-
-        implicit none
     
         ! Input parameters
         integer, intent(in)  :: idx, nargs

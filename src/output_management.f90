@@ -15,8 +15,6 @@ contains
     !---------------------------------------------------------------------------
     subroutine setup_output_files()
 
-        implicit none
-
         ! Ensure output directory exists
         call ensure_directory_exists(output_path)
 
@@ -33,10 +31,10 @@ contains
     !-------------------------------------------------------
     subroutine ensure_directory_exists(path)
 
-        implicit none
+        ! Input parameter
+        character(len=*), intent(in) :: path
 
         ! Local variables
-        character(len=*), intent(in) :: path
         character(len=200) :: command
         integer :: exit_status
         logical :: exists
@@ -58,8 +56,6 @@ contains
     ! Open log file
     !-------------------------------------------------------
     subroutine open_log_file(path, filename, unit_number)
-
-        implicit none
 
         ! Input parameters
         character(len=*), intent(in) :: path               ! Directory path for log file
@@ -95,8 +91,6 @@ contains
     ! Write a modern ASCII header with project info (dynamic version)
     !---------------------------------------------------------------------------
     subroutine write_header()
-
-        implicit none
 
         integer, parameter :: box_width = 78 ! width of the box
 

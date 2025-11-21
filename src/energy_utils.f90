@@ -9,7 +9,6 @@ module energy_utils
     use ewald_energy
 
     use, intrinsic :: iso_fortran_env, only: real64
-    use, intrinsic :: ieee_arithmetic ! To remove eventually
 
     implicit none
 
@@ -19,8 +18,6 @@ contains
     ! Compute the total energy of the system
     !------------------------------------------------------------------------------
     subroutine ComputeSystemEnergy(box)
-
-        implicit none
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -52,8 +49,6 @@ contains
     !------------------------------------------------------------------------------
 
     subroutine ComputeTotalIntraResidueCoulombEnergy()
-
-        implicit none
 
         ! Local variables
         integer :: residue_type_1
@@ -88,8 +83,6 @@ contains
 
     subroutine ComputePairwiseEnergy(box)
 
-        implicit none
-
         ! Input arguments
         type(type_box), intent(inout) :: box    ! Box (reservoir or primary)
 
@@ -122,12 +115,9 @@ contains
     end subroutine ComputePairwiseEnergy
 
     !------------------------------------------------------------------------------
-    ! subroutine SingleMolPairwiseEnergy
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
     subroutine SingleMolPairwiseEnergy(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
-
-        implicit none
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -198,8 +188,6 @@ contains
     !------------------------------------------------------------------------------
     pure function LennardJonesEnergy(r, sigma, epsilon) result(energy)
 
-        implicit none
-
         ! Input variables
         real(real64), intent(in) :: r          ! Distance between the two atoms (in Å)
         real(real64), intent(in) :: sigma      ! Lennard-Jones sigma parameter (in Å)
@@ -241,8 +229,6 @@ contains
     ! Function to compute Coulomb interaction energy (Ewald direct-space term)
     !------------------------------------------------------------------------------
     pure function CoulombEnergy(r, q1, q2) result(energy)
-
-        implicit none
 
         ! Input variables
         real(real64), intent(in) :: r       ! Distance between the two atoms (in Å)
@@ -287,8 +273,6 @@ contains
     !------------------------------------------------------------------------------
     subroutine ComputeEwaldRecip()
 
-        implicit none
-
         ! Step 1: Precompute weighting coefficients that depend only on |k|-vectors.
         ! These account for the Gaussian charge screening used in the Ewald method.
         call compute_reciprocal_weights()
@@ -305,21 +289,12 @@ contains
 
     !------------------------------------------------------------------------------
     ! Computes the Ewald self-interaction correction.
-    !
     ! In the Ewald summation, each point charge is artificially spread out by a
     ! Gaussian distribution. This leads to an unphysical interaction of each charge
     ! with its own Gaussian "image". The self-energy term removes this contribution
     ! to avoid overcounting.
-    !
-    ! Algorithm:
-    !   1. For each residue type, compute the self-interaction of a *single* molecule
-    !      (depends only on its charges, not its position).
-    !   2. Multiply the result by the number of molecules of that residue type.
-    !   3. Accumulate the correction into the total self-energy term.
     !------------------------------------------------------------------------------
     subroutine ComputeEwaldSelf()
-
-        implicit none
 
         ! Local variables
         integer :: residue_type_1
@@ -352,8 +327,6 @@ contains
     !------------------------------------------------------------------------------
     subroutine SingleMolEwaldSelf(residue_type, self_energy_1)
 
-        implicit none
-
         ! Input arguments
         integer, intent(in) :: residue_type           ! Residue type for the molecule
         real(real64), intent(out) :: self_energy_1    ! Computed self-energy for this molecule
@@ -384,12 +357,9 @@ contains
     end subroutine SingleMolEwaldSelf
 
     !------------------------------------------------------------------------------
-    ! subroutine ComputePairInteractionEnergy_singlemol
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
     subroutine ComputePairInteractionEnergy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
-
-        implicit none
 
         ! Input arguments
         type(type_box), intent(inout) :: box
