@@ -48,7 +48,7 @@ contains
     ! Mathematical expression:
     !   E_intra_total = Σ_{residues} Σ_{molecules} E_intra(molecule)
     !   where E_intra(molecule) is computed by
-    !     ComputeIntraResidueRealCoulombEnergySingleMol
+    !     compute_intra_residue_real_coulomb_energy_single_mol
     !------------------------------------------------------------------------------
 
     subroutine ComputeTotalIntraResidueCoulombEnergy()
@@ -73,7 +73,7 @@ contains
                 do molecule_index_1 = 1, primary%num_residues(residue_type_1)
 
                     ! Compute intra-residue Coulomb energy for this molecule
-                    call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type_1, molecule_index_1, e_intra_coulomb)
+                    call compute_intra_residue_real_coulomb_energy_single_mol(residue_type_1, molecule_index_1, e_intra_coulomb)
 
                     ! Accumulate into total intra-residue energy
                     energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
@@ -291,7 +291,7 @@ contains
 
         ! Step 1: Precompute weighting coefficients that depend only on |k|-vectors.
         ! These account for the Gaussian charge screening used in the Ewald method.
-        call ComputeReciprocalWeights()
+        call compute_reciprocal_weights()
 
         ! Step 2: Build Fourier terms e^(i·k·r) for every atom inthe system.
         ! This avoids recomputing expensive exponentials during the k-sum.
@@ -299,7 +299,7 @@ contains
 
         ! Step 3: Compute reciprocal-space electrostatic energy using the structure
         ! factors and the precomputed reciprocal weighting coefficients.
-        call ComputeReciprocalEnergy(energy%recip_coulomb)
+        call compute_reciprocal_energy(energy%recip_coulomb)
 
     end subroutine ComputeEwaldRecip
 

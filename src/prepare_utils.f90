@@ -32,7 +32,7 @@ contains
         call AllocateArray()
 
         ! Precompute k vectors
-        call PrecomputeValidReciprocalVectors()
+        call precompute_valid_reciprocal_vectors()
 
         ! Log the Ewald parameters and settings for
         ! reproducibility and debugging
@@ -209,8 +209,8 @@ contains
 
                     if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
                 
-                    k_squared = NormalizedKSquared(kx_idx, ky_idx, kz_idx, ewald%kmax)
-                    if (CheckValidReciprocalVector(k_squared)) then
+                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%kmax)
+                    if (check_valid_reciprocal_vector(k_squared)) then
                         count = count + 1
                     end if
                 

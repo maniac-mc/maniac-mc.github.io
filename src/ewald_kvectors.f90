@@ -1,18 +1,9 @@
 module ewald_kvectors
 
     !----------------------------------------------------------------------
-    ! Module: ewald_kvectors
-    !
-    ! Purpose:
-    !   Provides routines to precompute all reciprocal lattice vectors
-    !   and associated quantities for the reciprocal-space part of the
-    !   Ewald summation method.
-    !
-    ! Features:
-    !   - Precompute valid k-vectors and their squared magnitudes.
-    !   - Precompute multiplicative form factors for symmetry.
-    !   - Precompute reciprocal-space weighting constants W(k).
-    !   - Avoid repeated loops over k-space during energy computations.
+    ! Provides routines to precompute all reciprocal lattice vectors
+    ! and associated quantities for the reciprocal-space part of the
+    ! Ewald summation method.
     !----------------------------------------------------------------------
 
     use simulation_state
@@ -23,27 +14,16 @@ module ewald_kvectors
 
     implicit none
 
+    private :: compute_cartesian_k_squared, compute_symmetry_form_factor
+
 contains
 
     !-------------------------------------------------------------------
-    ! PrecomputeValidReciprocalVectors
-    !
-    ! Purpose:
-    !   Generates all valid reciprocal lattice vectors for the system
-    !   and stores them in ewald%kvectors. Also precomputes the normalized
-    !   squared magnitude (k^2) and Cartesian squared magnitude.
-    !
-    ! Description:
-    !   Loops over all possible kx, ky, kz indices within the specified
-    !   kmax bounds and stores only valid vectors:
-    !     - k ≠ 0 (to avoid singularity)
-    !     - k within normalized cutoff sphere
-    !   Also precomputes the symmetry form factor for each vector:
-    !     1 for zero index, 2 for non-zero.
+    ! Generates all valid reciprocal lattice vectors for the system
+    ! and stores them in ewald%kvectors. Also precomputes the normalized
+    ! squared magnitude (k^2) and Cartesian squared magnitude.
     !-------------------------------------------------------------------
-    subroutine PrecomputeValidReciprocalVectors()
-
-        implicit none
+    subroutine precompute_valid_reciprocal_vectors()
 
         integer :: kx_idx, ky_idx, kz_idx   ! Loop indices for each k-component
         integer :: count                    ! Counter for valid k-vectors
@@ -63,12 +43,12 @@ contains
                     if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
 
                     ! Compute normalized k^2 again
-                    k_squared = NormalizedKSquared(kx_idx, ky_idx, kz_idx, ewald%kmax)
+                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%kmax)
 
                     ! Skip invalid k-vectors
-                    if (.not. CheckValidReciprocalVector(k_squared)) cycle
+                    if (.not. check_valid_reciprocal_vector(k_squared)) cycle
 
-                    k_squared_mag = ComputeCartesianKSquared(kx_idx, ky_idx, kz_idx, kvec_matrix)
+                    k_squared_mag = compute_cartesian_k_squared(kx_idx, ky_idx, kz_idx, kvec_matrix)
 
                     ! Increment counter and store k-vector components
                     count = count + 1
@@ -79,30 +59,18 @@ contains
                     ewald%kvectors(count)%k_squared_mag = k_squared_mag
 
                     ! Precompute form factor for current kx index: 1 for zero, 2 otherwise
-                    ewald%form_factor(count) = ComputeSymmetryFormFactor(kx_idx)
+                    ewald%form_factor(count) = compute_symmetry_form_factor(kx_idx)
                 end do
             end do
         end do
 
-    end subroutine PrecomputeValidReciprocalVectors
+    end subroutine precompute_valid_reciprocal_vectors
 
     !-------------------------------------------------------------------
-    ! NormalizedKSquared
-    !
-    ! Purpose:
-    !   Computes the squared magnitude of a k-vector in normalized index space.
-    !
-    ! Formula:
+    !   Computes the squared magnitude of a k-vector in normalized index space:
     !   k^2_normalized = (kx/kmax_x)^2 + (ky/kmax_y)^2 + (kz/kmax_z)^2
-    !
-    ! Input:
-    !   kx, ky, kz : integer indices of the reciprocal lattice vector
-    !   kmax(3)    : maximum k-indices along each axis
-    !
-    ! Output:
-    !   k_squared  : normalized squared magnitude
     !-------------------------------------------------------------------
-    pure function NormalizedKSquared(kx, ky, kz, kmax) result(k_squared)
+    pure function normalized_K_squared(kx, ky, kz, kmax) result(k_squared)
 
         ! Input arguments
         integer, intent(in) :: kx, ky, kz
@@ -116,59 +84,17 @@ contains
                     (dble(ky)/dble(kmax(2)))**2 + &
                     (dble(kz)/dble(kmax(3)))**2
 
-    end function NormalizedKSquared
+    end function normalized_K_squared
 
     !-------------------------------------------------------------------
-    ! ComputeCartesianKSquared
-    !
-    ! Purpose:
-    !   Computes the squared magnitude of a reciprocal lattice vector
-    !   in Cartesian space using the reciprocal lattice vectors.
-    !
-    ! Input:
-    !   kx, ky, kz   : integer lattice indices
-    !   kvec_matrix  : 3x3 matrix of reciprocal lattice vectors (columns)
-    !
-    ! Output:
-    !   k2_mag       : squared magnitude |k|^2 in Cartesian units
+    ! Returns the multiplicative symmetry factor for a k-index along one axis.
+    ! 1 for zero index, 2 for non-zero.
     !-------------------------------------------------------------------
-    pure function ComputeCartesianKSquared(kx, ky, kz, kvec_matrix) result(k2_mag)
-
-        ! Input arguments
-        integer, intent(in) :: kx, ky, kz
-        real(real64), intent(in) :: kvec_matrix(3,3)
-        ! Output argument
-        real(real64) :: k2_mag
-        ! Local argument
-        real(real64) :: kvec(3)
-
-        ! Build the 3D k-vector
-        kvec = dble(kx) * kvec_matrix(:,1) + &
-               dble(ky) * kvec_matrix(:,2) + &
-               dble(kz) * kvec_matrix(:,3)
-
-        ! Return squared magnitude
-        k2_mag = dot_product(kvec, kvec)
-
-    end function ComputeCartesianKSquared
-
-    !-------------------------------------------------------------------
-    ! ComputeSymmetryFormFactor
-    !
-    ! Purpose:
-    !   Returns the multiplicative symmetry factor for a k-index along one axis.
-    !   1 for zero index, 2 for non-zero.
-    !
-    ! Input:
-    !   idx : integer index along an axis
-    !
-    ! Output:
-    !   factor : multiplicative form factor
-    !-------------------------------------------------------------------
-    pure function ComputeSymmetryFormFactor(idx) result(factor)
+    pure function compute_symmetry_form_factor(idx) result(factor)
 
         ! Input arguments
         integer, intent(in) :: idx
+
         ! Output argument
         real(real64) :: factor
 
@@ -178,29 +104,17 @@ contains
             factor = two
         end if
 
-    end function ComputeSymmetryFormFactor
+    end function compute_symmetry_form_factor
 
     !-------------------------------------------------------------------
-    ! CheckValidReciprocalVector
-    !
-    ! Purpose:
-    !   Determines whether a normalized k-vector is valid for inclusion
-    !   in the reciprocal-space Ewald summation.
-    !
-    ! Criteria:
-    !   - Reject near-zero vectors (to avoid division by zero)
-    !   - Exclude vectors outside the normalized unit sphere (k^2 > 1)
-    !
-    ! Input:
-    !   k_squared : normalized squared magnitude
-    !
-    ! Output:
-    !   valid     : .true. if vector is valid
+    ! Determines whether a normalized k-vector is valid for inclusion
+    ! in the reciprocal-space Ewald summation.
     !-------------------------------------------------------------------
-    pure function CheckValidReciprocalVector(k_squared) result(valid)
+    pure function check_valid_reciprocal_vector(k_squared) result(valid)
 
         ! Input arguments
         real(real64), intent(in) :: k_squared
+
         ! Output argument
         logical :: valid
 
@@ -208,24 +122,14 @@ contains
         ! and any vectors outside the normalized unit sphere.
         valid = (abs(k_squared) >= error) .and. (k_squared <= one)
 
-    end function CheckValidReciprocalVector
+    end function check_valid_reciprocal_vector
 
     !-------------------------------------------------------------------
-    ! ComputeReciprocalWeights
-    !
-    ! Purpose:
-    !   Precomputes reciprocal-space weighting factors W(k) for the
-    !   Ewald sum, using the standard formula:
-    !
-    !       W(k) = exp(-|k|^2 / (4 * alpha^2)) / |k|^2
-    !
-    ! Description:
-    !   Loops over all precomputed k-vectors and stores W(k) in
-    !   ewald%recip_constants. This avoids recomputation during energy sums.
+    ! Precomputes reciprocal-space weighting factors W(k) for the
+    ! Ewald sum, using the standard formula:
+    !   W(k) = exp(-|k|^2 / (4 * alpha^2)) / |k|^2
     !-------------------------------------------------------------------
-    subroutine ComputeReciprocalWeights()
-
-        implicit none
+    subroutine compute_reciprocal_weights()
 
         ! Local variables
         integer :: idx                  ! Loop index over precomputed k-vectors
@@ -244,6 +148,32 @@ contains
 
         end do
 
-    end subroutine ComputeReciprocalWeights
+    end subroutine compute_reciprocal_weights
+
+    !-------------------------------------------------------------------
+    ! Computes the squared magnitude of a reciprocal lattice vector
+    ! in Cartesian space using the reciprocal lattice vectors.
+    !-------------------------------------------------------------------
+    pure function compute_cartesian_k_squared(kx, ky, kz, kvec_matrix) result(k2_mag)
+
+        ! Input arguments
+        integer, intent(in) :: kx, ky, kz
+        real(real64), intent(in) :: kvec_matrix(3,3)
+
+        ! Output argument
+        real(real64) :: k2_mag
+
+        ! Local variable
+        real(real64) :: kvec(3)
+
+        ! Build the 3D k-vector
+        kvec = dble(kx) * kvec_matrix(:,1) + &
+               dble(ky) * kvec_matrix(:,2) + &
+               dble(kz) * kvec_matrix(:,3)
+
+        ! Return squared magnitude
+        k2_mag = dot_product(kvec, kvec)
+
+    end function compute_cartesian_k_squared
 
 end module ewald_kvectors

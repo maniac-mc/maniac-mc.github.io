@@ -351,10 +351,10 @@ contains
             ! Note: In creation scenario, compute all energy components
 
             call single_mol_fourier_terms(residue_type, molecule_index)
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb, is_creation = creation_flag)
+            call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb, is_creation = creation_flag)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
-            call ComputeEwaldSelfInteractionSingleMol(residue_type, new%ewald_self)
-            call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, new%intra_coulomb)
+            call compute_ewald_self_interaction_single_mol(residue_type, new%ewald_self)
+            call compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, new%intra_coulomb)
         
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
@@ -368,7 +368,7 @@ contains
             new%coulomb = 0
             new%ewald_self = 0
             new%intra_coulomb = 0
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb, is_creation = deletion_flag)
+            call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb, is_creation = deletion_flag)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
@@ -379,7 +379,7 @@ contains
             ! recompute reciprocal and pairwise interactions
 
             call single_mol_fourier_terms(residue_type, molecule_index)
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb)
+            call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
 
             ! Recalculate total energy
@@ -416,7 +416,7 @@ contains
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -424,10 +424,10 @@ contains
         else if (deletion_flag) then
 
             ! Note: In deletion scenario, compute all energy components
-            call ComputeEwaldSelfInteractionSingleMol(residue_type, old%ewald_self)
-            call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type, molecule_index, old%intra_coulomb)
+            call compute_ewald_self_interaction_single_mol(residue_type, old%ewald_self)
+            call compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, old%intra_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -436,7 +436,7 @@ contains
 
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
-            call ComputeRecipEnergySingleMol(residue_type, molecule_index, old%recip_coulomb)
+            call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
 
             ! Recalculate total energy
