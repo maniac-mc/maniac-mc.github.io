@@ -1,14 +1,10 @@
 module molecule_creation
 
     !===========================================================================
-    ! Module: molecule_creation
-    !
-    ! Purpose:
-    !   Implements Monte Carlo creation (insertion) moves for molecules in a
-    !   simulation box. Handles inserting molecules, updating energies,
-    !   Fourier terms, and optionally removing molecules from a reservoir.
-    !
-    !======
+    ! Implements Monte Carlo creation (insertion) moves for molecules in a
+    ! simulation box. Handles inserting molecules, updating energies,
+    ! Fourier terms, and optionally removing molecules from a reservoir.
+    !===========================================================================
 
     use monte_carlo_utils
     use ewald_kvectors
@@ -23,24 +19,17 @@ module molecule_creation
 
     implicit none
 
-    private ! Hide everything by default
-    public :: CreateMolecule  ! Only expose the main entry point
+    private :: accept_creation_move
 
 contains
 
     !---------------------------------------------------------------------------
-    ! Subroutine: CreateMolecule
-    !
-    ! Purpose:
-    !   Attempts to insert a new molecule of a given residue type at a random
-    !   position and orientation inside the simulation box. Computes energy
-    !   changes, applies the Metropolis criterion, and either accepts or
-    !   rejects the creation.
-    !
+    ! Attempts to insert a new molecule of a given residue type at a random
+    ! position and orientation inside the simulation box. Computes energy
+    ! changes, applies the Metropolis criterion, and either accepts or
+    ! rejects the creation.
     !---------------------------------------------------------------------------
-    subroutine CreateMolecule(residue_type, molecule_index)
-
-        implicit none
+    subroutine attempt_creation_move(residue_type, molecule_index)
 
         ! Input arguments
         integer, intent(in) :: residue_type     ! Residue type to be moved
@@ -49,7 +38,6 @@ contains
         ! Local variables
         integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability             ! Acceptance probability of creation move
-        logical :: is_creation                  ! Flag indicating creation
 
         call check_molecule_index(molecule_index)
 
@@ -57,8 +45,7 @@ contains
         counter%trial_creations = counter%trial_creations + 1
 
         ! Compute old energy
-        is_creation = .true.
-        call compute_old_energy(residue_type, molecule_index, is_creation = is_creation)
+        call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
         primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
@@ -71,36 +58,31 @@ contains
         call insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
 
         ! Compute new energy
-        call compute_new_energy(residue_type, molecule_index, is_creation = is_creation)
+        call compute_new_energy(residue_type, molecule_index, is_creation = .true.)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_CREATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
-            call AcceptCreationMove(residue_type, rand_mol_index, old, new)
+            call accept_creation_move(residue_type, rand_mol_index)
         else ! Reject move
             call reject_creation_move(residue_type, molecule_index)
         end if
 
-    end subroutine CreateMolecule
+    end subroutine attempt_creation_move
 
     !---------------------------------------------------------------------------
-    ! Subroutine: AcceptCreationMove
-    !
-    ! Purpose:
-    !   Updates system energies and counters when a creation move is accepted.
-    !   Optionally removes the inserted molecule from the reservoir.
-    !
+    ! Updates system energies and counters when a creation move is accepted.
+    ! Optionally removes the inserted molecule from the reservoir.
     !---------------------------------------------------------------------------
-    subroutine AcceptCreationMove(residue_type, rand_mol_index, old, new)
+    subroutine accept_creation_move(residue_type, rand_mol_index)
 
-        implicit none
-
+        ! Input parameters
         integer, intent(in) :: residue_type     ! Residue type to be moved
-        integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
-        type(energy_state), intent(in) :: old   ! Previous energy states
-        type(energy_state), intent(in) :: new   ! New energy states
+        integer, intent(in) :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
+
+        ! Local variable
         integer :: last_molecule_index          ! Index of the last molecule in the reservoir (used when removing a molecule)
 
         ! Update total energies
@@ -128,6 +110,6 @@ contains
 
         end if
 
-    end subroutine AcceptCreationMove
+    end subroutine accept_creation_move
 
 end module molecule_creation

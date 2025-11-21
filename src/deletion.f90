@@ -1,15 +1,10 @@
 module molecule_deletion
 
     !===========================================================================
-    ! Module: molecule_deletion
-    !
-    ! Purpose:
-    !   Implements Monte Carlo deletion moves for molecules in a simulation
-    !   box. Handles removal of molecules, updating of energies, Fourier terms,
-    !   and optional placement into a reservoir.
-    !
+    ! Implements Monte Carlo deletion moves for molecules in a simulation
+    ! box. Handles removal of molecules, updating of energies, Fourier terms,
+    ! and optional placement into a reservoir.
     !===========================================================================
-
 
     use monte_carlo_utils
     use simulation_state
@@ -24,32 +19,25 @@ module molecule_deletion
 
     implicit none
 
-    private                    ! Hide everything by default
-    public :: DeleteMolecule   ! Only expose the main entry point
+    private
+    public :: attempt_deletion_move
 
 contains
 
     !---------------------------------------------------------------------------
-    ! Subroutine: DeleteMolecule
-    !
-    ! Purpose:
-    !   Attempts to remove a molecule of a given residue type from the simulation
-    !   box. Computes energy changes, applies the Metropolis criterion, and
-    !   either accepts or rejects the deletion.
-    !
+    ! Attempts to remove a molecule of a given residue type from the simulation
+    ! box. Computes energy changes, applies the Metropolis criterion, and
+    ! either accepts or rejects the deletion.
     !---------------------------------------------------------------------------
-    subroutine DeleteMolecule(residue_type, molecule_index)
-
-        implicit none
+    subroutine attempt_deletion_move(residue_type, molecule_index)
 
         ! Input arguments
         integer, intent(in) :: residue_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Local variables
-        real(real64) :: probability ! Acceptance probability of creation move
-        integer :: last_molecule_index ! Index of the last molecule in the primary box
-        logical :: is_deletion                  ! Flag indicating creation
+        real(real64) :: probability             ! Acceptance probability of deletion move
+        integer :: last_molecule_index          ! Index of the last molecule in the primary box
 
         ! Return immediately if no molecules of type residue_type exist
         if (primary%num_residues(residue_type)==0) return
@@ -58,46 +46,39 @@ contains
         counter%trial_deletions = counter%trial_deletions + 1
 
         ! Energy of the previous configuration
-        is_deletion = .true.
-        call compute_old_energy(residue_type, molecule_index, is_deletion = is_deletion)
+        call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
         call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
 
         ! Record the index of the last molecule
         last_molecule_index = primary%num_residues(residue_type)
 
         ! Delete molecule
-        call RemoveMolecule(residue_type, molecule_index, last_molecule_index)
+        call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         ! Update molecule and atom counts
         primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
         primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
 
         ! Calculate new energy
-        call compute_new_energy(residue_type, molecule_index, is_deletion = is_deletion)
+        call compute_new_energy(residue_type, molecule_index, is_deletion = .true.)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, residue_type, TYPE_DELETION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
-            call AcceptDeletionMove(residue_type, last_molecule_index, old, new)
+            call accept_deletion_move(residue_type, last_molecule_index)
         else ! Reject move
-            call RejectDeletionMove(residue_type, molecule_index, res%mol_com_old, res%site_offset_old)
+            call reject_deletion_move(residue_type, molecule_index, res%mol_com_old, res%site_offset_old)
         end if
 
-    end subroutine DeleteMolecule
+    end subroutine attempt_deletion_move
 
     !---------------------------------------------------------------------------
-    ! Subroutine: RemoveMolecule
-    !
-    ! Purpose:
-    !   Physically removes a molecule from the simulation box by replacing it
-    !   with the last molecule in the array and updating Fourier terms.
-    !
+    ! Physically removes a molecule from the simulation box by replacing it
+    ! with the last molecule in the array and updating Fourier terms.
     !---------------------------------------------------------------------------
-    subroutine RemoveMolecule(residue_type, molecule_index, last_molecule_index)
-
-        implicit none
+    subroutine remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         integer, intent(in) :: residue_type      ! Residue type to remove
         integer, intent(in) :: molecule_index    ! Molecule index to remove
@@ -112,24 +93,19 @@ contains
         ! Replace Fourier terms
         call ReplaceFourierTermsSingleMol(residue_type, molecule_index, last_molecule_index)
 
-    end subroutine RemoveMolecule
+    end subroutine remove_molecule
 
     !---------------------------------------------------------------------------
-    ! Subroutine: AcceptDeletionMove
-    !
-    ! Purpose:
-    !   Updates system energy and counters when a deletion move is accepted.
-    !   Optionally adds the molecule to a reservoir if one exists.
-    !
+    ! Updates system energy and counters when a deletion move is accepted.
+    ! Optionally adds the molecule to a reservoir if one exists.
     !---------------------------------------------------------------------------
-    subroutine AcceptDeletionMove(residue_type, last_molecule_index, old, new)
+    subroutine accept_deletion_move(residue_type, last_molecule_index)
 
-        implicit none
-
+        ! Input parameters
         integer, intent(in) :: residue_type         ! Residue type to be moved
         integer, intent(in) :: last_molecule_index  ! Index of the last molecule in the reservoir
-        type(energy_state), intent(in) :: old       ! Previous energy states
-        type(energy_state), intent(in) :: new       ! New energy states
+
+        ! Local variable
         real(real64) :: trial_pos(3)                ! Random numbers for initial molecule position in the box
 
         ! Update total energies
@@ -164,24 +140,19 @@ contains
 
         end if
 
-    end subroutine AcceptDeletionMove
+    end subroutine accept_deletion_move
 
     !---------------------------------------------------------------------------
-    ! Subroutine: RejectDeletionMove
-    !
-    ! Purpose:
-    !   Restores molecule positions, orientations, counts, and Fourier states
-    !   when a deletion move is rejected.
-    !
+    ! Restores molecule positions, orientations, counts, and Fourier states
+    ! when a deletion move is rejected.
     !---------------------------------------------------------------------------
-    subroutine RejectDeletionMove(residue_type, molecule_index, mol_com_old, site_offset_old)
+    subroutine reject_deletion_move(residue_type, molecule_index, mol_com_old, site_offset_old)
 
-        implicit none
-
-        integer, intent(in) :: residue_type     ! Residue type to be moved
-        integer, intent(in) :: molecule_index   ! Molecule ID
-        real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
-        real(real64), dimension(:, :) :: site_offset_old
+        ! Input parameters
+        integer, intent(in) :: residue_type         ! Residue type to be moved
+        integer, intent(in) :: molecule_index       ! Molecule ID
+        real(real64), dimension(3) :: mol_com_old   ! For storing old molecule center-of-mass
+        real(real64), dimension(:, :) :: site_offset_old ! For storing old molecule offset
 
         ! Restore previous residue/atom numbers
         primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
@@ -193,8 +164,8 @@ contains
             site_offset_old(:, 1:nb%atom_in_residue(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)
-        call RestoreSingleMolFourier(residue_type, molecule_index)
+        call restore_single_mol_fourier(residue_type, molecule_index)
 
-    end subroutine RejectDeletionMove
+    end subroutine reject_deletion_move
 
 end module molecule_deletion

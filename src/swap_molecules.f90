@@ -1,15 +1,11 @@
 module molecule_swap
 
     !===========================================================================
-    ! Module: molecule_swap
-    !
-    ! Purpose:
-    !   Implements Monte Carlo identity–swap (transmutation) moves between 
-    !   different molecular residue types. A selected molecule of type A is 
-    !   converted into a molecule of type B while preserving its center-of-mass 
-    !   position.
-    !
-    !======
+    ! Implements Monte Carlo identity–swap (transmutation) moves between 
+    ! different molecular residue types. A selected molecule of type A is 
+    ! converted into a molecule of type B while preserving its center-of-mass 
+    ! position.
+    !===========================================================================
 
     use monte_carlo_utils
     use ewald_kvectors
@@ -133,7 +129,7 @@ contains
             site_offset_old(:, 1:nb%atom_in_residue(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
-        call RestoreSingleMolFourier(residue_type, molecule_index)
+        call restore_single_mol_fourier(residue_type, molecule_index)
 
     end subroutine RejectSwapMove
 

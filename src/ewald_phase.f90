@@ -147,13 +147,13 @@ contains
     end subroutine save_single_mol_fourier_terms
 
     !--------------------------------------------------------------------
-    ! RestoreSingleMolFourier
+    ! restore_single_mol_fourier
     !
     ! Purpose:
     !   Restores previously saved Fourier-space phase factors and reciprocal
     !   amplitudes for a molecule or residue after a rejected move.
     !--------------------------------------------------------------------
-    subroutine RestoreSingleMolFourier(residue_type, molecule_index)
+    subroutine restore_single_mol_fourier(residue_type, molecule_index)
 
         implicit none
 
@@ -204,7 +204,7 @@ contains
             ewald%recip_amplitude(idx) = ewald%recip_amplitude_old(idx)
         end do
 
-    end subroutine RestoreSingleMolFourier
+    end subroutine restore_single_mol_fourier
 
     !--------------------------------------------------------------------
     ! ReplaceFourierTermsSingleMol

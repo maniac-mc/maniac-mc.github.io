@@ -524,7 +524,7 @@ contains
         end if
 
         ! Restore Fourier states
-        call RestoreSingleMolFourier(res_type, mol_index)
+        call restore_single_mol_fourier(res_type, mol_index)
 
     end subroutine reject_molecule_move
 
@@ -596,7 +596,7 @@ contains
         primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
-        call RestoreSingleMolFourier(residue_type, molecule_index)
+        call restore_single_mol_fourier(residue_type, molecule_index)
 
     end subroutine reject_creation_move
 

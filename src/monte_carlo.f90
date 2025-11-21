@@ -74,12 +74,12 @@ contains
 
                             ! Attempt to create a molecule of species residue_type
                             molecule_index = primary%num_residues(residue_type) + 1
-                            call CreateMolecule(residue_type, molecule_index)
+                            call attempt_creation_move(residue_type, molecule_index)
 
                         else
 
                             ! Attempt to delete a randomly chosen molecule of species residue_type
-                            call DeleteMolecule(residue_type, molecule_index)
+                            call attempt_deletion_move(residue_type, molecule_index)
 
                         end if
 
