@@ -350,7 +350,7 @@ contains
         
             ! Note: In creation scenario, compute all energy components
 
-            call SingleMolFourierTerms(residue_type, molecule_index)
+            call single_mol_fourier_terms(residue_type, molecule_index)
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb, is_creation = creation_flag)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
             call ComputeEwaldSelfInteractionSingleMol(residue_type, new%ewald_self)
@@ -378,7 +378,7 @@ contains
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
 
-            call SingleMolFourierTerms(residue_type, molecule_index)
+            call single_mol_fourier_terms(residue_type, molecule_index)
             call ComputeRecipEnergySingleMol(residue_type, molecule_index, new%recip_coulomb)
             call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
 
@@ -673,7 +673,7 @@ contains
             primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
         ! Replace Fourier terms
-        call ReplaceFourierTermsSingleMol(residue_type, molecule_index, last_molecule_index)
+        call replace_fourier_terms_single_mol(residue_type, molecule_index, last_molecule_index)
 
     end subroutine remove_molecule
 

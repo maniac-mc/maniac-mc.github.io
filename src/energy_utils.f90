@@ -295,7 +295,7 @@ contains
 
         ! Step 2: Build Fourier terms e^(i·k·r) for every atom inthe system.
         ! This avoids recomputing expensive exponentials during the k-sum.
-        call ComputeAllFourierTerms()
+        call compute_all_fourier_terms()
 
         ! Step 3: Compute reciprocal-space electrostatic energy using the structure
         ! factors and the precomputed reciprocal weighting coefficients.

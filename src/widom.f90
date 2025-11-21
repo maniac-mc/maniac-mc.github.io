@@ -20,7 +20,7 @@ module widom
 
     implicit none
 
-    private :: accumulate_widom_weight ! Internal helper, not part of public API
+    private :: accumulate_widom_weight
 
 contains
 
