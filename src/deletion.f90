@@ -19,9 +19,6 @@ module molecule_deletion
 
     implicit none
 
-    private
-    public :: attempt_deletion_move
-
 contains
 
     !---------------------------------------------------------------------------

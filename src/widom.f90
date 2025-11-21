@@ -20,8 +20,6 @@ module widom
 
     implicit none
 
-    private :: accumulate_widom_weight
-
 contains
 
     !---------------------------------------------------------------------------

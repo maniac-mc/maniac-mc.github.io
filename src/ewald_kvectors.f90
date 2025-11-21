@@ -14,8 +14,6 @@ module ewald_kvectors
 
     implicit none
 
-    private :: compute_cartesian_k_squared, compute_symmetry_form_factor
-
 contains
 
     !-------------------------------------------------------------------

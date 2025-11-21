@@ -9,9 +9,6 @@ module prepare_utils
 
     implicit none
 
-    private
-    public :: prepare_simulation_parameters
-
 contains
 
     !-----------------------------------------------------------

@@ -8,8 +8,6 @@ module ewald_energy
 
     implicit none
 
-    private :: compute_recip_amplitude
-
 contains
 
     !--------------------------------------------------------------------

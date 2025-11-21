@@ -7,9 +7,7 @@ module ewald_phase
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
-
-    private :: compute_atom_phase, compute_phase_factor
-
+    
 contains
 
     !--------------------------------------------------------------------

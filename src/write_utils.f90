@@ -8,9 +8,6 @@ module write_utils
 
     implicit none
 
-    private
-    public :: update_output_files
-
 contains
 
     !------------------------------------------------------------------------------

@@ -17,38 +17,29 @@ contains
     !------------------------------------------------------------------------------
     ! Compute the total energy of the system
     !------------------------------------------------------------------------------
-    subroutine ComputeSystemEnergy(box)
+    subroutine compute_system_energy(box)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
 
         ! Compute each energy components
-        call ComputePairwiseEnergy(box)
+        call compute_pairwise_energy(box)
         call ComputeEwaldSelf()
         call ComputeEwaldRecip()
-        call ComputeTotalIntraResidueCoulombEnergy()
+        call compute_total_intra_residue_coulomb_energy()
 
         ! Calculate total energy
         energy%total = energy%recip_coulomb + energy%non_coulomb + energy%coulomb + &
             energy%ewald_self + energy%intra_coulomb ! In kcal/mol
 
-    end subroutine ComputeSystemEnergy
+    end subroutine compute_system_energy
 
     !------------------------------------------------------------------------------
-    ! Subroutine: ComputeTotalIntraResidueCoulombEnergy
-    !
-    ! Purpose:
-    !   Loops over all active residue types and their molecules, computes the
-    !   intra-residue Coulomb energy for each molecule, and accumulates it into
-    !   the total intra-residue energy in the simulation.
-    !
-    ! Mathematical expression:
-    !   E_intra_total = Σ_{residues} Σ_{molecules} E_intra(molecule)
-    !   where E_intra(molecule) is computed by
-    !     compute_intra_residue_real_coulomb_energy_single_mol
+    ! Loops over all active residue types and their molecules, computes the
+    ! intra-residue Coulomb energy for each molecule, and accumulates it into
+    ! the total intra-residue energy in the simulation.
     !------------------------------------------------------------------------------
-
-    subroutine ComputeTotalIntraResidueCoulombEnergy()
+    subroutine compute_total_intra_residue_coulomb_energy()
 
         ! Local variables
         integer :: residue_type_1
@@ -79,9 +70,9 @@ contains
 
         end do
 
-    end subroutine ComputeTotalIntraResidueCoulombEnergy
+    end subroutine compute_total_intra_residue_coulomb_energy
 
-    subroutine ComputePairwiseEnergy(box)
+    subroutine compute_pairwise_energy(box)
 
         ! Input arguments
         type(type_box), intent(inout) :: box    ! Box (reservoir or primary)
@@ -102,7 +93,7 @@ contains
             do molecule_index_1 = 1, box%num_residues(residue_type_1)
 
                 ! Compute the energy for residue_1, molecule_1
-                call SingleMolPairwiseEnergy(box, residue_type_1, &
+                call single_mol_pairwise_energy(box, residue_type_1, &
                     molecule_index_1, e_non_coulomb, e_coulomb)
 
                 ! Add residue_1, molecule_1 energy to the total pairwise energy
@@ -112,12 +103,12 @@ contains
             end do
         end do
 
-    end subroutine ComputePairwiseEnergy
+    end subroutine compute_pairwise_energy
 
     !------------------------------------------------------------------------------
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
-    subroutine SingleMolPairwiseEnergy(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
+    subroutine single_mol_pairwise_energy(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -181,7 +172,7 @@ contains
         ! Re-scale energy
         e_coulomb = e_coulomb * EPS0_INV_real   ! In kcal/mol
 
-    end subroutine SingleMolPairwiseEnergy
+    end subroutine single_mol_pairwise_energy
 
     !------------------------------------------------------------------------------
     ! Function to compute Lennard-Jones interaction energy

@@ -24,7 +24,7 @@ program MANIAC
     ! Step 3 : Simulation preparation
     call prepare_simulation_parameters()  ! Set up MC parameters, initial checks
     call PrecomputeTable()              ! Precompute tables for faster calculation
-    call ComputeSystemEnergy(primary)   ! Compute initial total energy
+    call compute_system_energy(primary)   ! Compute initial total energy
 
     ! Step 4 :Monte Carlo simulation
     call MonteCarloLoop()               ! Main MC loop
