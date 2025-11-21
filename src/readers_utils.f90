@@ -30,9 +30,9 @@ contains
         total_mass = 0.0_real64
 
         do iat = 1, nb_atoms
-            com_x = com_x + mass(i) * x(iat)
-            com_y = com_y + mass(i) * y(iat)
-            com_z = com_z + mass(i) * z(iat)
+            com_x = com_x + mass(iat) * x(iat)
+            com_y = com_y + mass(iat) * y(iat)
+            com_z = com_z + mass(iat) * z(iat)
             total_mass = total_mass + mass(iat)
         end do
 
@@ -65,7 +65,7 @@ contains
         total_mass = 0.0_real64
 
         do iat = 1, nb_atoms
-            total_mass = total_mass + mass(i)
+            total_mass = total_mass + mass(iat)
         end do
 
     end function compute_mass
