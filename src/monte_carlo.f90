@@ -36,7 +36,7 @@ contains
 
         ! 2. Initialization
         call LogStartMC()               ! Log starting message
-        call UpdateFiles(.false.)       ! Write initial topology
+        call update_output_files(.false.)       ! Write initial topology
 
         ! 3. Main Monte Carlo Loop
         do current_block = 1, input%nb_block        ! Loop over blocks
@@ -99,7 +99,7 @@ contains
             !----------------------------------------------
             call AdjustMoveStepSizes()          ! Adjust the Monte Carlo move step sizes based on recent acceptance ratios
             call PrintStatus()                  ! Print the current status of the simulation to the log, data, and trajectory files
-            call UpdateFiles(.true.)
+            call update_output_files(.true.)
 
         end do
 

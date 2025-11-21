@@ -1,4 +1,3 @@
-
 module write_utils
 
     use parameters
@@ -9,16 +8,39 @@ module write_utils
 
     implicit none
 
+    private
+    public :: update_output_files
+
 contains
 
-    subroutine WriteLAMMPSTRJ(box, lammpstrj_filename, append_mode)
+    !------------------------------------------------------------------------------
+    ! Updates all relevant output files for the current Monte Carlo step.
+    !------------------------------------------------------------------------------
+    subroutine update_output_files(later_step)
 
-        implicit none
+        logical, intent(in) :: later_step       ! Flag to distinguish first vs. later steps
+
+        ! Write LAMMPS trajectory (main and reservoir)
+        call write_dump_lammpstrj(primary, "trajectory.lammpstrj", later_step)
+        if (has_reservoir) call write_dump_lammpstrj(reservoir, "reservoir.lammpstrj", later_step)
+
+        ! Write energies and move counts to data file
+        call write_dat_info()
+
+        ! Write LAMMPS data file
+        call write_topology_data(primary)
+
+    end subroutine update_output_files
+
+    !------------------------------------------------------------------------------
+    ! Write trajectory in lammpstrj format (see https://docs.lammps.org for details)
+    !------------------------------------------------------------------------------
+    subroutine write_dump_lammpstrj(box, lammpstrj_filename, append_mode)
 
         ! Input parameters
-        logical, OPTIONAL :: append_mode    ! Flag to append to existing files
-        type(type_box), intent(inout) :: box
-        character(len=*), intent(in), optional :: lammpstrj_filename ! Output trajectory in lammpstrj format
+        type(type_box), intent(inout) :: box                            ! Type for box
+        character(len=*), intent(in), optional :: lammpstrj_filename    ! Output trajectory in lammpstrj format
+        logical, optional :: append_mode                                ! Flag to append to existing files
 
         ! Local variables
         integer :: i, j, k                      ! Loop indices over residue types, residues, and atoms
@@ -90,14 +112,12 @@ contains
 
         close(UNIT_LMP)
 
-    end subroutine WriteLAMMPSTRJ
+    end subroutine write_dump_lammpstrj
 
     !------------------------------------------------------------------------------
-    ! Central wrapper to write all simulation output files for the current block.
+    ! Write all simulation output files to .dat file for the current block.
     !------------------------------------------------------------------------------
-    subroutine WriteEnergyAndCount()
-
-        implicit none
+    subroutine write_dat_info()
 
         ! Local variables
         character(len=8) :: file_status
@@ -112,23 +132,21 @@ contains
             file_status = 'OLD'
         end if
 
-        call WriteEnergyData(current_block, file_status)
+        call write_dat_energy(current_block, file_status)
 
-        call WriteResidueCounts(current_block, file_status)
+        call write_dat_number(current_block, file_status)
 
-        call WriteMoves(current_block, file_status)
+        call write_dat_mcmove(current_block, file_status)
 
-        call WriteWidomData(current_block, file_status)
+        call write_dat_widom(current_block, file_status)
 
-    end subroutine WriteEnergyAndCount
+    end subroutine write_dat_info
 
     !------------------------------------------------------------------------------
     ! Write energy.dat. Outputs total energy, Coulomb, non-Coulomb,
     ! intramolecular, and Ewald contributions.
     !------------------------------------------------------------------------------
-    subroutine WriteEnergyData(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_energy(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -159,16 +177,14 @@ contains
         ! Close file
         close(UNIT_ENERGY)
 
-    end subroutine WriteEnergyData
+    end subroutine write_dat_energy
 
     !------------------------------------------------------------------------------
     ! Write widom_RESNAME.dat for active residues if Widom sampling is enabled.
     ! Outputs block number, excess chemical potential, total chemical potential,
     ! and number of Widom samples. Header written only for first block.
     !------------------------------------------------------------------------------
-    subroutine WriteWidomData(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_widom(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -218,15 +234,13 @@ contains
 
         end if
 
-    end subroutine WriteWidomData
+    end subroutine write_dat_widom
 
     !------------------------------------------------------------------------------
     ! Write number_RESNAME.dat for each active residue. Tracks block number
     ! and number of active molecules. Header is written only for the first block.
     !------------------------------------------------------------------------------
-    subroutine WriteResidueCounts(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_number(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -263,16 +277,14 @@ contains
 
         end do
 
-    end subroutine WriteResidueCounts
+    end subroutine write_dat_number
 
     !------------------------------------------------------------------------------
     ! Write moves_new.dat. Tracks move accuracies and trials for translation,
     ! rotation, creation/deletion, swap, and Widom moves. Header generated
     ! dynamically based on which move types are enabled.
     !------------------------------------------------------------------------------
-    subroutine WriteMoves(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_mcmove(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -384,9 +396,12 @@ contains
 
         close(UNIT_MOVES)
 
-    end subroutine WriteMoves
+    end subroutine write_dat_mcmove
 
-    subroutine WriteLAMMPSData(box)
+    !------------------------------------------------------------------------------
+    ! Write topology in LAMMPS data format (see https://docs.lammps.org for details)
+    !------------------------------------------------------------------------------
+    subroutine write_topology_data(box)
 
         implicit none
 
@@ -607,28 +622,6 @@ contains
 
         close(UNIT_DATA)
 
-    end subroutine WriteLAMMPSData
-
-    !------------------------------------------------------------------------------
-    ! subroutine UpdateFiles
-    ! Updates all relevant output files for the current Monte Carlo step.
-    !------------------------------------------------------------------------------
-    subroutine UpdateFiles(later_step)
-
-        implicit none
-
-        logical, intent(in) :: later_step  ! Flag to distinguish first vs. later steps
-
-        ! Write LAMMPS trajectory
-        call WriteLAMMPSTRJ(primary, "trajectory.lammpstrj", later_step)
-        if (has_reservoir) call WriteLAMMPSTRJ(reservoir, "reservoir.lammpstrj", later_step)
-
-        ! Write energies and move counts to data file
-        call WriteEnergyAndCount()
-
-        ! Write LAMMPS data file
-        call WriteLAMMPSData(primary)
-
-    end subroutine UpdateFiles
+    end subroutine write_topology_data
 
 end module write_utils
