@@ -6,8 +6,6 @@ module geometry_utils
 
     implicit none
 
-    private :: compute_cell_properties, determine_box_symmetry, log_geometry_parameters
-
 contains
 
     !-----------------------------------------------------------
