@@ -533,22 +533,33 @@ contains
     ! its atomic geometry. Can take geometry from a reservoir or apply
     ! a random rotation if no reservoir exists.
     !---------------------------------------------------------------------------
-    subroutine insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
+    subroutine insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index, place_random_com)
 
         ! Input arguments
         integer, intent(in) :: residue_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
         integer, intent(out), optional :: rand_mol_index ! Randomly selected molecule index from the reservoir
+        logical, intent(in), optional :: place_random_com ! To control if the COM must be picked
 
         ! Local variables
+        logical :: do_place_com                 ! Internal flag to control COM generation
         logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
         real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
         real(real64) :: trial_pos(3)            ! Random numbers for initial molecule position in the box
 
-        ! Generate a random position in the simulation box
-        call random_number(trial_pos) ! Random numbers in [0,1)
-        primary%mol_com(:, residue_type, molecule_index) = primary%bounds(:,1) &
-            + matmul(primary%matrix, trial_pos)
+        ! Decide whether to place a random COM
+        if (present(place_random_com)) then
+            do_place_com = place_random_com
+        else
+            do_place_com = .true. ! Default behavior
+        end if
+
+        ! Generate a random position in the simulation box (if enabled)
+        if (do_place_com) then
+            call random_number(trial_pos) ! Random numbers in [0,1)
+            primary%mol_com(:, residue_type, molecule_index) = primary%bounds(:,1) &
+                + matmul(primary%matrix, trial_pos)
+        end if
 
         ! Copy geometry from reservoir or rotate if no reservoir
         if (has_reservoir) then
@@ -644,5 +655,26 @@ contains
         end do
 
     end subroutine CalculateExcessMu
+
+    !---------------------------------------------------------------------------
+    ! Physically removes a molecule from the simulation box by replacing it
+    ! with the last molecule in the array and updating Fourier terms.
+    !---------------------------------------------------------------------------
+    subroutine remove_molecule(residue_type, molecule_index, last_molecule_index)
+
+        integer, intent(in) :: residue_type      ! Residue type to remove
+        integer, intent(in) :: molecule_index    ! Molecule index to remove
+        integer, intent(in):: last_molecule_index ! Index of the last molecule in the primary box
+
+        ! Replace with the last molecule
+        primary%mol_com(:, residue_type, molecule_index) = &
+            primary%mol_com(:, residue_type, last_molecule_index)
+        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+            primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+
+        ! Replace Fourier terms
+        call ReplaceFourierTermsSingleMol(residue_type, molecule_index, last_molecule_index)
+
+    end subroutine remove_molecule
 
 end module monte_carlo_utils

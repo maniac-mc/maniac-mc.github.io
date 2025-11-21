@@ -75,27 +75,6 @@ contains
     end subroutine attempt_deletion_move
 
     !---------------------------------------------------------------------------
-    ! Physically removes a molecule from the simulation box by replacing it
-    ! with the last molecule in the array and updating Fourier terms.
-    !---------------------------------------------------------------------------
-    subroutine remove_molecule(residue_type, molecule_index, last_molecule_index)
-
-        integer, intent(in) :: residue_type      ! Residue type to remove
-        integer, intent(in) :: molecule_index    ! Molecule index to remove
-        integer, intent(in):: last_molecule_index ! Index of the last molecule in the primary box
-
-        ! Replace with the last molecule
-        primary%mol_com(:, residue_type, molecule_index) = &
-            primary%mol_com(:, residue_type, last_molecule_index)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
-
-        ! Replace Fourier terms
-        call ReplaceFourierTermsSingleMol(residue_type, molecule_index, last_molecule_index)
-
-    end subroutine remove_molecule
-
-    !---------------------------------------------------------------------------
     ! Updates system energy and counters when a deletion move is accepted.
     ! Optionally adds the molecule to a reservoir if one exists.
     !---------------------------------------------------------------------------

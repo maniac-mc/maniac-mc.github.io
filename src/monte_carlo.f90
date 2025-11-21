@@ -62,7 +62,7 @@ contains
                 else if (random_draw <= proba%rotation+proba%translation+proba%swap) then
 
                     ! Case 3: Swap move
-                    call SwapMolecules(residue_type, molecule_index)
+                    call attempt_swap_move(residue_type, molecule_index)
 
                 else ! Insertion/deletion move or widom
 

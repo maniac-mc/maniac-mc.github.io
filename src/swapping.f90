@@ -21,17 +21,20 @@ module molecule_swap
     implicit none
 
     private ! Hide everything by default
-    public :: SwapMolecules  ! Only expose the main entry point
+    public :: attempt_swap_move  ! Only expose the main entry point
 
 contains
 
     !---------------------------------------------------------------------------
-    ! Subroutine: SwapMolecules
-    !
+    ! Attempts an identity-swap (transmutation) move between two molecular
+    ! residue types. A molecule of type 'residue_type' is deleted while a new
+    ! molecule of a different type is inserted at the same center-of-mass
+    ! position. The routine evaluates the old and new energies, constructs the
+    ! trial configuration, computes the Metropolis acceptance probability, and
+    ! finally accepts or rejects the swap while restoring or updating all state
+    ! variables accordingly.
     !---------------------------------------------------------------------------
-    subroutine SwapMolecules(residue_type, molecule_index)
-
-        implicit none
+    subroutine attempt_swap_move(residue_type, molecule_index)
 
         ! Input arguments
         integer, intent(in) :: residue_type     ! Residue type to be moved
@@ -43,11 +46,9 @@ contains
         integer :: rand_mol_index       ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability     ! Acceptance probability of creation move
         integer :: last_molecule_index  ! Index of the last molecule in the primary box
-        logical :: is_deletion          ! Flag indicating creation
-        logical :: is_creation          ! Flag indicating creation
 
         ! Pick randomly a second residue type
-        residue_type_bis = PickDifferentResidueType(residue_type)
+        residue_type_bis = pick_different_residue_type(residue_type)
 
         ! If no valid different residue type was found, skip this move
         if (residue_type_bis == -1) return
@@ -64,15 +65,14 @@ contains
         ! STEP 1 - Delete a molecule
 
         ! Energy of the previous configuration
-        is_deletion = .true.
-        call compute_old_energy(residue_type, molecule_index, is_deletion = is_deletion)
+        call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
         call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
 
         ! Record the index of the last molecule of type "residue_type"
         last_molecule_index = primary%num_residues(residue_type)
 
         ! Delete molecule
-        call RemoveMolecule(residue_type, molecule_index, last_molecule_index)
+        call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         ! Update molecule and atom counts
         primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
@@ -88,11 +88,10 @@ contains
         primary%mol_com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
 
         ! Generate or pick orientation for the new molecule
-        call OrientMolecule(residue_type_bis, molecule_index_bis, rand_mol_index)
+        call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_mol_index, place_random_com = .false.)
 
         ! Compute new energy
-        is_creation = .true.
-        call compute_new_energy(residue_type_bis, molecule_index_bis, is_creation = is_creation)
+        call compute_new_energy(residue_type_bis, molecule_index_bis, is_creation = .true.)
 
         ! STEP 3 - Accept or reject move
 
@@ -101,17 +100,22 @@ contains
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
-            call AcceptSwapMove(old, new)
+            call accept_swap_move()
         else ! Reject move
-            call RejectSwapMove(residue_type, molecule_index, residue_type_bis, res%mol_com_old, res%site_offset_old)
+            call reject_swap_move(residue_type, molecule_index, residue_type_bis, res%mol_com_old, res%site_offset_old)
         end if
 
-    end subroutine SwapMolecules
+    end subroutine attempt_swap_move
 
-    subroutine RejectSwapMove(residue_type, molecule_index, residue_type_bis, mol_com_old, site_offset_old)
+    !---------------------------------------------------------------------------
+    ! Restores the system to its state prior to a rejected swap move. The
+    ! subroutine reinstates the original residue and atom counts, restores the
+    ! molecule’s center-of-mass and internal geometry, and rebuilds the associated
+    ! Fourier (reciprocal-space) contributions.
+    !---------------------------------------------------------------------------
+    subroutine reject_swap_move(residue_type, molecule_index, residue_type_bis, mol_com_old, site_offset_old)
 
-        implicit none
-
+        ! Input parameters
         integer, intent(in) :: residue_type, residue_type_bis       ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
         real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
@@ -120,6 +124,7 @@ contains
         ! Restore previous residue/atom numbers
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
         primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
+
         primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type_bis)
         primary%num_residues(residue_type_bis) = primary%num_residues(residue_type_bis) - 1
 
@@ -131,14 +136,14 @@ contains
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
         call restore_single_mol_fourier(residue_type, molecule_index)
 
-    end subroutine RejectSwapMove
+    end subroutine reject_swap_move
 
-    subroutine AcceptSwapMove(old, new)
-
-        implicit none
-
-        type(energy_state), intent(in) :: old   ! Previous energy states
-        type(energy_state), intent(in) :: new   ! New energy states
+    !---------------------------------------------------------------------------
+    ! Commits an accepted swap move by updating global energy components with the
+    ! differences between the new and old configurations, and increments the
+    ! counter tracking successful identity–swap moves.
+    !---------------------------------------------------------------------------
+    subroutine accept_swap_move()
 
         energy%recip_coulomb    = new%recip_coulomb
         energy%non_coulomb      = energy%non_coulomb    + new%non_coulomb   - old%non_coulomb
@@ -150,23 +155,15 @@ contains
         ! Count successful move
         counter%swaps = counter%swaps + 1
 
-    end subroutine AcceptSwapMove
+    end subroutine accept_swap_move
 
     !---------------------------------------------------------------------------
-    ! Function: PickDifferentResidueType
-    !
-    ! Purpose:
-    !   Attempts to select a residue type different from 'current_type'. The
-    !   selection is made among the residue types marked as active in 
-    !   input%is_active. A maximum number of attempts is performed to avoid 
-    !   infinite loops.
-    !
-    ! Returns:
-    !   new_type  - A residue type different from current_type, or -1 on failure.
+    ! Attempts to select a residue type different from 'current_type'. The
+    ! selection is made among the residue types marked as active in 
+    ! input%is_active. A maximum number of attempts is performed to avoid 
+    ! infinite loops.
     !---------------------------------------------------------------------------
-    function PickDifferentResidueType(current_type, max_attempts) result(new_type)
-
-        implicit none
+    function pick_different_residue_type(current_type, max_attempts) result(new_type)
     
         ! Input arguments
         integer, intent(in) :: current_type        ! Original residue type to avoid
@@ -199,63 +196,6 @@ contains
         ! If all attempts failed, return failure code
         new_type = -1
 
-    end function PickDifferentResidueType
-
-    subroutine RemoveMolecule(residue_type, molecule_index, last_molecule_index)
-
-        implicit none
-
-        integer, intent(in) :: residue_type      ! Residue type to remove
-        integer, intent(in) :: molecule_index    ! Molecule index to remove
-        integer, intent(in):: last_molecule_index ! Index of the last molecule in the primary box
-
-        ! Replace with the last molecule
-        primary%mol_com(:, residue_type, molecule_index) = &
-            primary%mol_com(:, residue_type, last_molecule_index)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
-
-        ! Replace Fourier terms
-        call ReplaceFourierTermsSingleMol(residue_type, molecule_index, last_molecule_index)
-
-    end subroutine RemoveMolecule
-
-    subroutine OrientMolecule(residue_type, molecule_index, rand_mol_index)
-
-        implicit none
-
-        ! Input arguments
-        integer, intent(in) :: residue_type     ! Residue type to be moved
-        integer, intent(in) :: molecule_index   ! Molecule ID
-        integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
-
-        ! Local variables
-        logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
-        real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
-
-        ! Copy geometry from reservoir or rotate if no reservoir
-        if (has_reservoir) then
-
-            ! Pick a random (and existing) molecule in the reservoir
-            call random_number(random_nmb) ! generates random_nmb in [0,1)
-            rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1 ! random integer in [1, N]
-
-            ! Copy site offsets from the chosen molecule
-            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
-
-        else
-
-            ! Copy site offsets from the first molecule
-            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                primary%site_offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
-
-            ! Rotate the new molecule randomly (using full 360° rotation)
-            full_rotation = .True.
-            call ApplyRandomRotation(residue_type, molecule_index, full_rotation)
-
-        end if
-
-    end subroutine OrientMolecule
+    end function pick_different_residue_type
 
 end module molecule_swap
