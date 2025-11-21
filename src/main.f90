@@ -22,7 +22,7 @@ program MANIAC
     call ReadParameters()               ! Read simulation parameters (Lennard-Jones, etc.)
 
     ! Step 3 : Simulation preparation
-    call PrepareSimulationParameters()  ! Set up MC parameters, initial checks
+    call prepare_simulation_parameters()  ! Set up MC parameters, initial checks
     call PrecomputeTable()              ! Precompute tables for faster calculation
     call ComputeSystemEnergy(primary)   ! Compute initial total energy
 

@@ -9,226 +9,41 @@ module prepare_utils
 
     implicit none
 
+    private :: adjust_real_space_cutoff, allocate_array, log_ewald_parameters, compute_fourier_indices, setup_ewald, &
+        compute_ewald_parameters, clamp_tolerance, prepare_monte_carlo
+
 contains
 
     !-----------------------------------------------------------
-    ! Subroutine: PrepareSimulationParameters
-    ! Purpose: Convert fugacities to dimensionless activities and
-    !          initialize Ewald summation parameters for the simulation.
+    ! Convert fugacities to dimensionless activities and
+    ! initialize Ewald summation parameters for the simulation.
     !-----------------------------------------------------------
-    subroutine PrepareSimulationParameters()
-
-        implicit none
-
-        real(real64) :: mass                   ! Mass of residue
-        integer :: val_int                     ! Integer value read from input
+    subroutine prepare_simulation_parameters()
 
         ! Initialize Ewald summation parameters
         ! (cutoff, precision, reciprocal space, etc.)
-        call SetupEwald()
+        call setup_ewald()
 
         ! Allocate memory for arrays needed by the Ewald
         ! method (reciprocal vectors, coefficients, etc.)
-        call AllocateArray()
+        call allocate_array()
 
         ! Precompute k vectors
         call precompute_valid_reciprocal_vectors()
 
+        ! Some precalculations for Monte Carlo
+        call prepare_monte_carlo()
+
         ! Log the Ewald parameters and settings for
         ! reproducibility and debugging
-        call LogEwaldParameters()
+        call log_ewald_parameters()
 
-
-        ! ---------------------------------------
-        ! Some precalculations
-        ! ---------------------------------------
-
-        ! Compute inverse thermal energy β = 1/(k_B T)
-        ! Units: KB_kcalmol in kcal/(mol·K), T in K
-        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
-
-        do val_int = 1, nb%type_residue
-
-            if (input%is_active(val_int) == 0) cycle
-
-            if (input%fugacity(val_int) >= zero) then
-                input%chemical_potential(val_int) = log(input%fugacity(val_int)) / beta
-            end if
-
-            ! Compute thermal de Broglie wavelength λ for each active residue:
-            ! λ = h / sqrt(2 π m k_B T)
-            ! H_PLANCK in J s, mass in kg, KB in J/K, T in K
-            mass = res%mass(val_int) * G_TO_KG / NA ! Mass per residue (kg)
-            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * input%temperature) ! Thermal de Broglie wavelength
-            
-            ! Convert lambda to Å
-            res%lambda(val_int) = res%lambda(val_int) * M_TO_A
-
-        end do
-
-    end subroutine PrepareSimulationParameters
-
-    !-----------------------------------------------------------
-    ! Print Ewald information
-    !-----------------------------------------------------------
-    subroutine LogEwaldParameters()
-
-        implicit none
-
-        character(200) :: formatted_msg
-
-        write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', input%real_space_cutoff
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', input%ewald_tolerance
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%alpha
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%fourier_precision
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
-            ewald%kmax(1), ', ', ewald%kmax(2), ', ', ewald%kmax(3)
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%num_kvectors
-        call LogMessage(formatted_msg)
-
-    end subroutine LogEwaldParameters
-
-    !--------------------------------------------------------------------
-    ! Subroutine: SetupEwald
-    ! Initialize parameters for the Ewald summation method.
-    !--------------------------------------------------------------------
-    subroutine SetupEwald(verbose)
-
-        implicit none
-
-        ! Input parameters
-        logical, optional, intent(in) :: verbose   ! optional flag for logging
-        logical :: do_log                          ! Internal flag: whether to log messages in this routine
-
-        ! Default: log unless explicitly disabled
-        do_log = .true.; if (present(verbose)) do_log = verbose
-
-        ! Adjust cutoff if too large
-        call AdjustRealSpaceCutoff(do_log)
-
-        ! Clamp tolerance
-        call ClampTolerance()
-
-        ! Compute Ewald parameters
-        call ComputeEwaldParameters()
-
-        ! Compute Fourier indices
-        call ComputeFourierIndices()
-
-    end subroutine SetupEwald
-
-    !--------------------------------------------------------------------
-    ! Subroutine: AdjustRealSpaceCutoff
-    ! Purpose   : Ensure that the user-specified real-space cutoff fits
-    !             within the periodic simulation box. If it is too large,
-    !             reduce it to half the minimum box dimension.
-    !--------------------------------------------------------------------
-    subroutine AdjustRealSpaceCutoff(do_log)
-
-        logical, intent(in) :: do_log
-
-        character(200) :: msg           ! Buffer for logging
-        real(real64) :: safe_cutoff     ! Adjusted real-space cutoff length to fit inside the simulation box safely
-
-        if (input%real_space_cutoff > primary%metrics(1) &
-                .or. input%real_space_cutoff > primary%metrics(2) &
-                .or. input%real_space_cutoff > primary%metrics(3)) then
-
-            if (do_log) then
-                write(msg, '(A)') 'WARNING: real_space_cutoff too large for box. Reducing to safe value.'
-                call LogMessage(msg)
-            end if
-            
-            safe_cutoff = min(primary%metrics(1), primary%metrics(2), primary%metrics(3)) / two
-            input%real_space_cutoff = safe_cutoff
-        
-        end if
-    end subroutine AdjustRealSpaceCutoff
-
-    !--------------------------------------------------------------------
-    ! Subroutine: ClampTolerance
-    ! Purpose   : Limit the Ewald accuracy tolerance to a maximum value of 0.5.
-    !--------------------------------------------------------------------
-    subroutine ClampTolerance()
-
-        ! Clamp accuracy tolerance to max 0.5
-        input%ewald_tolerance = min(abs(input%ewald_tolerance), half)
-    
-    end subroutine ClampTolerance
-
-    !--------------------------------------------------------------------
-    ! Subroutine: ComputeEwaldParameters
-    ! Purpose   : Compute the main Ewald summation parameters:
-    !             - screening factor
-    !             - damping parameter (alpha)
-    !             - Fourier-space precision
-    !--------------------------------------------------------------------
-    subroutine ComputeEwaldParameters()
-    
-        ! Intermediate tolerance factor for screening width
-        ewald%screening_factor = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff)))
-
-        ! Compute Ewald damping parameter
-        ewald%alpha = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
-                    input%real_space_cutoff
-
-        ! Estimate needed Fourier-space precision
-        ewald%fourier_precision = sqrt(-log(input%ewald_tolerance * input%real_space_cutoff * &
-                                (two * ewald%screening_factor * ewald%alpha)**2))
-
-    end subroutine ComputeEwaldParameters
-
-    !--------------------------------------------------------------------
-    ! Subroutine: ComputeFourierIndices
-    ! Purpose   : Compute the maximum Fourier indices (kmax) in the X, Y, Z
-    !             directions, and the total number of reciprocal lattice vectors.
-    !--------------------------------------------------------------------
-    subroutine ComputeFourierIndices()
-
-        implicit none
-
-        integer :: kx_idx, ky_idx, kz_idx   ! Loop indices for each k-component
-        integer :: count                    ! Counter for valid k-vectors
-        real(real64) :: k_squared           ! Normalized squared magnitude of k-vector
-
-        ! Compute maximum Fourier indices in X, Y, Z directions
-        ewald%kmax = nint(quarter + primary%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
-
-        ! Count the total number of valid reciprocal vectors
-        count = 0
-        do kx_idx = 0, ewald%kmax(1)
-            do ky_idx = -ewald%kmax(2), ewald%kmax(2)
-                do kz_idx = -ewald%kmax(3), ewald%kmax(3)
-
-                    if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
-                
-                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%kmax)
-                    if (check_valid_reciprocal_vector(k_squared)) then
-                        count = count + 1
-                    end if
-                
-                end do
-            end do
-        end do
-
-        ewald%num_kvectors = count
-
-    end subroutine ComputeFourierIndices
+    end subroutine prepare_simulation_parameters
 
     !-------------------------------------------------------------------
-    ! Subroutine: ALLOC_TAB
-    ! Purpose: Allocate arrays used for Fourier components and related data
+    ! Allocate arrays used for Fourier components and related data
     !-------------------------------------------------------------------
-    subroutine AllocateArray()
-
-        implicit none
+    subroutine allocate_array()
 
         allocate(res%site_offset_old(3, nb%max_atom_in_residue))
 
@@ -267,6 +82,187 @@ contains
             widom_stat%sample(:) = 0
         end if
 
-    end subroutine AllocateArray
+    end subroutine allocate_array
+
+    !--------------------------------------------------------------------
+    ! Ensure that the user-specified real-space cutoff fits
+    ! within the periodic simulation box. If it is too large,
+    ! reduce it to half the minimum box dimension.
+    !--------------------------------------------------------------------
+    subroutine adjust_real_space_cutoff(do_log)
+
+        ! Input parameter
+        logical, intent(in) :: do_log
+
+        character(200) :: msg           ! Buffer for logging
+        real(real64) :: safe_cutoff     ! Adjusted real-space cutoff length to fit inside the simulation box safely
+
+        if (input%real_space_cutoff > primary%metrics(1) &
+                .or. input%real_space_cutoff > primary%metrics(2) &
+                .or. input%real_space_cutoff > primary%metrics(3)) then
+
+            if (do_log) then
+
+                write(msg, '(A)') 'WARNING: real_space_cutoff too large for box. Reducing to safe value.'
+                call LogMessage(msg)
+            
+            end if
+            
+            safe_cutoff = min(primary%metrics(1), primary%metrics(2), primary%metrics(3)) / two
+            input%real_space_cutoff = safe_cutoff
+        
+        end if
+
+    end subroutine adjust_real_space_cutoff
+
+    !-----------------------------------------------------------
+    ! Print Ewald information
+    !-----------------------------------------------------------
+    subroutine log_ewald_parameters()
+
+        character(200) :: formatted_msg
+
+        write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', input%real_space_cutoff
+        call LogMessage(formatted_msg)
+        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', input%ewald_tolerance
+        call LogMessage(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
+        call LogMessage(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%alpha
+        call LogMessage(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%fourier_precision
+        call LogMessage(formatted_msg)
+        write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
+            ewald%kmax(1), ', ', ewald%kmax(2), ', ', ewald%kmax(3)
+        call LogMessage(formatted_msg)
+        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%num_kvectors
+        call LogMessage(formatted_msg)
+
+    end subroutine log_ewald_parameters
+
+    !--------------------------------------------------------------------
+    ! Compute the maximum Fourier indices (kmax) in the X, Y, Z
+    ! directions, and the total number of reciprocal lattice vectors.
+    !--------------------------------------------------------------------
+    subroutine compute_fourier_indices()
+
+        integer :: kx_idx, ky_idx, kz_idx   ! Loop indices for each k-component
+        integer :: count                    ! Counter for valid k-vectors
+        real(real64) :: k_squared           ! Normalized squared magnitude of k-vector
+
+        ! Compute maximum Fourier indices in X, Y, Z directions
+        ewald%kmax = nint(quarter + primary%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
+
+        ! Count the total number of valid reciprocal vectors
+        count = 0
+        do kx_idx = 0, ewald%kmax(1)
+            do ky_idx = -ewald%kmax(2), ewald%kmax(2)
+                do kz_idx = -ewald%kmax(3), ewald%kmax(3)
+
+                    if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
+                
+                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%kmax)
+                    if (check_valid_reciprocal_vector(k_squared)) then
+                        count = count + 1
+                    end if
+                
+                end do
+            end do
+        end do
+
+        ewald%num_kvectors = count
+
+    end subroutine compute_fourier_indices
+
+    !--------------------------------------------------------------------
+    ! Initialize parameters for the Ewald summation method.
+    !--------------------------------------------------------------------
+    subroutine setup_ewald(verbose)
+
+        ! Input parameter
+        logical, optional, intent(in) :: verbose   ! optional flag for logging
+
+        ! Local variable
+        logical :: do_log                          ! Internal flag: whether to log messages in this routine
+
+        ! Default: log unless explicitly disabled
+        do_log = .true.; if (present(verbose)) do_log = verbose
+
+        ! Adjust cutoff if too large
+        call adjust_real_space_cutoff(do_log)
+
+        ! Clamp tolerance
+        call clamp_tolerance()
+
+        ! Compute Ewald parameters
+        call compute_ewald_parameters()
+
+        ! Compute Fourier indices
+        call compute_fourier_indices()
+
+    end subroutine setup_ewald
+
+    !--------------------------------------------------------------------
+    ! Limit the Ewald accuracy tolerance to a maximum value of 0.5.
+    !--------------------------------------------------------------------
+    subroutine clamp_tolerance()
+
+        ! Clamp accuracy tolerance to max 0.5
+        input%ewald_tolerance = min(abs(input%ewald_tolerance), half)
+    
+    end subroutine clamp_tolerance
+
+    !--------------------------------------------------------------------
+    ! Compute the main Ewald summation parameters; the screening factor, the damping parameter (alpha)
+    ! and the fourier-space precision
+    !--------------------------------------------------------------------
+    subroutine compute_ewald_parameters()
+    
+        ! Intermediate tolerance factor for screening width
+        ewald%screening_factor = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff)))
+
+        ! Compute Ewald damping parameter
+        ewald%alpha = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
+                    input%real_space_cutoff
+
+        ! Estimate needed Fourier-space precision
+        ewald%fourier_precision = sqrt(-log(input%ewald_tolerance * input%real_space_cutoff * &
+                                (two * ewald%screening_factor * ewald%alpha)**2))
+
+    end subroutine compute_ewald_parameters
+
+    !-------------------------------------------------------------------
+    ! Compute beta and de Broglie
+    !-------------------------------------------------------------------
+    subroutine prepare_monte_carlo()
+
+        ! Local variables
+        real(real64) :: mass                   ! Mass of residue
+        integer :: val_int                     ! Integer value read from input
+
+        ! Compute inverse thermal energy β = 1/(k_B T)
+        ! Units: KB_kcalmol in kcal/(mol·K), T in K
+        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
+
+        do val_int = 1, nb%type_residue
+
+            if (input%is_active(val_int) == 0) cycle
+
+            if (input%fugacity(val_int) >= zero) then
+                input%chemical_potential(val_int) = log(input%fugacity(val_int)) / beta
+            end if
+
+            ! Compute thermal de Broglie wavelength λ for each active residue:
+            ! λ = h / sqrt(2 π m k_B T)
+            ! H_PLANCK in J s, mass in kg, KB in J/K, T in K
+            mass = res%mass(val_int) * G_TO_KG / NA                                         ! Mass per residue (kg)
+            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * input%temperature)    ! Thermal de Broglie wavelength
+            
+            ! Convert lambda to Å
+            res%lambda(val_int) = res%lambda(val_int) * M_TO_A
+
+        end do
+
+    end subroutine prepare_monte_carlo
 
 end module prepare_utils
