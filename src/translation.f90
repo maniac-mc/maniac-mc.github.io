@@ -12,8 +12,6 @@ module molecule_translation
 
     implicit none
 
-    private :: propose_translation_move
-
 contains
 
     !---------------------------------------------------------------------------

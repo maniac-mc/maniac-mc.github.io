@@ -1,4 +1,4 @@
-program test_ComputeCellProperties
+program test_compute_cell_properties
     use, intrinsic :: iso_fortran_env, only: real64
     use geometry_utils
     implicit none
@@ -17,7 +17,7 @@ program test_ComputeCellProperties
     box%matrix(2,2) = 1.0_real64
     box%matrix(3,3) = 1.0_real64
 
-    call ComputeCellProperties(box)
+    call compute_cell_properties(box)
 
     pass1 = abs(box%volume - 1.0_real64) < tol
     if (.not. pass1) then
@@ -33,7 +33,7 @@ program test_ComputeCellProperties
     box%matrix(2,2) = 3.0_real64
     box%matrix(3,3) = 4.0_real64
 
-    call ComputeCellProperties(box)
+    call compute_cell_properties(box)
 
     expected = 2.0_real64 * 3.0_real64 * 4.0_real64
     pass2 = abs(box%volume - expected) < tol
@@ -56,7 +56,7 @@ program test_ComputeCellProperties
     box%matrix(:,2) = [0.5_real64, 1.0_real64, 0.0_real64]
     box%matrix(:,3) = [0.0_real64, 0.5_real64, 1.0_real64]
 
-    call ComputeCellProperties(box)
+    call compute_cell_properties(box)
 
     expected = box%matrix(1,1) * (box%matrix(2,2)*box%matrix(3,3) - box%matrix(2,3)*box%matrix(3,2)) &
              - box%matrix(1,2) * (box%matrix(2,1)*box%matrix(3,3) - box%matrix(2,3)*box%matrix(3,1)) &
@@ -69,4 +69,4 @@ program test_ComputeCellProperties
         stop 1
     end if
 
-end program test_ComputeCellProperties
+end program test_compute_cell_properties

@@ -129,8 +129,6 @@ contains
     end function amplitude_squared
 
     !----------------------------------------------------------------------------
-    ! Function: CrossProduct
-    !
     ! Computes the cross product of two 3D vectors a and b.
     ! Given vectors a = (a1, a2, a3) and b = (b1, b2, b3), the cross product
     ! c = a × b is defined as:
@@ -142,7 +140,7 @@ contains
     ! The resulting vector c is perpendicular to both a and b, and its magnitude
     ! equals |a||b|sin(θ), where θ is the angle between a and b.
     !----------------------------------------------------------------------------
-    function CrossProduct(a, b) result(c)
+    function compute_cross_product(a, b) result(c)
 
         ! Input argument
         real(real64), intent(in) :: a(3), b(3)  ! Input vectors
@@ -153,7 +151,7 @@ contains
         c(2) = a(3)*b(1) - a(1)*b(3)            ! y-component
         c(3) = a(1)*b(2) - a(2)*b(1)            ! z-component
 
-    end function CrossProduct
+    end function compute_cross_product
 
     !--------------------------------------------------------------------
     ! Function: vector_norm

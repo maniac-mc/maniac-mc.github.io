@@ -19,8 +19,6 @@ contains
     !---------------------------------------------------------------
     subroutine ReadParameters()
 
-        implicit none
-
         ! Local variables
         integer :: ios                                      ! I/O status code for file operations
         integer :: i, j, k, l                               ! Loop indices for iterating over residues and atoms
@@ -111,8 +109,6 @@ contains
     end subroutine ReadParameters
 
     subroutine ApplyLorentzBerthelot()
-
-        implicit none
 
         integer :: i, j, k, l               ! Loop indices for iterating over residues and atoms
         integer :: type_i, type_j           ! Atom type indices for the current pair of atoms

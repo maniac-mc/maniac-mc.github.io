@@ -19,10 +19,7 @@ module molecule_swap
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
-
-    private ! Hide everything by default
-    public :: attempt_swap_move  ! Only expose the main entry point
-
+    
 contains
 
     !---------------------------------------------------------------------------

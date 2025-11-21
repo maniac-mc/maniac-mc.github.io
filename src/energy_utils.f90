@@ -9,7 +9,6 @@ module energy_utils
     use ewald_energy
 
     use, intrinsic :: iso_fortran_env, only: real64
-    use, intrinsic :: ieee_arithmetic ! To remove eventually
 
     implicit none
 
@@ -18,42 +17,29 @@ contains
     !------------------------------------------------------------------------------
     ! Compute the total energy of the system
     !------------------------------------------------------------------------------
-    subroutine ComputeSystemEnergy(box)
-
-        implicit none
+    subroutine compute_system_energy(box)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
 
         ! Compute each energy components
-        call ComputePairwiseEnergy(box)
+        call compute_pairwise_energy(box)
         call ComputeEwaldSelf()
         call ComputeEwaldRecip()
-        call ComputeTotalIntraResidueCoulombEnergy()
+        call compute_total_intra_residue_coulomb_energy()
 
         ! Calculate total energy
         energy%total = energy%recip_coulomb + energy%non_coulomb + energy%coulomb + &
             energy%ewald_self + energy%intra_coulomb ! In kcal/mol
 
-    end subroutine ComputeSystemEnergy
+    end subroutine compute_system_energy
 
     !------------------------------------------------------------------------------
-    ! Subroutine: ComputeTotalIntraResidueCoulombEnergy
-    !
-    ! Purpose:
-    !   Loops over all active residue types and their molecules, computes the
-    !   intra-residue Coulomb energy for each molecule, and accumulates it into
-    !   the total intra-residue energy in the simulation.
-    !
-    ! Mathematical expression:
-    !   E_intra_total = Σ_{residues} Σ_{molecules} E_intra(molecule)
-    !   where E_intra(molecule) is computed by
-    !     ComputeIntraResidueRealCoulombEnergySingleMol
+    ! Loops over all active residue types and their molecules, computes the
+    ! intra-residue Coulomb energy for each molecule, and accumulates it into
+    ! the total intra-residue energy in the simulation.
     !------------------------------------------------------------------------------
-
-    subroutine ComputeTotalIntraResidueCoulombEnergy()
-
-        implicit none
+    subroutine compute_total_intra_residue_coulomb_energy()
 
         ! Local variables
         integer :: residue_type_1
@@ -73,7 +59,7 @@ contains
                 do molecule_index_1 = 1, primary%num_residues(residue_type_1)
 
                     ! Compute intra-residue Coulomb energy for this molecule
-                    call ComputeIntraResidueRealCoulombEnergySingleMol(residue_type_1, molecule_index_1, e_intra_coulomb)
+                    call compute_intra_residue_real_coulomb_energy_single_mol(residue_type_1, molecule_index_1, e_intra_coulomb)
 
                     ! Accumulate into total intra-residue energy
                     energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
@@ -84,11 +70,9 @@ contains
 
         end do
 
-    end subroutine ComputeTotalIntraResidueCoulombEnergy
+    end subroutine compute_total_intra_residue_coulomb_energy
 
-    subroutine ComputePairwiseEnergy(box)
-
-        implicit none
+    subroutine compute_pairwise_energy(box)
 
         ! Input arguments
         type(type_box), intent(inout) :: box    ! Box (reservoir or primary)
@@ -109,7 +93,7 @@ contains
             do molecule_index_1 = 1, box%num_residues(residue_type_1)
 
                 ! Compute the energy for residue_1, molecule_1
-                call SingleMolPairwiseEnergy(box, residue_type_1, &
+                call single_mol_pairwise_energy(box, residue_type_1, &
                     molecule_index_1, e_non_coulomb, e_coulomb)
 
                 ! Add residue_1, molecule_1 energy to the total pairwise energy
@@ -119,15 +103,12 @@ contains
             end do
         end do
 
-    end subroutine ComputePairwiseEnergy
+    end subroutine compute_pairwise_energy
 
     !------------------------------------------------------------------------------
-    ! subroutine SingleMolPairwiseEnergy
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
-    subroutine SingleMolPairwiseEnergy(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
-
-        implicit none
+    subroutine single_mol_pairwise_energy(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -191,14 +172,12 @@ contains
         ! Re-scale energy
         e_coulomb = e_coulomb * EPS0_INV_real   ! In kcal/mol
 
-    end subroutine SingleMolPairwiseEnergy
+    end subroutine single_mol_pairwise_energy
 
     !------------------------------------------------------------------------------
     ! Function to compute Lennard-Jones interaction energy
     !------------------------------------------------------------------------------
     pure function LennardJonesEnergy(r, sigma, epsilon) result(energy)
-
-        implicit none
 
         ! Input variables
         real(real64), intent(in) :: r          ! Distance between the two atoms (in Å)
@@ -241,8 +220,6 @@ contains
     ! Function to compute Coulomb interaction energy (Ewald direct-space term)
     !------------------------------------------------------------------------------
     pure function CoulombEnergy(r, q1, q2) result(energy)
-
-        implicit none
 
         ! Input variables
         real(real64), intent(in) :: r       ! Distance between the two atoms (in Å)
@@ -287,39 +264,28 @@ contains
     !------------------------------------------------------------------------------
     subroutine ComputeEwaldRecip()
 
-        implicit none
-
         ! Step 1: Precompute weighting coefficients that depend only on |k|-vectors.
         ! These account for the Gaussian charge screening used in the Ewald method.
-        call ComputeReciprocalWeights()
+        call compute_reciprocal_weights()
 
         ! Step 2: Build Fourier terms e^(i·k·r) for every atom inthe system.
         ! This avoids recomputing expensive exponentials during the k-sum.
-        call ComputeAllFourierTerms()
+        call compute_all_fourier_terms()
 
         ! Step 3: Compute reciprocal-space electrostatic energy using the structure
         ! factors and the precomputed reciprocal weighting coefficients.
-        call ComputeReciprocalEnergy(energy%recip_coulomb)
+        call compute_reciprocal_energy(energy%recip_coulomb)
 
     end subroutine ComputeEwaldRecip
 
     !------------------------------------------------------------------------------
     ! Computes the Ewald self-interaction correction.
-    !
     ! In the Ewald summation, each point charge is artificially spread out by a
     ! Gaussian distribution. This leads to an unphysical interaction of each charge
     ! with its own Gaussian "image". The self-energy term removes this contribution
     ! to avoid overcounting.
-    !
-    ! Algorithm:
-    !   1. For each residue type, compute the self-interaction of a *single* molecule
-    !      (depends only on its charges, not its position).
-    !   2. Multiply the result by the number of molecules of that residue type.
-    !   3. Accumulate the correction into the total self-energy term.
     !------------------------------------------------------------------------------
     subroutine ComputeEwaldSelf()
-
-        implicit none
 
         ! Local variables
         integer :: residue_type_1
@@ -352,8 +318,6 @@ contains
     !------------------------------------------------------------------------------
     subroutine SingleMolEwaldSelf(residue_type, self_energy_1)
 
-        implicit none
-
         ! Input arguments
         integer, intent(in) :: residue_type           ! Residue type for the molecule
         real(real64), intent(out) :: self_energy_1    ! Computed self-energy for this molecule
@@ -384,12 +348,9 @@ contains
     end subroutine SingleMolEwaldSelf
 
     !------------------------------------------------------------------------------
-    ! subroutine ComputePairInteractionEnergy_singlemol
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
     subroutine ComputePairInteractionEnergy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
-
-        implicit none
 
         ! Input arguments
         type(type_box), intent(inout) :: box

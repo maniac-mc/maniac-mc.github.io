@@ -1,4 +1,3 @@
-
 module write_utils
 
     use parameters
@@ -11,14 +10,34 @@ module write_utils
 
 contains
 
-    subroutine WriteLAMMPSTRJ(box, lammpstrj_filename, append_mode)
+    !------------------------------------------------------------------------------
+    ! Updates all relevant output files for the current Monte Carlo step.
+    !------------------------------------------------------------------------------
+    subroutine update_output_files(later_step)
 
-        implicit none
+        logical, intent(in) :: later_step       ! Flag to distinguish first vs. later steps
+
+        ! Write LAMMPS trajectory (main and reservoir)
+        call write_dump_lammpstrj(primary, "trajectory.lammpstrj", later_step)
+        if (has_reservoir) call write_dump_lammpstrj(reservoir, "reservoir.lammpstrj", later_step)
+
+        ! Write energies and move counts to data file
+        call write_dat_info()
+
+        ! Write LAMMPS data file
+        call write_topology_data(primary)
+
+    end subroutine update_output_files
+
+    !------------------------------------------------------------------------------
+    ! Write trajectory in lammpstrj format (see https://docs.lammps.org for details)
+    !------------------------------------------------------------------------------
+    subroutine write_dump_lammpstrj(box, lammpstrj_filename, append_mode)
 
         ! Input parameters
-        logical, OPTIONAL :: append_mode    ! Flag to append to existing files
-        type(type_box), intent(inout) :: box
-        character(len=*), intent(in), optional :: lammpstrj_filename ! Output trajectory in lammpstrj format
+        type(type_box), intent(inout) :: box                            ! Type for box
+        character(len=*), intent(in), optional :: lammpstrj_filename    ! Output trajectory in lammpstrj format
+        logical, optional :: append_mode                                ! Flag to append to existing files
 
         ! Local variables
         integer :: i, j, k                      ! Loop indices over residue types, residues, and atoms
@@ -90,14 +109,12 @@ contains
 
         close(UNIT_LMP)
 
-    end subroutine WriteLAMMPSTRJ
+    end subroutine write_dump_lammpstrj
 
     !------------------------------------------------------------------------------
-    ! Central wrapper to write all simulation output files for the current block.
+    ! Write all simulation output files to .dat file for the current block.
     !------------------------------------------------------------------------------
-    subroutine WriteEnergyAndCount()
-
-        implicit none
+    subroutine write_dat_info()
 
         ! Local variables
         character(len=8) :: file_status
@@ -112,23 +129,21 @@ contains
             file_status = 'OLD'
         end if
 
-        call WriteEnergyData(current_block, file_status)
+        call write_dat_energy(current_block, file_status)
 
-        call WriteResidueCounts(current_block, file_status)
+        call write_dat_number(current_block, file_status)
 
-        call WriteMoves(current_block, file_status)
+        call write_dat_mcmove(current_block, file_status)
 
-        call WriteWidomData(current_block, file_status)
+        call write_dat_widom(current_block, file_status)
 
-    end subroutine WriteEnergyAndCount
+    end subroutine write_dat_info
 
     !------------------------------------------------------------------------------
     ! Write energy.dat. Outputs total energy, Coulomb, non-Coulomb,
     ! intramolecular, and Ewald contributions.
     !------------------------------------------------------------------------------
-    subroutine WriteEnergyData(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_energy(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -159,16 +174,14 @@ contains
         ! Close file
         close(UNIT_ENERGY)
 
-    end subroutine WriteEnergyData
+    end subroutine write_dat_energy
 
     !------------------------------------------------------------------------------
     ! Write widom_RESNAME.dat for active residues if Widom sampling is enabled.
     ! Outputs block number, excess chemical potential, total chemical potential,
     ! and number of Widom samples. Header written only for first block.
     !------------------------------------------------------------------------------
-    subroutine WriteWidomData(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_widom(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -218,15 +231,13 @@ contains
 
         end if
 
-    end subroutine WriteWidomData
+    end subroutine write_dat_widom
 
     !------------------------------------------------------------------------------
     ! Write number_RESNAME.dat for each active residue. Tracks block number
     ! and number of active molecules. Header is written only for the first block.
     !------------------------------------------------------------------------------
-    subroutine WriteResidueCounts(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_number(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -263,16 +274,14 @@ contains
 
         end do
 
-    end subroutine WriteResidueCounts
+    end subroutine write_dat_number
 
     !------------------------------------------------------------------------------
     ! Write moves_new.dat. Tracks move accuracies and trials for translation,
     ! rotation, creation/deletion, swap, and Widom moves. Header generated
     ! dynamically based on which move types are enabled.
     !------------------------------------------------------------------------------
-    subroutine WriteMoves(current_block, file_status)
-
-        implicit none
+    subroutine write_dat_mcmove(current_block, file_status)
 
         ! Input arguments
         integer, intent(in) :: current_block
@@ -384,9 +393,12 @@ contains
 
         close(UNIT_MOVES)
 
-    end subroutine WriteMoves
+    end subroutine write_dat_mcmove
 
-    subroutine WriteLAMMPSData(box)
+    !------------------------------------------------------------------------------
+    ! Write topology in LAMMPS data format (see https://docs.lammps.org for details)
+    !------------------------------------------------------------------------------
+    subroutine write_topology_data(box)
 
         implicit none
 
@@ -396,7 +408,7 @@ contains
         ! Local variables
         integer :: i, j, k, atom_id, mol_id, atom_type
         integer :: cpt_bond, cpt_atom, cpt_angle, cpt_dihedral, cpt_improper
-        integer :: UNIT_DATA = 19
+        integer :: unit_data = 19
         real(real64) :: charge
         real(real64), dimension(3) :: pos
         integer :: dim ! Integer for looping over dimensions
@@ -446,52 +458,52 @@ contains
         box%num_impropers = cpt_improper
 
         ! Open file
-        open(UNIT=UNIT_DATA, FILE=trim(output_path) // data_filename, STATUS='REPLACE', ACTION='write')
+        open(UNIT=unit_data, FILE=trim(output_path) // data_filename, STATUS='REPLACE', ACTION='write')
 
-        write(UNIT_DATA, *) "! LAMMPS data file (atom_style full)"
-        write(UNIT_DATA, *) box%num_atoms, " atoms"
-        write(UNIT_DATA, *) box%num_atomtypes, " atom types"
-        write(UNIT_DATA, *) box%num_bonds, " bonds"
-        write(UNIT_DATA, *) box%num_bondtypes, " bond types"
-        write(UNIT_DATA, *) box%num_angles, " angles"
-        write(UNIT_DATA, *) box%num_angletypes, " angle types"
-        write(UNIT_DATA, *) box%num_dihedrals, " dihedrals"
-        write(UNIT_DATA, *) box%num_dihedraltypes, " dihedral types"
-        write(UNIT_DATA, *) box%num_impropers, " impropers"
-        write(UNIT_DATA, *) box%num_impropertypes, " improper types"
-        write(UNIT_DATA, *)
+        write(unit_data, *) "! LAMMPS data file (atom_style full)"
+        write(unit_data, *) box%num_atoms, " atoms"
+        write(unit_data, *) box%num_atomtypes, " atom types"
+        write(unit_data, *) box%num_bonds, " bonds"
+        write(unit_data, *) box%num_bondtypes, " bond types"
+        write(unit_data, *) box%num_angles, " angles"
+        write(unit_data, *) box%num_angletypes, " angle types"
+        write(unit_data, *) box%num_dihedrals, " dihedrals"
+        write(unit_data, *) box%num_dihedraltypes, " dihedral types"
+        write(unit_data, *) box%num_impropers, " impropers"
+        write(unit_data, *) box%num_impropertypes, " improper types"
+        write(unit_data, *)
 
         ! X bounds
-        write(UNIT_DATA, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(1,1), box%bounds(1,2)
-        write(UNIT_DATA, '(A)') "xlo xhi"
+        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(1,1), box%bounds(1,2)
+        write(unit_data, '(A)') "xlo xhi"
 
         ! Y bounds
-        write(UNIT_DATA, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(2,1), box%bounds(2,2)
-        write(UNIT_DATA, '(A)') "ylo yhi"
+        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(2,1), box%bounds(2,2)
+        write(unit_data, '(A)') "ylo yhi"
 
         ! Z bounds
-        write(UNIT_DATA, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(3,1), box%bounds(3,2)
-        write(UNIT_DATA, '(A)') "zlo zhi"
+        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(3,1), box%bounds(3,2)
+        write(unit_data, '(A)') "zlo zhi"
 
         if (box%is_triclinic) then
-            write(UNIT_DATA, '(3(F15.8,1X))') box%tilt(1), box%tilt(2), box%tilt(3)
-            write(UNIT_DATA, '(A)') "xy xz yz"
+            write(unit_data, '(3(F15.8,1X))') box%tilt(1), box%tilt(2), box%tilt(3)
+            write(unit_data, '(A)') "xy xz yz"
         end if
 
-        write(UNIT_DATA, *)
+        write(unit_data, *)
 
         ! Masses section (assumes atomic mass array `atom_masses`)
-        write(UNIT_DATA, *) "Masses"
-        write(UNIT_DATA, *)
+        write(unit_data, *) "Masses"
+        write(unit_data, *)
         do atom_id = 1, primary%num_atomtypes
-            write(UNIT_DATA, '(I5, 1X, F12.6)') atom_id, box%site_masses_vector(atom_id)
+            write(unit_data, '(I5, 1X, F12.6)') atom_id, box%site_masses_vector(atom_id)
         end do
 
-        write(UNIT_DATA, *)
+        write(unit_data, *)
 
         ! Atoms section
-        write(UNIT_DATA, *) "Atoms"
-        write(UNIT_DATA, *)
+        write(unit_data, *) "Atoms"
+        write(unit_data, *)
 
         atom_id = 0
         mol_id = 0
@@ -513,7 +525,7 @@ contains
                         call wrap_into_box(pos, box)
                     end if
 
-                    write(UNIT_DATA, '(I6,1X,I6,1X,I4,1X,F12.8,3(1X,F12.7))') &
+                    write(unit_data, '(I6,1X,I6,1X,I4,1X,F12.8,3(1X,F12.7))') &
                         atom_id, mol_id, atom_type, charge, pos(1), pos(2), pos(3)
 
                 end do
@@ -522,15 +534,15 @@ contains
 
         if (primary%num_bonds > 0 .or. reservoir%num_bonds > 0) then
             ! Atoms section
-            write(UNIT_DATA, *)
-            write(UNIT_DATA, *) "Bonds"
-            write(UNIT_DATA, *)
+            write(unit_data, *)
+            write(unit_data, *) "Bonds"
+            write(unit_data, *)
             cpt_bond = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
                 do j = 1, box%num_residues(i)
                     do k = 1, nb%bonds_per_residue(i)
-                        write(UNIT_DATA, *) cpt_bond, res%bond_type_2d(i, k, 1), &
+                        write(unit_data, *) cpt_bond, res%bond_type_2d(i, k, 1), &
                             cpt_atom + res%bond_type_2d(i, k, 2), &
                             cpt_atom + res%bond_type_2d(i, k, 3)
                         cpt_bond = cpt_bond + 1
@@ -542,15 +554,15 @@ contains
 
         if (primary%num_angles > 0 .or. reservoir%num_angles > 0) then
             ! Atoms section
-            write(UNIT_DATA, *)
-            write(UNIT_DATA, *) "Angles"
-            write(UNIT_DATA, *)
+            write(unit_data, *)
+            write(unit_data, *) "Angles"
+            write(unit_data, *)
             cpt_angle = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
                 do j = 1, box%num_residues(i)
                     do k = 1, nb%angles_per_residue(i)
-                        write(UNIT_DATA, *) cpt_angle, res%angle_type_2d(i, k, 1), &
+                        write(unit_data, *) cpt_angle, res%angle_type_2d(i, k, 1), &
                             cpt_atom + res%angle_type_2d(i, k, 2), &
                             cpt_atom + res%angle_type_2d(i, k, 3), &
                             cpt_atom + res%angle_type_2d(i, k, 4)
@@ -563,15 +575,15 @@ contains
 
         if (primary%num_dihedrals > 0 .or. reservoir%num_dihedrals > 0) then
             ! Atoms section
-            write(UNIT_DATA, *)
-            write(UNIT_DATA, *) "Dihedrals"
-            write(UNIT_DATA, *)
+            write(unit_data, *)
+            write(unit_data, *) "Dihedrals"
+            write(unit_data, *)
             cpt_dihedral = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
                 do j = 1, box%num_residues(i)
                     do k = 1, nb%dihedrals_per_residue(i)
-                        write(UNIT_DATA, *) cpt_dihedral, res%dihedral_type_2d(i, k, 1), &
+                        write(unit_data, *) cpt_dihedral, res%dihedral_type_2d(i, k, 1), &
                             cpt_atom + res%dihedral_type_2d(i, k, 2), &
                             cpt_atom + res%dihedral_type_2d(i, k, 3), &
                             cpt_atom + res%dihedral_type_2d(i, k, 4), &
@@ -585,15 +597,15 @@ contains
 
         if (primary%num_impropers > 0 .or. reservoir%num_impropers > 0) then
             ! Atoms section
-            write(UNIT_DATA, *)
-            write(UNIT_DATA, *) "Impropers"
-            write(UNIT_DATA, *)
+            write(unit_data, *)
+            write(unit_data, *) "Impropers"
+            write(unit_data, *)
             cpt_improper = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
                 do j = 1, box%num_residues(i)
                     do k = 1, nb%impropers_per_residue(i)
-                        write(UNIT_DATA, *) cpt_improper, res%improper_type_2d(i, k, 1), &
+                        write(unit_data, *) cpt_improper, res%improper_type_2d(i, k, 1), &
                             cpt_atom + res%improper_type_2d(i, k, 2), &
                             cpt_atom + res%improper_type_2d(i, k, 3), &
                             cpt_atom + res%improper_type_2d(i, k, 4), &
@@ -605,30 +617,8 @@ contains
             end do
         end if
 
-        close(UNIT_DATA)
+        close(unit_data)
 
-    end subroutine WriteLAMMPSData
-
-    !------------------------------------------------------------------------------
-    ! subroutine UpdateFiles
-    ! Updates all relevant output files for the current Monte Carlo step.
-    !------------------------------------------------------------------------------
-    subroutine UpdateFiles(later_step)
-
-        implicit none
-
-        logical, intent(in) :: later_step  ! Flag to distinguish first vs. later steps
-
-        ! Write LAMMPS trajectory
-        call WriteLAMMPSTRJ(primary, "trajectory.lammpstrj", later_step)
-        if (has_reservoir) call WriteLAMMPSTRJ(reservoir, "reservoir.lammpstrj", later_step)
-
-        ! Write energies and move counts to data file
-        call WriteEnergyAndCount()
-
-        ! Write LAMMPS data file
-        call WriteLAMMPSData(primary)
-
-    end subroutine UpdateFiles
+    end subroutine write_topology_data
 
 end module write_utils

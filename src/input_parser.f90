@@ -17,8 +17,6 @@ contains
     !-----------------------------------------------------------------------------
     subroutine read_input_file()
 
-        implicit none
-
         ! Pre-scan input file
         call prescan_input_file(maniac_file)
 
@@ -37,17 +35,15 @@ contains
     end subroutine read_input_file
 
     !---------------------------------------------------------------------------
-    ! Subroutine: ReadFullInputFile
-    !
-    ! Purpose:
-    !   Opens the full MANIAC input file, reads and parses its contents by calling
-    !   ParseInputFile, then closes the file.
+    ! Opens the full MANIAC input file, reads and parses its contents by calling
+    ! ParseInputFile, then closes the file.
     !---------------------------------------------------------------------------
     subroutine ReadFullInputFile(filename)
 
-        implicit none
-
+        ! Input parameter
         character(len=*), intent(in) :: filename
+
+        ! Local variables
         integer :: unit     ! Fortran unit number used to open the input file
         integer :: ios      ! I/O status returned by open/read operations
 
@@ -64,9 +60,10 @@ contains
     !---------------------------------------------------------------------------
     subroutine prescan_input_file(filename)
 
-        implicit none
-
+        ! Input parameter
         character(len=*), intent(in) :: filename
+
+        ! Local variables
         integer :: unit                             ! Fortran unit number used to open the input file
         integer :: ios                              ! I/O status returned by open/read operations
 
@@ -85,9 +82,6 @@ contains
     ! Aborts execution if probabilities are invalid.
     !---------------------------------------------------------------------------
     subroutine ValidateAndRescaleMoveProbabilities()
-
-        use, intrinsic :: iso_fortran_env, only: real64
-        implicit none
 
         real(real64) :: proba_total         ! Sum of all move probabilities (translation, rotation, etc.)
         real(real64) :: scale_factor        ! Factor used to rescale probabilities so they sum to 1.0
@@ -124,8 +118,6 @@ contains
     ! for array allocations
     !-----------------------------------------------------------------------------
     subroutine predetect_number_info(INFILE)
-
-        implicit none
 
         ! Input parameters
         integer, intent(in) :: INFILE
@@ -225,8 +217,6 @@ contains
     !-----------------------------------------------------------------------------
     subroutine allocate_atom_arrays()
 
-        implicit none
-
         ! Allocate atom arrays for primary and reservoir
         call allocate_atom_block(primary)
         call allocate_atom_block(reservoir)
@@ -295,8 +285,7 @@ contains
     !-----------------------------------------------------------------------------
     subroutine ParseInputFile(INFILE)
 
-        implicit none
-
+        ! Input parameter
         integer, intent(in) :: INFILE
 
         ! Local variables
@@ -635,8 +624,6 @@ contains
 
     subroutine SortResidues()
 
-        implicit none
-
         integer :: i, j, k, n
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
@@ -715,8 +702,7 @@ contains
     !-----------------------------------------------------------------------------
     subroutine check_IO_status(filename, ios)
 
-        implicit none
-
+        ! Input parameters
         character(len=*), intent(in) :: filename
         integer, intent(in) :: ios
 

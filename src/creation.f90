@@ -19,8 +19,6 @@ module molecule_creation
 
     implicit none
 
-    private :: accept_creation_move
-
 contains
 
     !---------------------------------------------------------------------------

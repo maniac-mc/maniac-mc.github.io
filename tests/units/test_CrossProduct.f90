@@ -1,4 +1,4 @@
-program test_CrossProduct
+program test_compute_cross_product
 
     use geometry_utils
     use, intrinsic :: iso_fortran_env, only: real64
@@ -16,7 +16,7 @@ program test_CrossProduct
     b = [0.0_real64, 1.0_real64, 0.0_real64]
     expected = [0.0_real64, 0.0_real64, 1.0_real64]
 
-    c = CrossProduct(a, b)
+    c = compute_cross_product(a, b)
     pass1 = all(abs(c - expected) < tol)
 
     !---------------------------------------
@@ -27,7 +27,7 @@ program test_CrossProduct
     b = 2.0_real64 * a
     expected = [0.0_real64, 0.0_real64, 0.0_real64]
 
-    c = CrossProduct(a, b)
+    c = compute_cross_product(a, b)
     pass2 = all(abs(c - expected) < tol)
 
     !---------------------------------------
@@ -38,7 +38,7 @@ program test_CrossProduct
     b = [4.0_real64, 5.0_real64, 6.0_real64]
     expected = [-3.0_real64, 6.0_real64, -3.0_real64]
 
-    c = CrossProduct(a, b)
+    c = compute_cross_product(a, b)
     pass3 = all(abs(c - expected) < tol)
 
     !---------------------------------------
@@ -57,4 +57,4 @@ program test_CrossProduct
         stop 1
     end if
 
-end program test_CrossProduct
+end program test_compute_cross_product
