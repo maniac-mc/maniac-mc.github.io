@@ -114,7 +114,7 @@ contains
         call ParseLAMMPSBox(INFILE, box)
 
         ! Detect box type and other informations
-        call PrepareSimulationBox(box)
+        call prepare_simulation_box(box)
 
         ! === Step 5: Read masses ===
         rewind(INFILE)

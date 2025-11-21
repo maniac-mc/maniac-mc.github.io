@@ -9,8 +9,8 @@ module prepare_utils
 
     implicit none
 
-    private :: adjust_real_space_cutoff, allocate_array, log_ewald_parameters, compute_fourier_indices, setup_ewald, &
-        compute_ewald_parameters, clamp_tolerance, prepare_monte_carlo
+    private
+    public :: prepare_simulation_parameters
 
 contains
 

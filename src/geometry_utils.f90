@@ -3,172 +3,37 @@ module geometry_utils
     use simulation_state
     use output_utils
     use, intrinsic :: iso_fortran_env, only: real64
+
     implicit none
+
+    private :: compute_cell_properties, determine_box_symmetry, log_geometry_parameters
 
 contains
 
-
     !-----------------------------------------------------------
-    ! Subroutine: PrepareSimulationBox
-    !
-    ! Initializes a simulation box for molecular simulations.
-    ! Steps performed:
+    ! Initializes a simulation box for molecular simulations:
     !  1. Determine box symmetry (cubic, orthorhombic, triclinic)
     !  2. Compute geometric properties: cell lengths, angles, volume
     !  3. Calculate the inverse box matrix for reciprocal-space operations
     !-----------------------------------------------------------
-    subroutine PrepareSimulationBox(box)
-
-        implicit none
+    subroutine prepare_simulation_box(box)
 
         ! Input argument
         type(type_box), intent(inout) :: box
 
-        ! Local variable
-        character(200) :: formatted_msg ! Buffer for formatted output messages
-
         ! Step 1: Determine box symmetry
-        call DetermineBoxSymmetry(box)
+        call determine_box_symmetry(box)
 
         ! Step 2: Compute geometric properties
-        call ComputeCellProperties(box)
+        call compute_cell_properties(box)
 
         ! Step 3: Compute inverse matrix for reciprocal-space operations
         call compute_box_determinant_and_inverse(box)
 
-        ! Log final results
-        call LogMessage("====== Simulation preparation ======")
-        call LogMessage("")
+        ! Log the information
+        call log_geometry_parameters(box)
 
-        select case (box%type)
-            case (1)
-
-                call LogMessage("Box symmetry type: Cubic")
-            
-            case (2)
-            
-                call LogMessage("Box symmetry type: Orthorhombic")
-            
-            case (3)
-            
-                call LogMessage("Box symmetry type: Triclinic")
-            
-            case default
-            
-                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%type
-                call LogMessage(formatted_msg)
-        
-        end select
-
-        write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%volume
-        call LogMessage(formatted_msg)
-
-    end subroutine PrepareSimulationBox
-
-    !-----------------------------------------------------------
-    ! Subroutine: DetermineBoxSymmetry
-    !
-    ! Determines the symmetry type of a simulation box using
-    ! its 3x3 box matrix:
-    !   - Cubic : All diagonal elements equal, off-diagonal = 0
-    !   - Orthorhombic: Diagonal elements unequal, off-diagonal = 0
-    !   - Triclinic : At least one off-diagonal element ≠ 0
-    !-----------------------------------------------------------
-    subroutine DetermineBoxSymmetry(box)
-
-        implicit none
-
-        ! Input parameters
-        type(type_box), intent(inout) :: box
-
-        ! Local variables
-        real(real64), dimension(6) :: off_diag
-
-        ! Collect off-diagonal elements
-        off_diag = [box%matrix(1,2), box%matrix(1,3), &
-                    box%matrix(2,1), box%matrix(2,3), &
-                    box%matrix(3,1), box%matrix(3,2)]
-
-        ! Check for triclinic (any off-diagonal > tolerance)
-        if (maxval(abs(off_diag)) > error) then
-
-            box%type = 3
-        
-        ! Check for orthorhombic (unequal diagonals)
-        else if (abs(box%matrix(1,1) - box%matrix(2,2)) > error .or. &
-                 abs(box%matrix(1,1) - box%matrix(3,3)) > error) then
-        
-            box%type = 2
-        
-        ! Otherwise, cubic
-        else
-        
-            box%type = 1
-        
-        end if
-
-    end subroutine DetermineBoxSymmetry
-
-    !-----------------------------------------------------------
-    ! Subroutine: ComputeCellProperties
-    !
-    ! Computes geometric properties of the simulation box:
-    !  - Lengths of cell vectors
-    !  - Cosines of angles between vectors
-    !  - Cell volume
-    !  - Perpendicular widths along each axis
-    !
-    ! Uses standard vector operations:
-    !   - |a| = sqrt(a·a)
-    !   - cosθ = (a·b) / (|a||b|)
-    !   - volume = a · (b × c)
-    !-----------------------------------------------------------
-    subroutine ComputeCellProperties(box)
-
-        implicit none
-
-        ! Input parameters
-        type(type_box), intent(inout) :: box
-
-        ! Local variables
-        real(real64), dimension(3) :: vec_lengths ! Lengths of the three cell vectors
-        real(real64), dimension(3) :: axb ! Cross product of vector a and b
-        real(real64), dimension(3) :: bxc ! Cross product of vector b and c
-        real(real64), dimension(3) :: cxa ! Cross product of vector c and a
-        real(real64) :: a(3), b(3), c(3) ! Local vectors for cross products
-
-        ! Calculate lengths of cell vectors
-        box%metrics(1:3) = sqrt(sum(box%matrix(:, 1:3)**2, dim=1))
-
-        ! Copy cell vectors from the box matrix
-        a = box%matrix(:, 1)
-        b = box%matrix(:, 2)
-        c = box%matrix(:, 3)
-
-        ! Calculate vector lengths
-        vec_lengths(1) = vector_norm(a)
-        vec_lengths(2) = vector_norm(b)
-        vec_lengths(3) = vector_norm(c)
-
-        ! Calculate cosines of angles using dot products divided by product of lengths
-        box%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
-        box%metrics(5) = dot_product(a, c) / (vec_lengths(1) * vec_lengths(3))
-        box%metrics(6) = dot_product(b, c) / (vec_lengths(2) * vec_lengths(3))
-
-        ! Calculate cross products
-        axb = CrossProduct(a, b)
-        bxc = CrossProduct(b, c)
-        cxa = CrossProduct(c, a)
-
-        ! Calculate volume of cell
-        box%volume = abs(dot_product(box%matrix(:,1), bxc))
-
-        ! Calculate cell perpendicular widths
-        box%metrics(7) = box%volume / vector_norm(bxc)
-        box%metrics(8) = box%volume / vector_norm(cxa)
-        box%metrics(9) = box%volume / vector_norm(axb)
-
-    end subroutine ComputeCellProperties
+    end subroutine prepare_simulation_box
 
     !-----------------------------------------------------------    !
     ! Wraps a Cartesian position into the simulation box using
@@ -180,8 +45,6 @@ contains
     !             wrap s into [0,1), then r' = r0 + H·s
     !-----------------------------------------------------------
     subroutine apply_PBC(pos, box)
-
-        implicit none
 
         ! Input parameters
         type(type_box), intent(in) :: box
@@ -243,8 +106,6 @@ contains
     !-----------------------------------------------------------
     subroutine wrap_into_box(pos, box)
 
-        implicit none
-
         ! Input parameters
         real(real64), dimension(3), intent(inout) :: pos   ! Cartesian position to wrap into box
         type(type_box), intent(inout) :: box               ! Simulation box (geometry + PBC matrices)
@@ -288,8 +149,6 @@ contains
     !----------------------------------------------------------------------------
     subroutine compute_box_determinant_and_inverse(box)
 
-        implicit none
-
         ! Input parameters
         type(type_box), intent(inout) :: box        ! Box structure (matrix, determinant, inverse) to be read and updated
 
@@ -303,17 +162,17 @@ contains
         ! First column of adjugate
         vec1 = box%matrix(:, 2)
         vec2 = box%matrix(:, 3)
-        adjugate(:,1) = CrossProduct(vec1, vec2)
+        adjugate(:,1) = compute_cross_product(vec1, vec2)
 
         ! Second column
         vec1 = box%matrix(:, 3)
         vec2 = box%matrix(:, 1)
-        adjugate(:,2) = CrossProduct(vec1, vec2)
+        adjugate(:,2) = compute_cross_product(vec1, vec2)
 
         ! Third column
         vec1 = box%matrix(:, 1)
         vec2 = box%matrix(:, 2)
-        adjugate(:,3) = CrossProduct(vec1, vec2)
+        adjugate(:,3) = compute_cross_product(vec1, vec2)
 
         ! Compute determinant from first row
         box%determinant = dot_product(box%matrix(:,1), adjugate(:,1))
@@ -345,12 +204,6 @@ contains
     !---------------------------------------------------------------------
     ! Compute the minimum-image distance between two atoms in a periodic box
     !
-    ! This function calculates the Cartesian distance between two atoms,
-    ! taking into account periodic boundary conditions (PBC). It handles
-    ! 2 types of boxes:
-    !   1. Cubic or Orthorhombic
-    !   2. Triclinic (tilted boxes)
-    !
     ! For cubic and orthorhombic boxes, the minimum-image convention is
     ! applied per Cartesian component. For triclinic boxes, all 27
     ! neighboring periodic images are checked to ensure the true
@@ -358,8 +211,6 @@ contains
     !---------------------------------------------------------------------
     function minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                             residue_type_2, molecule_index_2, atom_index_2) result(distance)
-
-        implicit none
 
         ! Input parameters
         type(type_box), intent(in) :: box                 ! simulation box (geometry + PBC matrices)
@@ -429,5 +280,126 @@ contains
         end if
 
     end function minimum_image_distance
+
+    !-----------------------------------------------------------
+    ! Computes geometric properties of the simulation box:
+    !  - Lengths of cell vectors
+    !  - Cosines of angles between vectors
+    !  - Cell volume
+    !  - Perpendicular widths along each axis
+    !-----------------------------------------------------------
+    subroutine compute_cell_properties(box)
+
+        ! Input parameters
+        type(type_box), intent(inout) :: box
+
+        ! Local variables
+        real(real64), dimension(3) :: vec_lengths ! Lengths of the three cell vectors
+        real(real64), dimension(3) :: axb ! Cross product of vector a and b
+        real(real64), dimension(3) :: bxc ! Cross product of vector b and c
+        real(real64), dimension(3) :: cxa ! Cross product of vector c and a
+        real(real64) :: a(3), b(3), c(3) ! Local vectors for cross products
+
+        ! Calculate lengths of cell vectors
+        box%metrics(1:3) = sqrt(sum(box%matrix(:, 1:3)**2, dim=1))
+
+        ! Copy cell vectors from the box matrix
+        a = box%matrix(:, 1)
+        b = box%matrix(:, 2)
+        c = box%matrix(:, 3)
+
+        ! Calculate vector lengths
+        vec_lengths(1) = vector_norm(a)
+        vec_lengths(2) = vector_norm(b)
+        vec_lengths(3) = vector_norm(c)
+
+        ! Calculate cosines of angles using dot products divided by product of lengths
+        box%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
+        box%metrics(5) = dot_product(a, c) / (vec_lengths(1) * vec_lengths(3))
+        box%metrics(6) = dot_product(b, c) / (vec_lengths(2) * vec_lengths(3))
+
+        ! Calculate cross products
+        axb = compute_cross_product(a, b)
+        bxc = compute_cross_product(b, c)
+        cxa = compute_cross_product(c, a)
+
+        ! Calculate volume of cell
+        box%volume = abs(dot_product(box%matrix(:,1), bxc))
+
+        ! Calculate cell perpendicular widths
+        box%metrics(7) = box%volume / vector_norm(bxc)
+        box%metrics(8) = box%volume / vector_norm(cxa)
+        box%metrics(9) = box%volume / vector_norm(axb)
+
+    end subroutine compute_cell_properties
+
+    !-----------------------------------------------------------    !
+    ! Determines the symmetry type of a simulation
+    !-----------------------------------------------------------
+    subroutine determine_box_symmetry(box)
+
+        ! Input parameters
+        type(type_box), intent(inout) :: box
+
+        ! Local variables
+        real(real64), dimension(6) :: off_diag
+
+        ! Collect off-diagonal elements
+        off_diag = [box%matrix(1,2), box%matrix(1,3), &
+                    box%matrix(2,1), box%matrix(2,3), &
+                    box%matrix(3,1), box%matrix(3,2)]
+
+        ! Check for triclinic (any off-diagonal > tolerance)
+        if (maxval(abs(off_diag)) > error) then
+            box%type = 3
+        ! Check for orthorhombic (unequal diagonals)
+        else if (abs(box%matrix(1,1) - box%matrix(2,2)) > error .or. &
+                 abs(box%matrix(1,1) - box%matrix(3,3)) > error) then
+            box%type = 2
+        ! Otherwise, cubic
+        else
+            box%type = 1
+        end if
+
+    end subroutine determine_box_symmetry
+
+    !-----------------------------------------------------------
+    ! Print geometry information
+    !-----------------------------------------------------------
+    subroutine log_geometry_parameters(box)
+
+        ! Input argument
+        type(type_box), intent(inout) :: box
+
+        ! Local variable
+        character(200) :: formatted_msg ! Buffer for formatted output messages
+
+        call LogMessage("====== Simulation preparation ======")
+        call LogMessage("")
+
+        select case (box%type)
+            case (1)
+
+                call LogMessage("Box symmetry type: Cubic")
+            
+            case (2)
+            
+                call LogMessage("Box symmetry type: Orthorhombic")
+            
+            case (3)
+            
+                call LogMessage("Box symmetry type: Triclinic")
+            
+            case default
+            
+                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%type
+                call LogMessage(formatted_msg)
+        
+        end select
+
+        write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%volume
+        call LogMessage(formatted_msg)
+
+    end subroutine log_geometry_parameters
 
 end module geometry_utils
