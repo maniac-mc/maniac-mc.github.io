@@ -13,8 +13,9 @@ module data_parser
     implicit none
 
     ! 1D atom information
-    real(real64), allocatable :: atom_x_1d(:), atom_y_1d(:), atom_z_1d(:)   ! Array of X Y Z coordinate of atoms
+    real(real64), allocatable :: atom_xyz(:,:)                          ! Array coordinate of atoms
     real(real64), allocatable :: atom_charges_1d(:)                         ! Partial charges on sites
+
     real(real64), allocatable :: atom_masses_1d(:)                          ! Masses of atoms
     integer, allocatable :: atom_types_1d(:)                                ! Array of atom types
     integer, allocatable :: atom_ids_1d(:)                                  ! Atom_id
@@ -89,9 +90,7 @@ contains
         allocate(atom_original_1d(box%num_atoms))
         allocate(atom_types_1d(box%num_atoms))
         allocate(atom_charges_1d(box%num_atoms))
-        allocate(atom_x_1d(box%num_atoms))
-        allocate(atom_y_1d(box%num_atoms))
-        allocate(atom_z_1d(box%num_atoms))
+        allocate(atom_xyz(3, box%num_atoms))
         allocate(atom_names_1d(box%num_atoms))
         allocate(bond_ids_1d(box%num_bonds))
         allocate(bond_types_1d(box%num_bonds))
@@ -158,9 +157,7 @@ contains
         if (allocated(atom_original_1d)) deallocate(atom_original_1d)
         if (allocated(atom_types_1d)) deallocate(atom_types_1d)
         if (allocated(atom_charges_1d)) deallocate(atom_charges_1d)
-        if (allocated(atom_x_1d)) deallocate(atom_x_1d)
-        if (allocated(atom_y_1d)) deallocate(atom_y_1d)
-        if (allocated(atom_z_1d)) deallocate(atom_z_1d)
+        if (allocated(atom_xyz)) deallocate(atom_xyz)
         if (allocated(atom_names_1d)) deallocate(atom_names_1d)
         if (allocated(bond_ids_1d)) deallocate(bond_ids_1d)
         if (allocated(bond_types_1d)) deallocate(bond_types_1d)
@@ -637,9 +634,9 @@ contains
             atom_original_1d(k) = tmp1_int
             atom_types_1d(k) = tmp3_int
             atom_charges_1d(k) = tmp1_flt
-            atom_x_1d(k) = tmp2_flt
-            atom_y_1d(k) = tmp3_flt
-            atom_z_1d(k) = tmp4_flt
+            atom_xyz(1, k) = tmp2_flt
+            atom_xyz(2, k) = tmp3_flt
+            atom_xyz(3, k) = tmp4_flt
             atom_found = atom_found + 1
         end do
 
@@ -1041,9 +1038,7 @@ contains
         integer, allocatable :: sort_index(:)
         character(10), allocatable :: tmp_atom_names_1d(:)
         real(real64), allocatable :: tmp_atom_charges_1d(:)
-        real(real64), allocatable :: tmp_atom_x_1d(:)
-        real(real64), allocatable :: tmp_atom_y_1d(:)
-        real(real64), allocatable :: tmp_atom_z_1d(:)
+        real(real64), allocatable :: tmp_atom_xyz(:, :)
         integer, allocatable :: tmp_atom_types_1d(:)
         integer, allocatable :: tmp_atom_original_1d(:)
 
@@ -1074,9 +1069,7 @@ contains
         ! Allocate temporary arrays
         allocate(tmp_atom_names_1d(box%num_atoms))
         allocate(tmp_atom_charges_1d(box%num_atoms))
-        allocate(tmp_atom_x_1d(box%num_atoms))
-        allocate(tmp_atom_y_1d(box%num_atoms))
-        allocate(tmp_atom_z_1d(box%num_atoms))
+        allocate(tmp_atom_xyz(3, box%num_atoms))
         allocate(tmp_atom_types_1d(box%num_atoms))
         allocate(tmp_atom_original_1d(box%num_atoms))
 
@@ -1084,9 +1077,7 @@ contains
         do i = 1, box%num_atoms
             tmp_atom_names_1d(i)   = atom_names_1d(sort_index(i))
             tmp_atom_charges_1d(i) = atom_charges_1d(sort_index(i))
-            tmp_atom_x_1d(i)       = atom_x_1d(sort_index(i))
-            tmp_atom_y_1d(i)       = atom_y_1d(sort_index(i))
-            tmp_atom_z_1d(i)       = atom_z_1d(sort_index(i))
+            tmp_atom_xyz(:, i) = atom_xyz(:, sort_index(i))
             tmp_atom_types_1d(i)   = atom_types_1d(sort_index(i))
             tmp_atom_original_1d(i) = atom_original_1d(sort_index(i))
         end do
@@ -1095,9 +1086,7 @@ contains
         do i = 1, box%num_atoms
             atom_names_1d(i) = tmp_atom_names_1d(i)
             atom_charges_1d(i) = tmp_atom_charges_1d(i)
-            atom_x_1d(i) = tmp_atom_x_1d(i)
-            atom_y_1d(i) = tmp_atom_y_1d(i)
-            atom_z_1d(i) = tmp_atom_z_1d(i)
+            atom_xyz(:, i) = tmp_atom_xyz(:, i)
             atom_types_1d(i) = tmp_atom_types_1d(i)
             atom_ids_1d(i) = i
             atom_original_1d(i) = tmp_atom_original_1d(i)
@@ -1107,9 +1096,7 @@ contains
 
         if (allocated(tmp_atom_names_1d)) deallocate(tmp_atom_names_1d)
         if (allocated(tmp_atom_charges_1d)) deallocate(tmp_atom_charges_1d)
-        if (allocated(tmp_atom_x_1d)) deallocate(tmp_atom_x_1d)
-        if (allocated(tmp_atom_y_1d)) deallocate(tmp_atom_y_1d)
-        if (allocated(tmp_atom_z_1d)) deallocate(tmp_atom_z_1d)
+        if (allocated(tmp_atom_xyz)) deallocate(tmp_atom_xyz)
         if (allocated(tmp_atom_types_1d)) deallocate(tmp_atom_types_1d)
         if (allocated(tmp_atom_original_1d)) deallocate(tmp_atom_original_1d)
 
@@ -1274,15 +1261,11 @@ contains
         ! Local variables
         integer :: natoms, nmolecules             ! atoms per residue, molecules per type
         integer :: i, j, k, l, m, k_temp          ! loop counters and atom index tracking
-        real(real64), allocatable :: tmp_x(:)     ! temporary x coordinates
-        real(real64), allocatable :: tmp_y(:)     ! temporary y coordinates
-        real(real64), allocatable :: tmp_z(:)     ! temporary z coordinates
+        real(real64), allocatable :: tmp_xyz(:, :) ! temporary xyz coordinates
         real(real64) :: dist                      ! Intramoleclar distance for sanity check
 
         ! Allocate temporary arrays for one molecule's atom positions
-        allocate(tmp_x(maxval(nb%atom_in_residue)))
-        allocate(tmp_y(maxval(nb%atom_in_residue)))
-        allocate(tmp_z(maxval(nb%atom_in_residue)))
+        allocate(tmp_xyz(3, maxval(nb%atom_in_residue)))
 
         k = 1  ! Global atom index
 
@@ -1300,15 +1283,11 @@ contains
                     k_temp = k ! Save starting index for this molecule
 
                     ! Copy coordinates into temporary arrays
-                    do l = 1, natoms
-                        tmp_x(l) = atom_x_1d(k)
-                        tmp_y(l) = atom_y_1d(k)
-                        tmp_z(l) = atom_z_1d(k)
-                        k = k + 1
-                    end do
+                    tmp_xyz(:, 1:natoms) = atom_xyz(:, k:k+natoms-1)
+                    k = k + natoms
 
                     ! Repair the molecule if its marked as active
-                    call RepairMolecule(tmp_x, tmp_y, tmp_z, natoms, box)
+                    call repair_molecule(tmp_xyz, natoms, box)
 
                     k = k_temp  ! Reset k to overwrite the same atoms
 
@@ -1316,25 +1295,22 @@ contains
                     ! molecules are not too large, and are not overlapping
                     do l = 1, natoms-1
                         do m = l+1, natoms
-                            dist = sqrt((tmp_x(l)-tmp_x(m))**2 + &
-                                        (tmp_y(l)-tmp_y(m))**2 + &
-                                        (tmp_z(l)-tmp_z(m))**2)
+                            
+                            dist = sqrt(sum((tmp_xyz(:, l) - tmp_xyz(:, m))**2))
                             ! do to : do not hardcode these value
+
                             if (dist > 10.0_real64) then
                                 call WarnUser("Unusually large distance (> 1 nm) detected in active residue")
                             else if (dist < 1.0e-5_real64) then
                                 call WarnUser("Overlapping atoms detected in molecule")
                             end if
+
                         end do
                     end do
 
                     ! Update coordinates with repaired values
-                    do l = 1, natoms
-                        atom_x_1d(k) = tmp_x(l)
-                        atom_y_1d(k) = tmp_y(l)
-                        atom_z_1d(k) = tmp_z(l)
-                        k = k + 1
-                    end do
+                    atom_xyz(:, k:k+natoms-1) = tmp_xyz(:, 1:natoms)
+                    k = k + natoms
 
                 ! For inactve residue, update counter
                 else
@@ -1344,7 +1320,7 @@ contains
         end do
 
         ! Free temporary arrays
-        deallocate(tmp_x, tmp_y, tmp_z)
+        deallocate(tmp_xyz)
 
     end subroutine RepairActiveMolecules
 
@@ -1367,9 +1343,6 @@ contains
         ! Temporary arrays (assumed declared module-wide or can be moved here)
         real(real64), allocatable :: tmp_atom_masses_1d(:)
         real(real64), allocatable :: tmp_atom_xyz(:,:)
-        ! real(real64), allocatable :: tmp_atom_x_1d(:)
-        ! real(real64), allocatable :: tmp_atom_y_1d(:)
-        ! real(real64), allocatable :: tmp_atom_z_1d(:)
 
         ! Allocate temporaries (size depends on max atoms per residue)
         allocate(tmp_atom_masses_1d(box%num_atoms))
@@ -1378,9 +1351,6 @@ contains
             allocate(res%masses_1d(primary%num_atomtypes))
         end if
 
-        ! allocate(tmp_atom_x_1d(box%num_atoms))
-        ! allocate(tmp_atom_y_1d(box%num_atoms))
-        ! allocate(tmp_atom_z_1d(box%num_atoms))
         allocate(tmp_atom_xyz(3, box%num_atoms))
 
         cpt = 1
@@ -1415,12 +1385,8 @@ contains
                     nb_res = nb_res + 1
 
                     ! Extract atom coordinates for this molecule
-                    do j = 1, nb%atom_in_residue(i)
-                        tmp_atom_xyz(1,j) = atom_x_1d(k)
-                        tmp_atom_xyz(2,j) = atom_y_1d(k)
-                        tmp_atom_xyz(3,j) = atom_z_1d(k)
-                        k = k + 1
-                    end do
+                    tmp_atom_xyz(:, 1:nb%atom_in_residue(i)) = atom_xyz(:, k:k+nb%atom_in_residue(i)-1)
+                    k = k + nb%atom_in_residue(i)
 
                     ! Compute Center of Mass
                     call compute_COM(tmp_atom_xyz, nb%atom_in_residue(i), tmp_atom_masses_1d, com)
