@@ -255,10 +255,18 @@ contains
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
+
             do idim = 1, 3
-                call compute_phase_factor(ewald%temp(idim,:), phase(idim), ewald%kmax(idim))
-                ewald%phase_factor(idim, res_type, mol_index, atom_index_1, :) = ewald%temp(idim,:)
+                ewald%temp_1d(:) = ewald%temp(idim, :)
+                call compute_phase_factor(ewald%temp_1d(:), phase(idim), ewald%kmax(idim))
+                ewald%phase_factor(idim, res_type, mol_index, atom_index_1, -ewald%kmax(idim):ewald%kmax(idim)) = ewald%temp_1d(:)
             end do
+
+            ! do idim = 1, 3
+            !     ! Pass pointer to avoid temporary
+            !     call compute_phase_factor(ewald%temp(idim,-:), phase(idim), ewald%kmax(idim))
+            !     ewald%phase_factor(idim, res_type, mol_index, atom_index_1, :) = ewald%temp(idim,:)
+            ! end do
 
         end do
 

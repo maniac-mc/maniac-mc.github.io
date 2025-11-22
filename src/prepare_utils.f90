@@ -55,7 +55,9 @@ contains
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%kmax)
         allocate(ewald%phase_factor(3, nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase_factor_old(3, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))   ! for x/y/z separately
+        allocate(ewald%phase_factor_old(3, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))
+
+        allocate(ewald%temp_1d(-kmax_max:kmax_max))
 
         ! Allocate temporary arrays once
         allocate(ewald%temp(3, -kmax_max:kmax_max))

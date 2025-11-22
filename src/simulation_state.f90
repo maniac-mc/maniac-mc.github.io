@@ -192,6 +192,7 @@ module simulation_state
         real(real64), dimension(:), allocatable :: form_factor ! Factor to account for symmetry (k vs -k)
         type(kvector_type), allocatable :: kvectors(:) ! Precomputed reciprocal vectors
         complex(real64), dimension(:, :), allocatable :: temp ! Temporary Fourier array
+        complex(real64), dimension(:), allocatable :: temp_1d ! Temporary Fourier array
         complex(real64), dimension(:), allocatable :: phase_new  ! Temporary array for new configuration phases
         complex(real64), dimension(:), allocatable :: phase_old  ! Temporary array for old configuration phases
         real(real64), dimension(:), allocatable :: charges ! Temporary array for atom charges    
