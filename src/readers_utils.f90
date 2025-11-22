@@ -11,28 +11,28 @@ contains
     !---------------------------------------------------------------------------
     ! Computes the center of mass from atomic coordinates and masses.
     !---------------------------------------------------------------------------
-    subroutine compute_COM(x, y, z, nb_atoms, mass, com_x, com_y, com_z)
+    subroutine compute_COM(coords, nb_atoms, mass, com)
 
         ! Input parameters
         integer, intent(in)  :: nb_atoms                            ! number of atoms
-        real(real64), intent(in)  :: x(nb_atoms), y(nb_atoms), z(nb_atoms) ! coordinates
+        real(real64), intent(in)  :: coords(3, nb_atoms)            ! atomic coordinates
         real(real64), intent(in)  :: mass(nb_atoms)                 ! masses
-        real(real64), intent(out) :: com_x, com_y, com_z            ! COM components
+
+        ! Output
+        real(real64), intent(out) :: com(3)                  ! center of mass vector
 
         ! Local variables
         real(real64) :: total_mass                                  ! accumulated mass
         character(len=32) :: mass_str                               ! mass formatted string
         integer :: iat                                              ! atom index
 
-        com_x = 0.0_real64
-        com_y = 0.0_real64
-        com_z = 0.0_real64
+        com = 0.0_real64
         total_mass = 0.0_real64
 
         do iat = 1, nb_atoms
-            com_x = com_x + mass(iat) * x(iat)
-            com_y = com_y + mass(iat) * y(iat)
-            com_z = com_z + mass(iat) * z(iat)
+            com(1) = com(1) + mass(iat) * coords(1, iat)
+            com(2) = com(2) + mass(iat) * coords(2, iat)
+            com(3) = com(3) + mass(iat) * coords(3, iat)
             total_mass = total_mass + mass(iat)
         end do
 
@@ -41,11 +41,7 @@ contains
             call AbortRun("Total mass is zero or negative: " // trim(mass_str), 1)
         end if
 
-        if (total_mass > 0.0_real64) then
-            com_x = com_x / total_mass
-            com_y = com_y / total_mass
-            com_z = com_z / total_mass
-        end if
+        com = com / total_mass
 
     end subroutine compute_COM
 
@@ -273,15 +269,10 @@ contains
     end subroutine ParseLAMMPSBox
 
     !-----------------------------------------------------------
-    ! Subroutine: RepairMolecule
     ! Ensures that bonded atoms in a molecule remain contiguous across
     ! periodic boundaries. Works for cubic, orthorhombic, and triclinic boxes.
-    !
-    ! Note: This routine does NOT re-center the molecule in the simulation box.
-    !       It only adjusts atomic positions so that the distance between
-    !       bonded atoms is minimized under PBC.
     !-----------------------------------------------------------
-    subroutine RepairMolecule(atom_x, atom_y, atom_z, nb_atoms, box)
+    subroutine repair_molecule(atom_xyz, nb_atoms, box)
 
         use, intrinsic :: iso_fortran_env, only: real64
         implicit none
@@ -289,9 +280,7 @@ contains
         ! Input parameters
         integer, intent(in) :: nb_atoms             ! Number of atoms in the molecule
         type(type_box), intent(inout) :: box        ! Simulation box: contains box type, matrix, and reciprocal matrix for PBC handling
-        real(real64), intent(inout) :: atom_x(nb_atoms) ! x-coordinates of atoms, updated to ensure molecular contiguity under PBC
-        real(real64), intent(inout) :: atom_y(nb_atoms) ! y-coordinates of atoms, updated to ensure molecular contiguity under PBC
-        real(real64), intent(inout) :: atom_z(nb_atoms) ! z-coordinates of atoms, updated to ensure molecular contiguity under PBC
+        real(real64), intent(inout) :: atom_xyz(3, nb_atoms)! XYZ-coordinates of atoms
 
         ! Local variables
         real(real64), dimension(3) :: delta_r_cart  ! Cartesian displacement vector: (dx, dy, dz) between current and previous atom
@@ -302,8 +291,8 @@ contains
 
         do iatom = 2, nb_atoms
             ! Take reference atom (iatom-1) and current atom (iatom)
-            ref_coords  = [atom_x(iatom-1), atom_y(iatom-1), atom_z(iatom-1)]
-            curr_coords = [atom_x(iatom), atom_y(iatom), atom_z(iatom)]
+            ref_coords  = atom_xyz(:, iatom-1)
+            curr_coords = atom_xyz(:, iatom)
 
             ! Raw displacement between the two atoms (may cross PBC boundary)
             delta_r_cart = curr_coords - ref_coords
@@ -327,18 +316,15 @@ contains
                 ! Back to Cartesian
                 delta_r_cart = matmul(box%matrix, delta_r_frac)
             else
-                call AbortRun("ERROR in RepairMolecule: box%type is invalid.", 1)
+                call AbortRun("ERROR in repair_molecule: box%type is invalid.", 1)
             end if
 
-            ! Repair atom position
-            curr_coords = ref_coords + delta_r_cart
-            atom_x(iatom) = curr_coords(1)
-            atom_y(iatom) = curr_coords(2)
-            atom_z(iatom) = curr_coords(3)
+            ! Update atom position
+            atom_xyz(:, iatom) = ref_coords + delta_r_cart
 
         end do
 
-    end subroutine RepairMolecule
+    end subroutine repair_molecule
 
     ! wrap_nearest:
     !   Given a displacement x and a box length boxlen, returns the

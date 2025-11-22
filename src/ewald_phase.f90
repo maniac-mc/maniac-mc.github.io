@@ -12,63 +12,55 @@ contains
 
     !--------------------------------------------------------------------
     ! Saves the current Fourier-space phase factors and reciprocal amplitudes
-    ! for a specific molecule or residue. This enables rollback after a
-    ! rejected Monte Carlo or molecular dynamics move.
+    ! for a specific molecule or residue, enabling rollback after a rejected move.
     !--------------------------------------------------------------------
     subroutine save_single_mol_fourier_terms(residue_type, molecule_index, symmetrize_x)
 
         ! Input arguments
-        integer, intent(in) :: residue_type     ! Residue type identifier
-        integer, intent(in) :: molecule_index   ! Index of the molecule to save
-        logical, intent(in), optional :: symmetrize_x  ! If true, save negative kx terms
+        integer, intent(in) :: residue_type       ! Residue type identifier
+        integer, intent(in) :: molecule_index     ! Molecule index to save
+        logical, intent(in), optional :: symmetrize_x   ! Whether to save negative kx
 
         ! Local variables
-        integer :: atom_index                   ! Atom index within the residue
-        integer :: kx_idx, ky_idx, kz_idx       ! Reciprocal vector indices
-        integer :: idx                          ! Index over precomputed k-vectors
-        logical :: do_sym                       ! Local flag
+        integer :: atom_index                     ! Atom index within the residue
+        integer :: dim                            ! Cartesian dimension (1=x,2=y,3=z)
+        integer :: k_idx                          ! Reciprocal index
+        integer :: idx                            ! Index over precomputed k-vectors
+        logical :: do_sym                         ! Local symmetry flag
 
-        ! Determine if we should symmetrize X
+        ! Determine if saving negative kx is requested
         do_sym = .false.
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
+        !----------------------------------------------------------
+        ! Save per-atom Fourier phase factors (IKX, IKY, IKZ)
+        !----------------------------------------------------------
         do atom_index = 1, nb%atom_in_residue(residue_type)
 
-            ! Save IKX terms (kx_idx from 0 to kmax(1))
-            do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor_x_old(atom_index, kx_idx) = &
-                    ewald%phase_factor_x(residue_type, molecule_index, atom_index, kx_idx)
-                    ! Optionally save negative kx for symmetry
-                    if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor_x_old(atom_index, -kx_idx) = &
-                            ewald%phase_factor_x(residue_type, molecule_index, atom_index, -kx_idx)
+            do dim = 1, 3
+
+                do k_idx = 0, ewald%kmax(dim)
+
+                    ! Positive k
+                    ewald%phase_factor_old(dim, atom_index, k_idx) = &
+                        ewald%phase_factor(dim, residue_type, molecule_index, atom_index, k_idx)
+
+                    ! Negative k (only if non-zero)
+                    if (k_idx /= 0) then
+                        if (dim /= 1 .or. do_sym) then
+                            ewald%phase_factor_old(dim, atom_index, -k_idx) = &
+                                ewald%phase_factor(dim, residue_type, molecule_index, atom_index, -k_idx)
+                        end if
                     end if
-            end do
 
-            ! Save IKY terms (KY from 0 to kmax(2)), include negative KY only if non-zero
-            do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor_y_old(atom_index, ky_idx) = &
-                    ewald%phase_factor_y(residue_type, molecule_index, atom_index, ky_idx)
-                if (ky_idx /= 0) then
-                    ewald%phase_factor_y_old(atom_index, -ky_idx) = &
-                        ewald%phase_factor_y(residue_type, molecule_index, atom_index, -ky_idx)
-                end if
-            end do
+                end do  ! k_idx
 
-            ! Save IKZ terms (KZ from 0 to kmax(3)), include negative KZ only if non-zero
-            do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor_z_old(atom_index, kz_idx) = &
-                    ewald%phase_factor_z(residue_type, molecule_index, atom_index, kz_idx)
-                if (kz_idx /= 0) then
-                    ewald%phase_factor_z_old(atom_index, -kz_idx) = &
-                        ewald%phase_factor_z(residue_type, molecule_index, atom_index, -kz_idx)
-                end if
-            end do
-        end do
+            end do  ! dim
+
+        end do  ! atom_index
 
         !------------------------------------------------------
         ! Save reciprocal amplitudes A(k)
-        ! Loop directly over precomputed valid k-vectors
         !------------------------------------------------------
         do idx = 1, ewald%num_kvectors
             ewald%recip_amplitude_old(idx) = ewald%recip_amplitude(idx)
@@ -83,58 +75,48 @@ contains
     subroutine restore_single_mol_fourier(residue_type, molecule_index, symmetrize_x)
 
         ! Input arguments
-        integer, intent(in) :: residue_type    ! Residue type identifier
-        integer, intent(in) :: molecule_index  ! Index of the molecule to restore
-        logical, intent(in), optional :: symmetrize_x  ! If true, restore negative kx terms
+        integer, intent(in) :: residue_type       ! Residue type index
+        integer, intent(in) :: molecule_index     ! Molecule index to restore
+        logical, intent(in), optional :: symmetrize_x ! Restore negative kx if true
 
         ! Local variables
-        integer :: atom_index_1                ! Atom index within the residue
-        integer :: kx_idx, ky_idx, kz_idx      ! Reciprocal vector indices
-        integer :: idx                         ! Index over precomputed k-vectors
-        logical :: do_sym                       ! Local flag
+        integer :: atom_index_1                   ! Atom index
+        integer :: dim                            ! Cartesian dimension (1=x,2=y,3=z)
+        integer :: k_idx                          ! Reciprocal index
+        integer :: idx                            ! Index over k-vector list
+        logical :: do_sym                         ! Whether to symmetrize X
 
-        ! Determine if we should symmetrize X
+        ! Determine if we symmetrize kx only
         do_sym = .false.
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
-        ! Restore per-atom phase factors (IKX, IKY, IKZ)
+        !----------------------------------------------------------
+        ! Restore per-atom Fourier phase factors (IKX, IKY, IKZ)
+        !----------------------------------------------------------
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)
 
-            ! Restore IKX
-            do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor_x(residue_type, molecule_index, atom_index_1, kx_idx) = &
-                    ewald%phase_factor_x_old(atom_index_1, kx_idx)
-                    ! Optionally restore negative kx for symmetry
-                    if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor_x(residue_type, molecule_index, atom_index_1, -kx_idx) = &
-                            ewald%phase_factor_x_old(atom_index_1, -kx_idx)
+            do dim = 1, 3
+
+                do k_idx = 0, ewald%kmax(dim)
+
+                    ! Positive k
+                    ewald%phase_factor(dim, residue_type, molecule_index, atom_index_1, k_idx) = &
+                        ewald%phase_factor_old(dim, atom_index_1, k_idx)
+
+                    ! Negative k
+                    if (k_idx /= 0) then
+                        if (dim /= 1 .or. do_sym) then
+                            ewald%phase_factor(dim, residue_type, molecule_index, atom_index_1, -k_idx) = &
+                                ewald%phase_factor_old(dim, atom_index_1, -k_idx)
+                        end if
                     end if
-            end do
 
-            ! Restore IKY (include negative KY only if non-zero)
-            do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor_y(residue_type, molecule_index, atom_index_1, ky_idx) = &
-                    ewald%phase_factor_y_old(atom_index_1, ky_idx)
-                if (ky_idx /= 0) then
-                    ewald%phase_factor_y(residue_type, molecule_index, atom_index_1, -ky_idx) = &
-                        ewald%phase_factor_y_old(atom_index_1, -ky_idx)
-                end if
-            end do
-
-            ! Restore IKZ (include negative KZ only if non-zero)
-            do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor_z(residue_type, molecule_index, atom_index_1, kz_idx) = &
-                    ewald%phase_factor_z_old(atom_index_1, kz_idx)
-                if (kz_idx /= 0) then
-                    ewald%phase_factor_z(residue_type, molecule_index, atom_index_1, -kz_idx) = &
-                        ewald%phase_factor_z_old(atom_index_1, -kz_idx)
-                end if
+                end do
             end do
         end do
 
         !------------------------------------------------------
-        ! Restore reciprocal amplitudes A(k) from backup
-        ! Loop directly over precomputed valid k-vectors
+        ! Restore reciprocal amplitudes A(k)
         !------------------------------------------------------
         do idx = 1, ewald%num_kvectors
             ewald%recip_amplitude(idx) = ewald%recip_amplitude_old(idx)
@@ -145,58 +127,45 @@ contains
     !--------------------------------------------------------------------
     ! Replaces the Fourier-space phase factors of one molecule (`index_1`)
     ! with those from another molecule (`index_2`) of the same residue type.
-    ! Used when molecule identities or positions are swapped (e.g., in
-    ! exchange Monte Carlo or symmetry operations).
     !--------------------------------------------------------------------
     subroutine replace_fourier_terms_single_mol(residue_type, index_1, index_2, symmetrize_x)
 
         ! Input arguments
-        integer, intent(in) :: residue_type
-        integer, intent(in) :: index_1
-        integer, intent(in) :: index_2
-        logical, intent(in), optional :: symmetrize_x ! If true, replace negative kx terms
+        integer, intent(in) :: residue_type     ! Residue type index
+        integer, intent(in) :: index_1          ! Destination molecule index
+        integer, intent(in) :: index_2          ! Source molecule index
+        logical, intent(in), optional :: symmetrize_x   ! Copy negative kx if true
 
         ! Local variables
-        integer :: kx_idx, ky_idx, kz_idx
-        integer :: atom_index_1
-        logical :: do_sym                       ! Local flag
+        integer :: k_idx                        ! Wave index (k)
+        integer :: atom_index_1                 ! Atom index within residue
+        logical :: do_sym                       ! Whether to symmetrize X
+        integer :: dim                           ! Spatial dimension (1..3)
 
-        ! Determine if we should symmetrize X
+        ! Determine if we should symmetrize x
         do_sym = .false.
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
         ! Restore IKX, IKY, IKZ from backups
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)
 
-            ! Restore IKX
-            do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor_x(residue_type, index_1, atom_index_1, kx_idx) = &
-                    ewald%phase_factor_x(residue_type, index_2, atom_index_1, kx_idx)
-                   ! Optionally replace negative kx for symmetry
-                    if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor_x(residue_type, index_1, atom_index_1, -kx_idx) = &
-                            ewald%phase_factor_x(residue_type, index_2, atom_index_1, -kx_idx)
+            do dim = 1, 3
+
+                do k_idx = 0, ewald%kmax(dim)
+
+                    ! Always copy positive (and zero) k
+                    ewald%phase_factor(dim, residue_type, index_1, atom_index_1, k_idx) = &
+                        ewald%phase_factor(dim, residue_type, index_2, atom_index_1, k_idx)
+
+                    ! Copy negative k only when allowed (when d=1, only if symmetrize_x is true, or when d=2,3)
+                    if (k_idx /= 0) then
+                        if (dim /= 1 .or. do_sym) then
+                            ewald%phase_factor(dim, residue_type, index_1, atom_index_1, -k_idx) = &
+                                ewald%phase_factor(dim, residue_type, index_2, atom_index_1, -k_idx)
+                        end if
                     end if
-            end do
 
-            ! Restore IKY (include negative KY only if non-zero)
-            do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor_y(residue_type, index_1, atom_index_1, ky_idx) = &
-                    ewald%phase_factor_y(residue_type, index_2, atom_index_1, ky_idx)
-                if (ky_idx /= 0) then
-                    ewald%phase_factor_y(residue_type, index_1, atom_index_1, -ky_idx) = &
-                        ewald%phase_factor_y(residue_type, index_2, atom_index_1, -ky_idx)
-                end if
-            end do
-
-            ! Restore IKZ (include negative KZ only if non-zero)
-            do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor_z(residue_type, index_1, atom_index_1, kz_idx) = &
-                    ewald%phase_factor_z(residue_type, index_2, atom_index_1, kz_idx)
-                if (kz_idx /= 0) then
-                    ewald%phase_factor_z(residue_type, index_1, atom_index_1, -kz_idx) = &
-                        ewald%phase_factor_z(residue_type, index_2, atom_index_1, -kz_idx)
-                end if
+                end do
             end do
         end do
 
@@ -240,6 +209,7 @@ contains
         integer :: atom_index_1                 ! Atom index
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
+        integer :: idim  ! component index: 1=X, 2=Y, 3=Z
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
@@ -254,14 +224,12 @@ contains
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
-            call compute_phase_factor(ewald%temp_x, phase(1), ewald%kmax(1))
-            ewald%phase_factor_x(res_type, mol_index, atom_index_1, :) = ewald%temp_x
 
-            call compute_phase_factor(ewald%temp_y, phase(2), ewald%kmax(2))
-            ewald%phase_factor_y(res_type, mol_index, atom_index_1, :) = ewald%temp_y
-
-            call compute_phase_factor(ewald%temp_z, phase(3), ewald%kmax(3))
-            ewald%phase_factor_z(res_type, mol_index, atom_index_1, :) = ewald%temp_z
+            do idim = 1, 3
+                ewald%temp_1d(:) = ewald%temp(idim, :)
+                call compute_phase_factor(ewald%temp_1d(:), phase(idim), ewald%kmax(idim))
+                ewald%phase_factor(idim, res_type, mol_index, atom_index_1, -ewald%kmax(idim):ewald%kmax(idim)) = ewald%temp_1d(:)
+            end do
 
         end do
 
@@ -282,8 +250,8 @@ contains
         ! Function result
         real(real64) :: phase(3)                        ! Returned phase components (2π * k·r)
 
-        !   For each reciprocal direction i ∈ {1,2,3}:
-        !   phase(i) = 2π * Σ_j [ reciprocal_box(j,i) * atom_pos(j) ]
+        ! For each reciprocal direction i ∈ {1,2,3}:
+        ! phase(i) = 2π * Σ_j [ reciprocal_box(j,i) * atom_pos(j) ]
         do i = 1, 3
             phase(i) = zero
             do j = 1, 3

@@ -1,11 +1,13 @@
-program test_RepairMolecule
+program test_repair_molecule
+
     use, intrinsic :: iso_fortran_env, only: real64
     use readers_utils
+
     implicit none
 
     type(type_box) :: box
     integer :: nb_atoms
-    real(real64), allocatable :: atom_x(:), atom_y(:), atom_z(:)
+    real(real64), allocatable :: atom_xyz(:,:)   ! single 2D array
     real(real64) :: tol
     logical :: pass1, pass2, pass3
     real(real64), dimension(3) :: dr
@@ -24,25 +26,24 @@ program test_RepairMolecule
     box%matrix(3,3) = 1.0_real64
 
     nb_atoms = 2
-    allocate(atom_x(nb_atoms), atom_y(nb_atoms), atom_z(nb_atoms))
-    allocate(expected(3,nb_atoms))
+    allocate(atom_xyz(3, nb_atoms))
+    allocate(expected(3, nb_atoms))
 
     ! Atom 1 inside box, atom 2 just across boundary
-    atom_x = [0.9_real64, -0.9_real64]
-    atom_y = [0.0_real64,  0.0_real64]
-    atom_z = [0.0_real64,  0.0_real64]
+    atom_xyz(:,1) = [0.9_real64, 0.0_real64, 0.0_real64]
+    atom_xyz(:,2) = [-0.9_real64, 0.0_real64, 0.0_real64]
 
-    call RepairMolecule(atom_x, atom_y, atom_z, nb_atoms, box)
+    call repair_molecule(atom_xyz, nb_atoms, box)
 
     ! Expected: atom 2 should be at 1.1 (contiguous with atom 1)
     expected(:,1) = [0.9_real64, 0.0_real64, 0.0_real64]
     expected(:,2) = [1.1_real64, 0.0_real64, 0.0_real64]
 
-    pass1 = all(abs([atom_x(1),atom_y(1),atom_z(1)]-expected(:,1))<tol) .and. &
-           all(abs([atom_x(2),atom_y(2),atom_z(2)]-expected(:,2))<tol)
+    pass1 = all(abs(atom_xyz(:,1)-expected(:,1))<tol) .and. &
+            all(abs(atom_xyz(:,2)-expected(:,2))<tol)
 
     if (.not. pass1) then
-        print *, "Cubic RepairMolecule test FAILED:", atom_x, atom_y, atom_z
+        print *, "Cubic repair_molecule test FAILED:", atom_xyz
         stop 1
     end if
 
@@ -55,20 +56,19 @@ program test_RepairMolecule
     box%matrix(2,2) = 3.0_real64
     box%matrix(3,3) = 4.0_real64
 
-    atom_x = [1.9_real64, -1.9_real64]
-    atom_y = [1.0_real64,  1.0_real64]
-    atom_z = [2.0_real64,  2.0_real64]
+    atom_xyz(:,1) = [1.9_real64, 1.0_real64, 2.0_real64]
+    atom_xyz(:,2) = [-1.9_real64, 1.0_real64, 2.0_real64]
 
-    call RepairMolecule(atom_x, atom_y, atom_z, nb_atoms, box)
+    call repair_molecule(atom_xyz, nb_atoms, box)
 
     expected(:,1) = [1.9_real64, 1.0_real64, 2.0_real64]
     expected(:,2) = [2.1_real64, 1.0_real64, 2.0_real64]
 
-    pass2 = all(abs([atom_x(1),atom_y(1),atom_z(1)]-expected(:,1))<tol) .and. &
-           all(abs([atom_x(2),atom_y(2),atom_z(2)]-expected(:,2))<tol)
+    pass2 = all(abs(atom_xyz(:,1)-expected(:,1))<tol) .and. &
+            all(abs(atom_xyz(:,2)-expected(:,2))<tol)
 
     if (.not. pass2) then
-        print *, "Orthorhombic RepairMolecule test FAILED:", atom_x, atom_y, atom_z
+        print *, "Orthorhombic repair_molecule test FAILED:", atom_xyz
         stop 1
     end if
 
@@ -84,19 +84,17 @@ program test_RepairMolecule
     recip = inverse(box%matrix)
     box%reciprocal = recip
 
-    atom_x = [0.9_real64, -0.8_real64]
-    atom_y = [0.1_real64,  0.2_real64]
-    atom_z = [0.0_real64,  0.1_real64]
+    atom_xyz(:,1) = [0.9_real64, 0.1_real64, 0.0_real64]
+    atom_xyz(:,2) = [-0.8_real64, 0.2_real64, 0.1_real64]
 
-    call RepairMolecule(atom_x, atom_y, atom_z, nb_atoms, box)
+    call repair_molecule(atom_xyz, nb_atoms, box)
 
-    ! Expected: second atom should be shifted close to first
-    ! (we just check continuity, not absolute values)
-    dr = [atom_x(2)-atom_x(1), atom_y(2)-atom_y(1), atom_z(2)-atom_z(1)]
-    pass3 = maxval(abs(dr)) < 1.0_real64  ! bond length is small
+    ! Check continuity
+    dr = atom_xyz(:,2) - atom_xyz(:,1)
+    pass3 = maxval(abs(dr)) < 1.0_real64
 
     if (.not. pass3) then
-        print *, "Triclinic RepairMolecule test FAILED:", atom_x, atom_y, atom_z
+        print *, "Triclinic repair_molecule test FAILED:", atom_xyz
         stop 1
     end if
 
@@ -125,4 +123,4 @@ contains
         inv(3,3) =  (mat(1,1)*mat(2,2)-mat(1,2)*mat(2,1))/det
     end function inverse
 
-end program test_RepairMolecule
+end program test_repair_molecule

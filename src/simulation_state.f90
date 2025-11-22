@@ -185,19 +185,14 @@ module simulation_state
         real(real64) :: fourier_precision       ! Estimated precision required for reciprocal (Fourier) space summation
         real(real64) :: screening_factor        ! Intermediate tolerance factor for real-space screening width calculation
         real(real64), dimension(:), allocatable :: recip_constants ! Constants for reciprocal space summations
-        complex(real64), dimension(:, :, :, :), allocatable :: phase_factor_x ! Complex exponentials for reciprocal space (x-component)
-        complex(real64), dimension(:, :, :, :), allocatable :: phase_factor_y ! Complex exponentials for reciprocal space (y-component)
-        complex(real64), dimension(:, :, :, :), allocatable :: phase_factor_z ! Complex exponentials for reciprocal space (z-component)
-        complex(real64), dimension(:, :), allocatable :: phase_factor_x_old ! Old Fourier terms along X
-        complex(real64), dimension(:, :), allocatable :: phase_factor_y_old ! Old Fourier terms along Y
-        complex(real64), dimension(:, :), allocatable :: phase_factor_z_old ! Old Fourier terms along Z
+        complex(real64), dimension(:, :, :, :, :), allocatable :: phase_factor   ! Complex exponentials for reciprocal space
+        complex(real64), dimension(:, :, :), allocatable :: phase_factor_old ! Old complex exponential terms
         complex(real64), dimension(:), allocatable :: recip_amplitude ! Fourier coefficients of charge density or potential
         complex(real64), dimension(:), allocatable :: recip_amplitude_old ! Old fourier coefficients of charge density or potential
         real(real64), dimension(:), allocatable :: form_factor ! Factor to account for symmetry (k vs -k)
         type(kvector_type), allocatable :: kvectors(:) ! Precomputed reciprocal vectors
-        complex(real64), dimension(:), allocatable :: temp_x  ! Temporary Fourier array along X
-        complex(real64), dimension(:), allocatable :: temp_y  ! Temporary Fourier array along Y
-        complex(real64), dimension(:), allocatable :: temp_z  ! Temporary Fourier array along Z
+        complex(real64), dimension(:, :), allocatable :: temp ! Temporary Fourier array
+        complex(real64), dimension(:), allocatable :: temp_1d ! Temporary Fourier array
         complex(real64), dimension(:), allocatable :: phase_new  ! Temporary array for new configuration phases
         complex(real64), dimension(:), allocatable :: phase_old  ! Temporary array for old configuration phases
         real(real64), dimension(:), allocatable :: charges ! Temporary array for atom charges    
