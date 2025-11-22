@@ -11,28 +11,28 @@ contains
     !---------------------------------------------------------------------------
     ! Computes the center of mass from atomic coordinates and masses.
     !---------------------------------------------------------------------------
-    subroutine compute_COM(x, y, z, nb_atoms, mass, com_x, com_y, com_z)
+    subroutine compute_COM(coords, nb_atoms, mass, com)
 
         ! Input parameters
         integer, intent(in)  :: nb_atoms                            ! number of atoms
-        real(real64), intent(in)  :: x(nb_atoms), y(nb_atoms), z(nb_atoms) ! coordinates
+        real(real64), intent(in)  :: coords(3, nb_atoms)            ! atomic coordinates
         real(real64), intent(in)  :: mass(nb_atoms)                 ! masses
-        real(real64), intent(out) :: com_x, com_y, com_z            ! COM components
+
+        ! Output
+        real(real64), intent(out) :: com(3)                  ! center of mass vector
 
         ! Local variables
         real(real64) :: total_mass                                  ! accumulated mass
         character(len=32) :: mass_str                               ! mass formatted string
         integer :: iat                                              ! atom index
 
-        com_x = 0.0_real64
-        com_y = 0.0_real64
-        com_z = 0.0_real64
+        com = 0.0_real64
         total_mass = 0.0_real64
 
         do iat = 1, nb_atoms
-            com_x = com_x + mass(iat) * x(iat)
-            com_y = com_y + mass(iat) * y(iat)
-            com_z = com_z + mass(iat) * z(iat)
+            com(1) = com(1) + mass(iat) * coords(1, iat)
+            com(2) = com(2) + mass(iat) * coords(2, iat)
+            com(3) = com(3) + mass(iat) * coords(3, iat)
             total_mass = total_mass + mass(iat)
         end do
 
@@ -41,11 +41,7 @@ contains
             call AbortRun("Total mass is zero or negative: " // trim(mass_str), 1)
         end if
 
-        if (total_mass > 0.0_real64) then
-            com_x = com_x / total_mass
-            com_y = com_y / total_mass
-            com_z = com_z / total_mass
-        end if
+        com = com / total_mass
 
     end subroutine compute_COM
 

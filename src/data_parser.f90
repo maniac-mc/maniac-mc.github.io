@@ -9,7 +9,6 @@ module data_parser
     use sanity_utils
 
     use, intrinsic :: iso_fortran_env, only: real64
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
     implicit none
 
@@ -1367,9 +1366,10 @@ contains
 
         ! Temporary arrays (assumed declared module-wide or can be moved here)
         real(real64), allocatable :: tmp_atom_masses_1d(:)
-        real(real64), allocatable :: tmp_atom_x_1d(:)
-        real(real64), allocatable :: tmp_atom_y_1d(:)
-        real(real64), allocatable :: tmp_atom_z_1d(:)
+        real(real64), allocatable :: tmp_atom_xyz(:,:)
+        ! real(real64), allocatable :: tmp_atom_x_1d(:)
+        ! real(real64), allocatable :: tmp_atom_y_1d(:)
+        ! real(real64), allocatable :: tmp_atom_z_1d(:)
 
         ! Allocate temporaries (size depends on max atoms per residue)
         allocate(tmp_atom_masses_1d(box%num_atoms))
@@ -1378,9 +1378,10 @@ contains
             allocate(res%masses_1d(primary%num_atomtypes))
         end if
 
-        allocate(tmp_atom_x_1d(box%num_atoms))
-        allocate(tmp_atom_y_1d(box%num_atoms))
-        allocate(tmp_atom_z_1d(box%num_atoms))
+        ! allocate(tmp_atom_x_1d(box%num_atoms))
+        ! allocate(tmp_atom_y_1d(box%num_atoms))
+        ! allocate(tmp_atom_z_1d(box%num_atoms))
+        allocate(tmp_atom_xyz(3, box%num_atoms))
 
         cpt = 1
         do i = 1, nb%type_residue
@@ -1415,16 +1416,14 @@ contains
 
                     ! Extract atom coordinates for this molecule
                     do j = 1, nb%atom_in_residue(i)
-                        tmp_atom_x_1d(j) = atom_x_1d(k)
-                        tmp_atom_y_1d(j) = atom_y_1d(k)
-                        tmp_atom_z_1d(j) = atom_z_1d(k)
+                        tmp_atom_xyz(1,j) = atom_x_1d(k)
+                        tmp_atom_xyz(2,j) = atom_y_1d(k)
+                        tmp_atom_xyz(3,j) = atom_z_1d(k)
                         k = k + 1
                     end do
 
                     ! Compute Center of Mass
-                    call compute_COM(tmp_atom_x_1d, tmp_atom_y_1d, tmp_atom_z_1d, &
-                                    nb%atom_in_residue(i), tmp_atom_masses_1d, &
-                                    com(1), com(2), com(3))
+                    call compute_COM(tmp_atom_xyz, nb%atom_in_residue(i), tmp_atom_masses_1d, com)
 
                     total_mass = compute_mass(nb%atom_in_residue(i), tmp_atom_masses_1d)
                     res%mass(i) = total_mass 
@@ -1435,22 +1434,13 @@ contains
                     ! Ensure CoM is inside simulation box
                     call apply_PBC(com, box)
 
-                    ! Sanity check (division by zero or corrupted input)
-                    if (.not. all(ieee_is_finite(com))) then
-                        call AbortRun("Invalid (NaN/Inf) CoM detected in residue")
-                    end if
-
-                    ! Sanity check, CoM outside simulation box
+                    ! Perform sanity checks
+                    call check_finite_vector(com, "Invalid (NaN/Inf) CoM detected in residue")
                     call check_inside_bounds(com, box%bounds(:,1), box%bounds(:,2), &
                         "Molecule COM outside simulation box")
-
-                    ! Sanity check, CoM far from atoms in active molecule
                     if (input%is_active(i) == 1) then
-                        if (minval(sqrt((tmp_atom_x_1d(1:nb%atom_in_residue(i)) - original_com(1))**2 + &
-                                        (tmp_atom_y_1d(1:nb%atom_in_residue(i)) - original_com(2))**2 + &
-                                        (tmp_atom_z_1d(1:nb%atom_in_residue(i)) - original_com(3))**2)) > 10.0_real64) then
-                            call WarnUser("CoM unusually far from all atoms in residue type")
-                        end if
+                        call check_com_distance(tmp_atom_xyz, nb%atom_in_residue(i), &
+                            original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
                     end if
 
                     ! Store CoM position
@@ -1458,14 +1448,10 @@ contains
                         box%mol_com(dim, i, l) = com(dim)
                     end do
 
-                    ! Compute site offsets from CoM
                     do m = 1, nb%atom_in_residue(i)
-
-                        box%site_offset(1, i, l, m) = tmp_atom_x_1d(m) - original_com(1)
-                        box%site_offset(2, i, l, m) = tmp_atom_y_1d(m) - original_com(2)
-                        box%site_offset(3, i, l, m) = tmp_atom_z_1d(m) - original_com(3)
-
+                        box%site_offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                     end do
+
                     l = l + 1 ! Move to next molecule slot
                 else
                     k = k + 1 ! Not start of this residue, keep scanning
