@@ -36,32 +36,32 @@ contains
 
             ! Save IKX terms (kx_idx from 0 to kmax(1))
             do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor_x_old(atom_index, kx_idx) = &
-                    ewald%phase_factor_x(residue_type, molecule_index, atom_index, kx_idx)
+                ewald%phase_factor_old(1, atom_index, kx_idx) = &
+                    ewald%phase_factor(1, residue_type, molecule_index, atom_index, kx_idx)
                     ! Optionally save negative kx for symmetry
                     if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor_x_old(atom_index, -kx_idx) = &
-                            ewald%phase_factor_x(residue_type, molecule_index, atom_index, -kx_idx)
+                        ewald%phase_factor_old(1, atom_index, -kx_idx) = &
+                            ewald%phase_factor(1, residue_type, molecule_index, atom_index, -kx_idx)
                     end if
             end do
 
             ! Save IKY terms (KY from 0 to kmax(2)), include negative KY only if non-zero
             do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor_y_old(atom_index, ky_idx) = &
-                    ewald%phase_factor_y(residue_type, molecule_index, atom_index, ky_idx)
+                ewald%phase_factor_old(2, atom_index, ky_idx) = &
+                    ewald%phase_factor(2, residue_type, molecule_index, atom_index, ky_idx)
                 if (ky_idx /= 0) then
-                    ewald%phase_factor_y_old(atom_index, -ky_idx) = &
-                        ewald%phase_factor_y(residue_type, molecule_index, atom_index, -ky_idx)
+                    ewald%phase_factor_old(2, atom_index, -ky_idx) = &
+                        ewald%phase_factor(2, residue_type, molecule_index, atom_index, -ky_idx)
                 end if
             end do
 
             ! Save IKZ terms (KZ from 0 to kmax(3)), include negative KZ only if non-zero
             do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor_z_old(atom_index, kz_idx) = &
-                    ewald%phase_factor_z(residue_type, molecule_index, atom_index, kz_idx)
+                ewald%phase_factor_old(3, atom_index, kz_idx) = &
+                    ewald%phase_factor(3, residue_type, molecule_index, atom_index, kz_idx)
                 if (kz_idx /= 0) then
-                    ewald%phase_factor_z_old(atom_index, -kz_idx) = &
-                        ewald%phase_factor_z(residue_type, molecule_index, atom_index, -kz_idx)
+                    ewald%phase_factor_old(3, atom_index, -kz_idx) = &
+                        ewald%phase_factor(3, residue_type, molecule_index, atom_index, -kz_idx)
                 end if
             end do
         end do
@@ -102,32 +102,32 @@ contains
 
             ! Restore IKX
             do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor_x(residue_type, molecule_index, atom_index_1, kx_idx) = &
-                    ewald%phase_factor_x_old(atom_index_1, kx_idx)
+                ewald%phase_factor(1, residue_type, molecule_index, atom_index_1, kx_idx) = &
+                    ewald%phase_factor_old(1, atom_index_1, kx_idx)
                     ! Optionally restore negative kx for symmetry
                     if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor_x(residue_type, molecule_index, atom_index_1, -kx_idx) = &
-                            ewald%phase_factor_x_old(atom_index_1, -kx_idx)
+                        ewald%phase_factor(1, residue_type, molecule_index, atom_index_1, -kx_idx) = &
+                            ewald%phase_factor_old(1, atom_index_1, -kx_idx)
                     end if
             end do
 
             ! Restore IKY (include negative KY only if non-zero)
             do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor_y(residue_type, molecule_index, atom_index_1, ky_idx) = &
-                    ewald%phase_factor_y_old(atom_index_1, ky_idx)
+                ewald%phase_factor(2, residue_type, molecule_index, atom_index_1, ky_idx) = &
+                    ewald%phase_factor_old(2, atom_index_1, ky_idx)
                 if (ky_idx /= 0) then
-                    ewald%phase_factor_y(residue_type, molecule_index, atom_index_1, -ky_idx) = &
-                        ewald%phase_factor_y_old(atom_index_1, -ky_idx)
+                    ewald%phase_factor(2, residue_type, molecule_index, atom_index_1, -ky_idx) = &
+                        ewald%phase_factor_old(2, atom_index_1, -ky_idx)
                 end if
             end do
 
             ! Restore IKZ (include negative KZ only if non-zero)
             do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor_z(residue_type, molecule_index, atom_index_1, kz_idx) = &
-                    ewald%phase_factor_z_old(atom_index_1, kz_idx)
+                ewald%phase_factor(3, residue_type, molecule_index, atom_index_1, kz_idx) = &
+                    ewald%phase_factor_old(3, atom_index_1, kz_idx)
                 if (kz_idx /= 0) then
-                    ewald%phase_factor_z(residue_type, molecule_index, atom_index_1, -kz_idx) = &
-                        ewald%phase_factor_z_old(atom_index_1, -kz_idx)
+                    ewald%phase_factor(3, residue_type, molecule_index, atom_index_1, -kz_idx) = &
+                        ewald%phase_factor_old(3, atom_index_1, -kz_idx)
                 end if
             end do
         end do
@@ -170,32 +170,32 @@ contains
 
             ! Restore IKX
             do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor_x(residue_type, index_1, atom_index_1, kx_idx) = &
-                    ewald%phase_factor_x(residue_type, index_2, atom_index_1, kx_idx)
+                ewald%phase_factor(1, residue_type, index_1, atom_index_1, kx_idx) = &
+                    ewald%phase_factor(1, residue_type, index_2, atom_index_1, kx_idx)
                    ! Optionally replace negative kx for symmetry
                     if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor_x(residue_type, index_1, atom_index_1, -kx_idx) = &
-                            ewald%phase_factor_x(residue_type, index_2, atom_index_1, -kx_idx)
+                        ewald%phase_factor(1, residue_type, index_1, atom_index_1, -kx_idx) = &
+                            ewald%phase_factor(1, residue_type, index_2, atom_index_1, -kx_idx)
                     end if
             end do
 
             ! Restore IKY (include negative KY only if non-zero)
             do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor_y(residue_type, index_1, atom_index_1, ky_idx) = &
-                    ewald%phase_factor_y(residue_type, index_2, atom_index_1, ky_idx)
+                ewald%phase_factor(2, residue_type, index_1, atom_index_1, ky_idx) = &
+                    ewald%phase_factor(2, residue_type, index_2, atom_index_1, ky_idx)
                 if (ky_idx /= 0) then
-                    ewald%phase_factor_y(residue_type, index_1, atom_index_1, -ky_idx) = &
-                        ewald%phase_factor_y(residue_type, index_2, atom_index_1, -ky_idx)
+                    ewald%phase_factor(2, residue_type, index_1, atom_index_1, -ky_idx) = &
+                        ewald%phase_factor(2, residue_type, index_2, atom_index_1, -ky_idx)
                 end if
             end do
 
             ! Restore IKZ (include negative KZ only if non-zero)
             do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor_z(residue_type, index_1, atom_index_1, kz_idx) = &
-                    ewald%phase_factor_z(residue_type, index_2, atom_index_1, kz_idx)
+                ewald%phase_factor(3, residue_type, index_1, atom_index_1, kz_idx) = &
+                    ewald%phase_factor(3, residue_type, index_2, atom_index_1, kz_idx)
                 if (kz_idx /= 0) then
-                    ewald%phase_factor_z(residue_type, index_1, atom_index_1, -kz_idx) = &
-                        ewald%phase_factor_z(residue_type, index_2, atom_index_1, -kz_idx)
+                    ewald%phase_factor(3, residue_type, index_1, atom_index_1, -kz_idx) = &
+                        ewald%phase_factor(3, residue_type, index_2, atom_index_1, -kz_idx)
                 end if
             end do
         end do
@@ -240,6 +240,7 @@ contains
         integer :: atom_index_1                 ! Atom index
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
+        integer :: idim  ! component index: 1=X, 2=Y, 3=Z
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
@@ -254,14 +255,10 @@ contains
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
-            call compute_phase_factor(ewald%temp_x, phase(1), ewald%kmax(1))
-            ewald%phase_factor_x(res_type, mol_index, atom_index_1, :) = ewald%temp_x
-
-            call compute_phase_factor(ewald%temp_y, phase(2), ewald%kmax(2))
-            ewald%phase_factor_y(res_type, mol_index, atom_index_1, :) = ewald%temp_y
-
-            call compute_phase_factor(ewald%temp_z, phase(3), ewald%kmax(3))
-            ewald%phase_factor_z(res_type, mol_index, atom_index_1, :) = ewald%temp_z
+            do idim = 1, 3
+                call compute_phase_factor(ewald%temp(idim,:), phase(idim), ewald%kmax(idim))
+                ewald%phase_factor(idim, res_type, mol_index, atom_index_1, :) = ewald%temp(idim,:)
+            end do
 
         end do
 
@@ -282,8 +279,8 @@ contains
         ! Function result
         real(real64) :: phase(3)                        ! Returned phase components (2π * k·r)
 
-        !   For each reciprocal direction i ∈ {1,2,3}:
-        !   phase(i) = 2π * Σ_j [ reciprocal_box(j,i) * atom_pos(j) ]
+        ! For each reciprocal direction i ∈ {1,2,3}:
+        ! phase(i) = 2π * Σ_j [ reciprocal_box(j,i) * atom_pos(j) ]
         do i = 1, 3
             phase(i) = zero
             do j = 1, 3

@@ -42,6 +42,8 @@ contains
     !-------------------------------------------------------------------
     subroutine allocate_array()
 
+        integer :: kmax_max
+
         allocate(res%site_offset_old(3, nb%max_atom_in_residue))
 
         ! Allocate real arrays for coefficients (dimension ewald%num_kvectors)
@@ -51,17 +53,12 @@ contains
         allocate(ewald%form_factor(ewald%num_kvectors)) ! Note, there is no need for such as large vector
 
         ! Allocate complex arrays for wave vector components
-        allocate(ewald%phase_factor_x(1:nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_residue, -ewald%kmax(1):ewald%kmax(1)))
-        allocate(ewald%phase_factor_y(1:nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_residue, -ewald%kmax(2):ewald%kmax(2)))
-        allocate(ewald%phase_factor_z(1:nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_residue, -ewald%kmax(3):ewald%kmax(3)))
-        allocate(ewald%phase_factor_x_old(1:nb%max_atom_in_residue, -ewald%kmax(1):ewald%kmax(1)))
-        allocate(ewald%phase_factor_y_old(1:nb%max_atom_in_residue, -ewald%kmax(2):ewald%kmax(2)))
-        allocate(ewald%phase_factor_z_old(1:nb%max_atom_in_residue, -ewald%kmax(3):ewald%kmax(3)))
+        kmax_max = maxval(ewald%kmax)
+        allocate(ewald%phase_factor(3, nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase_factor_old(3, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))   ! for x/y/z separately
 
         ! Allocate temporary arrays once
-        allocate(ewald%temp_x(-ewald%kmax(1):ewald%kmax(1)))
-        allocate(ewald%temp_y(-ewald%kmax(2):ewald%kmax(2)))
-        allocate(ewald%temp_z(-ewald%kmax(3):ewald%kmax(3)))
+        allocate(ewald%temp(3, -kmax_max:kmax_max))
         allocate(ewald%phase_new(nb%max_atom_in_residue))
         allocate(ewald%phase_old(nb%max_atom_in_residue))
         allocate(ewald%charges(nb%max_atom_in_residue))

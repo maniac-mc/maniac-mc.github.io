@@ -104,13 +104,13 @@ contains
             kz_idx = ewald%kvectors(idx)%kz
 
             ! Compute phase factors for the current residue
-            ewald%phase_new(1:natoms) = ewald%phase_factor_x(residue_type, molecule_index, 1:natoms, kx_idx) * &
-                ewald%phase_factor_y(residue_type, molecule_index, 1:natoms, ky_idx) * &
-                ewald%phase_factor_z(residue_type, molecule_index, 1:natoms, kz_idx)
+            ewald%phase_new(1:natoms) = ewald%phase_factor(1, residue_type, molecule_index, 1:natoms, kx_idx) * &
+                ewald%phase_factor(2, residue_type, molecule_index, 1:natoms, ky_idx) * &
+                ewald%phase_factor(3, residue_type, molecule_index, 1:natoms, kz_idx)
 
-            ewald%phase_old(1:natoms) = ewald%phase_factor_x_old(1:natoms, kx_idx) * &
-                ewald%phase_factor_y_old(1:natoms, ky_idx) * &
-                ewald%phase_factor_z_old(1:natoms, kz_idx)
+            ewald%phase_old(1:natoms) = ewald%phase_factor_old(1, 1:natoms, kx_idx) * &
+                ewald%phase_factor_old(2, 1:natoms, ky_idx) * &
+                ewald%phase_factor_old(3, 1:natoms, kz_idx)
 
             ! Update Fourier coefficient A(k)
             if (creation_flag) then
@@ -279,9 +279,9 @@ contains
 
                     ! Extract charge and phase
                     charges = primary%atom_charges(residue_type, atom_index)
-                    phase = ewald%phase_factor_x(residue_type, molecule_index, atom_index, kx_idx) * &
-                            ewald%phase_factor_y(residue_type, molecule_index, atom_index, ky_idx) * &
-                            ewald%phase_factor_z(residue_type, molecule_index, atom_index, kz_idx)
+                    phase = ewald%phase_factor(1, residue_type, molecule_index, atom_index, kx_idx) * &
+                            ewald%phase_factor(2, residue_type, molecule_index, atom_index, ky_idx) * &
+                            ewald%phase_factor(3, residue_type, molecule_index, atom_index, kz_idx)
 
                     ! Accumulate contribution from this atom:
                     ! charge * exp(i k · r) factor in x, y, z directions
