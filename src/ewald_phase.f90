@@ -145,8 +145,6 @@ contains
     !--------------------------------------------------------------------
     ! Replaces the Fourier-space phase factors of one molecule (`index_1`)
     ! with those from another molecule (`index_2`) of the same residue type.
-    ! Used when molecule identities or positions are swapped (e.g., in
-    ! exchange Monte Carlo or symmetry operations).
     !--------------------------------------------------------------------
     subroutine replace_fourier_terms_single_mol(residue_type, index_1, index_2, symmetrize_x)
 
@@ -157,9 +155,10 @@ contains
         logical, intent(in), optional :: symmetrize_x ! If true, replace negative kx terms
 
         ! Local variables
-        integer :: kx_idx, ky_idx, kz_idx
+        integer :: k_idx
         integer :: atom_index_1
         logical :: do_sym                       ! Local flag
+        integer :: dim                          ! Dimension (x, y, z)
 
         ! Determine if we should symmetrize X
         do_sym = .false.
@@ -168,35 +167,23 @@ contains
         ! Restore IKX, IKY, IKZ from backups
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)
 
-            ! Restore IKX
-            do kx_idx = 0, ewald%kmax(1)
-                ewald%phase_factor(1, residue_type, index_1, atom_index_1, kx_idx) = &
-                    ewald%phase_factor(1, residue_type, index_2, atom_index_1, kx_idx)
-                   ! Optionally replace negative kx for symmetry
-                    if (do_sym .and. kx_idx /= 0) then
-                        ewald%phase_factor(1, residue_type, index_1, atom_index_1, -kx_idx) = &
-                            ewald%phase_factor(1, residue_type, index_2, atom_index_1, -kx_idx)
+            do dim = 1, 3
+
+                do k_idx = 0, ewald%kmax(dim)
+
+                    ! Always copy positive (and zero) k
+                    ewald%phase_factor(dim, residue_type, index_1, atom_index_1, k_idx) = &
+                        ewald%phase_factor(dim, residue_type, index_2, atom_index_1, k_idx)
+
+                    ! Copy negative k only when allowed: When d=1, only if symmetrize_x is true. When d=2,3, always.
+                    if (k_idx /= 0) then
+                        if (dim /= 1 .or. do_sym) then
+                            ewald%phase_factor(dim, residue_type, index_1, atom_index_1, -k_idx) = &
+                                ewald%phase_factor(dim, residue_type, index_2, atom_index_1, -k_idx)
+                        end if
                     end if
-            end do
 
-            ! Restore IKY (include negative KY only if non-zero)
-            do ky_idx = 0, ewald%kmax(2)
-                ewald%phase_factor(2, residue_type, index_1, atom_index_1, ky_idx) = &
-                    ewald%phase_factor(2, residue_type, index_2, atom_index_1, ky_idx)
-                if (ky_idx /= 0) then
-                    ewald%phase_factor(2, residue_type, index_1, atom_index_1, -ky_idx) = &
-                        ewald%phase_factor(2, residue_type, index_2, atom_index_1, -ky_idx)
-                end if
-            end do
-
-            ! Restore IKZ (include negative KZ only if non-zero)
-            do kz_idx = 0, ewald%kmax(3)
-                ewald%phase_factor(3, residue_type, index_1, atom_index_1, kz_idx) = &
-                    ewald%phase_factor(3, residue_type, index_2, atom_index_1, kz_idx)
-                if (kz_idx /= 0) then
-                    ewald%phase_factor(3, residue_type, index_1, atom_index_1, -kz_idx) = &
-                        ewald%phase_factor(3, residue_type, index_2, atom_index_1, -kz_idx)
-                end if
+                end do
             end do
         end do
 
