@@ -6,6 +6,8 @@ module data_parser
     use geometry_utils
     use check_utils
     use readers_utils
+    use sanity_utils
+
     use, intrinsic :: iso_fortran_env, only: real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
@@ -143,7 +145,7 @@ contains
         call SortAtomsByOriginalID(box)
         call DetectMolecules(box)
         call RepairActiveMolecules(box)
-        call TransformCoordinate(box)
+        call transform_to_COM_frame(box)
         call ValidateMoleculeGeometry(box)
 
         ! === Step 7: Detect bond, angle, dihedral, improper per residue ===
@@ -1351,7 +1353,7 @@ contains
     ! Transform absolute atom coordinates into relative coordinates
     ! with respect to the molecule's center of mass (CoM).
     !---------------------------------------------------------------
-    subroutine TransformCoordinate(box)
+    subroutine transform_to_COM_frame(box)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -1439,11 +1441,8 @@ contains
                     end if
 
                     ! Sanity check, CoM outside simulation box
-                    do dim = 1, 3
-                        if (com(dim) < box%bounds(dim,1) .or. com(dim) > box%bounds(dim,2)) then
-                            call WarnUser("Molecule COM outside simulation box")
-                        end if
-                    end do
+                    call check_inside_bounds(com, box%bounds(:,1), box%bounds(:,2), &
+                        "Molecule COM outside simulation box")
 
                     ! Sanity check, CoM far from atoms in active molecule
                     if (input%is_active(i) == 1) then
@@ -1476,7 +1475,7 @@ contains
 
         if (allocated(tmp_atom_masses_1d)) deallocate(tmp_atom_masses_1d)
 
-    end subroutine TransformCoordinate
+    end subroutine transform_to_COM_frame
 
     !---------------------------------------------------------------
     ! Check if a given atom ID belongs to a specific residue.
