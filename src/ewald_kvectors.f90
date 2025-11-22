@@ -65,8 +65,8 @@ contains
     end subroutine precompute_valid_reciprocal_vectors
 
     !-------------------------------------------------------------------
-    !   Computes the squared magnitude of a k-vector in normalized index space:
-    !   k^2_normalized = (kx/kmax_x)^2 + (ky/kmax_y)^2 + (kz/kmax_z)^2
+    ! Computes the squared magnitude of a k-vector in normalized index space:
+    ! k^2_normalized = (kx/kmax_x)^2 + (ky/kmax_y)^2 + (kz/kmax_z)^2
     !-------------------------------------------------------------------
     pure function normalized_K_squared(kx, ky, kz, kmax) result(k_squared)
 
