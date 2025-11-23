@@ -55,20 +55,6 @@ module simulation_state
     end type proba_type
     type(proba_type) :: proba
 
-    ! Parameters provided in the input file
-    type :: input_type
-        real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
-        real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
-        real(real64) :: temperature                 ! Temperature in Kelvin
-        real(real64) :: translation_step            ! Maximum displacement for MC moves
-        real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
-        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
-        integer :: seed                             ! Initial seed for the random number generator
-        logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
-        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
-    end type input_type
-    type(input_type) :: input
-
     !---------------------------------------------------------------------------
     ! Energy terms
     !---------------------------------------------------------------------------
@@ -87,6 +73,22 @@ module simulation_state
         real(real64) :: total_non_coulomb           ! Total non-Coulomb energy
     end type energy_type
     type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
+
+
+
+    ! Parameters provided in the input file
+    type :: input_type
+        real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
+        real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
+        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
+        real(real64) :: temperature                 ! Temperature in Kelvin
+        real(real64) :: translation_step            ! Maximum displacement for MC moves
+        real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
+        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
+        integer :: seed                             ! Initial seed for the random number generator
+        logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
+    end type input_type
+    type(input_type) :: input
 
     ! Simulation box definition
     type :: type_box
