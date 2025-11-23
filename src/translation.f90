@@ -81,10 +81,18 @@ contains
         trial_pos = rand_symmetric(3) * input%translation_step
 
         ! Apply translation to previous COM position
+        ! #tofix to remove
         primary%mol_com(:, res_type, mol_index) = primary%mol_com(:, res_type, mol_index) + trial_pos(:)
 
+        ! Apply translation to previous COM position
+        guest%com(:, res_type, mol_index) = guest%com(:, res_type, mol_index) + trial_pos(:)
+
         ! Apply minimum image convension
+        ! #tofix to remove
         call apply_PBC(primary%mol_com(:, res_type, mol_index), primary)
+
+        ! Apply minimum image convension
+        call apply_PBC(guest%com(:, res_type, mol_index), primary)
 
     end subroutine propose_translation_move
 

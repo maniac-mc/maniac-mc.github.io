@@ -315,17 +315,20 @@ contains
         ! Local variables
         integer :: dim = 3                              ! Number of physical dimensions
         integer :: max_atom                             ! Maximum number of atom in the residue
+        integer :: max_molecule                         ! Maximum number of molecule
 
         ! Detect max number of atom (generaly much larger for host)
         if (is_host) then
             max_atom = nb%max_atom_in_residue_inactive
+            max_molecule = 1 ! Only one host (may be too rigid?)
         else
             max_atom = nb%max_atom_in_residue_active
+            max_molecule = NB_MAX_MOLECULE
         end if
 
         ! Allocate molecular coordinates
-        allocate(type%com(dim, nb%type_residue, NB_MAX_MOLECULE))
-        allocate(type%offset(dim, nb%type_residue, NB_MAX_MOLECULE, max_atom))
+        allocate(type%com(dim, nb%type_residue, max_molecule))
+        allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
 
     end subroutine allocate_coordinate
 

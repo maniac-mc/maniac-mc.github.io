@@ -1410,13 +1410,31 @@ contains
                     end if
 
                     ! Store CoM position
+                    ! #tofix : to remove
                     do dim = 1, 3
                         box%mol_com(dim, i, l) = com(dim)
                     end do
-
                     do m = 1, nb%atom_in_residue(i)
                         box%site_offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                     end do
+
+                    ! Store CoM position
+                    ! #tofix : deal with reservoirs
+                    if (input%is_active(i) == 1) then ! Option 1, active residue
+                        do dim = 1, 3
+                            guest%com(dim, i, l) = com(dim)
+                        end do
+                        do m = 1, nb%atom_in_residue(i)
+                            guest%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
+                        end do
+                    else ! Option 2, inactive residue
+                        do dim = 1, 3
+                            host%com(dim, i, l) = com(dim)
+                        end do
+                        do m = 1, nb%atom_in_residue(i)
+                            host%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
+                        end do
+                    end if
 
                     l = l + 1 ! Move to next molecule slot
                 else
