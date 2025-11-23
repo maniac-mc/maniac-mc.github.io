@@ -34,20 +34,22 @@ module simulation_state
     ! Counters for Monte Carlo move (trial, success)
     !---------------------------------------------------------------------------
     type :: counter_type
-        integer :: rotations(2) = 0                 ! Counter for rotational Monte Carlo moves
-        integer :: translations(2) = 0              ! Counter for translational Monte Carlo moves
         integer :: creations(2) = 0                 ! Counter for creation moves
         integer :: deletions(2) = 0                 ! Counter for deletion moves
+        integer :: translations(2) = 0              ! Counter for translational Monte Carlo moves
+        integer :: rotations(2) = 0                 ! Counter for rotational Monte Carlo moves
         integer :: swaps(2) = 0                     ! Counter for swap moves
         integer :: widom(2) = 0                     ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
 
-    ! Monte carlo move probability
+    !---------------------------------------------------------------------------
+    ! Desired Monte Carlo move probability
+    !---------------------------------------------------------------------------
     type :: proba_type
+        real(real64) :: insertion_deletion          ! Probability of attempting an insertion or a deletion
         real(real64) :: translation                 ! Probability of attempting a translation move
         real(real64) :: rotation                    ! Probability of attempting a rotation move
-        real(real64) :: insertion_deletion          ! Probability of attempting an insertion/deletion
         real(real64) :: swap                        ! Probability of attempting a swap move
         real(real64) :: widom                       ! Probability of attempting a widom move
     end type proba_type

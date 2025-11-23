@@ -81,6 +81,10 @@ contains
 
         weight = exp(-deltaU * beta)
 
+        if (weight > error) then ! Correspond to a success
+            counter%widom(2) = counter%widom(2) + 1
+        end if
+
         widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + weight
         widom_stat%sample(residue_type) = widom_stat%sample(residue_type) + 1
 
