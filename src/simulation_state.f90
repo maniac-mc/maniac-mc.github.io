@@ -120,10 +120,19 @@ module simulation_state
         character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
         integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
         integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms (1,:,:,:)=system, (2,:,:,:)=reservoir
-        real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center (1,:,:,:,:)=system, (2,:,:,:,:)=reservoir
+        real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms
+        real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center
     end type type_box
     type(type_box) :: primary, reservoir
+
+    !---------------------------------------------------------------------------
+    ! Separate coordinate for host, guest, and gas residue
+    !---------------------------------------------------------------------------
+    type :: type_coordinate
+        real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
+        real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
+    end type type_coordinate
+    type(type_coordinate) :: host, guest, gas                           ! Host and gest from the main, gas from reservoir
 
     ! Simulation box definition
     type :: type_number
@@ -137,6 +146,8 @@ module simulation_state
         integer, dimension(:), allocatable :: dihedrals_per_residue ! Number of dihedrals in the residue
         integer, dimension(:), allocatable :: impropers_per_residue ! Number of impropers in the residue
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
+        integer :: max_atom_in_residue_active
+        integer :: max_atom_in_residue_inactive
     end type type_number
     type(type_number) :: nb
 

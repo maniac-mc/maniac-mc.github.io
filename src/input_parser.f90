@@ -129,6 +129,7 @@ contains
         integer :: nb_type_per_residue
         integer :: max_atom_in_residue
         logical :: in_residue_block
+        logical :: is_active_residue
 
         ! Initialize counters
         nb%type_residue = 0
@@ -198,15 +199,33 @@ contains
                 rest_line = ''
             end if
 
-            if (trim(token) == 'nb-atoms') then
+            if (trim(token) == 'state') then
+                if (trim(rest_line) == 'actif') then
+                    is_active_residue = .true.
+                else
+                    is_active_residue = .false.
+                end if
+            end if
 
+            if (trim(token) == 'nb-atoms') then
                 read(rest_line, *, iostat=ios) max_atom_in_residue
+
+                ! Update global maximum
                 if (max_atom_in_residue > nb%max_atom_in_residue) then
                     nb%max_atom_in_residue = max_atom_in_residue
                 end if
-            
-            end if
 
+                ! Update active / inactive maxima
+                if (is_active_residue) then
+                    if (max_atom_in_residue > nb%max_atom_in_residue_active) then
+                        nb%max_atom_in_residue_active = max_atom_in_residue
+                    end if
+                else
+                    if (max_atom_in_residue > nb%max_atom_in_residue_inactive) then
+                        nb%max_atom_in_residue_inactive = max_atom_in_residue
+                    end if
+                end if
+            end if
         end do
 
     end subroutine predetect_number_info
@@ -218,6 +237,11 @@ contains
     subroutine allocate_atom_arrays()
 
         ! Allocate atom arrays for primary and reservoir
+
+        call allocate_coordinate(host, .true.)
+        call allocate_coordinate(guest, .false.)
+        call allocate_coordinate(gas, .false.)
+
         call allocate_atom_block(primary)
         call allocate_atom_block(reservoir)
 
@@ -278,6 +302,32 @@ contains
         allocate(system%num_residues(nb%type_residue))
 
     end subroutine allocate_atom_block
+
+    !-----------------------------------------------------------------------------
+    ! Allocate coordinate array for host, guest, and gas
+    !-----------------------------------------------------------------------------
+    subroutine allocate_coordinate(type, is_host)
+
+        ! Input parameters
+        type(type_coordinate), intent(inout) :: type    ! host, guest, gas
+        logical :: is_host                              ! To differentiate host
+
+        ! Local variables
+        integer :: dim = 3                              ! Number of physical dimensions
+        integer :: max_atom                             ! Maximum number of atom in the residue
+
+        ! Detect max number of atom (generaly much larger for host)
+        if (is_host) then
+            max_atom = nb%max_atom_in_residue_inactive
+        else
+            max_atom = nb%max_atom_in_residue_active
+        end if
+
+        ! Allocate molecular coordinates
+        allocate(type%com(dim, nb%type_residue, NB_MAX_MOLECULE))
+        allocate(type%offset(dim, nb%type_residue, NB_MAX_MOLECULE, max_atom))
+
+    end subroutine allocate_coordinate
 
     !-----------------------------------------------------------------------------
     ! Reads the MANIAC input file, parses global parameters and residue blocks,
