@@ -16,10 +16,10 @@ contains
     subroutine setup_output_files()
 
         ! Ensure output directory exists
-        call ensure_directory_exists(output_path)
+        call ensure_directory_exists(path%outputs)
 
         ! Open log file for writing, replacing any existing file
-        call open_log_file(output_path, 'log.maniac')
+        call open_log_file(path%outputs, 'log.maniac')
 
         ! Write header to log
         call write_header()

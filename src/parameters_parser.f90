@@ -53,7 +53,7 @@ contains
 
         printed = .false.                                   ! Initialize printed array to false (no pairs logged yet)
 
-        open(UNIT=INFILE, FILE=inc_file, STATUS='OLD', ACTION='read')
+        open(UNIT=INFILE, FILE=path%parameters, STATUS='OLD', ACTION='read')
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -104,7 +104,7 @@ contains
         call ApplyLorentzBerthelot()
 
         ! Print parameters in log
-        call LogParameters(inc_file, n_pairs, pair1, pair2, epsilons, sigmas)
+        call LogParameters(path%parameters, n_pairs, pair1, pair2, epsilons, sigmas)
 
     end subroutine ReadParameters
 

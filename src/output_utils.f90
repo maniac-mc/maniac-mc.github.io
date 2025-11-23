@@ -147,7 +147,7 @@ contains
 
         ! Output path information
         call BoxLine("All output files have been written to:", BOX_WIDTH)
-        call BoxLine(trim(output_path), BOX_WIDTH)
+        call BoxLine(trim(path%outputs), BOX_WIDTH)
 
         ! Bottom border
         call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
@@ -658,7 +658,7 @@ contains
         ! ===== HEADER =====
         call LogMessage("====== Import input file ======")
         call LogMessage("")
-        write(msg, '("Reading file ", A)') trim(maniac_file)
+        write(msg, '("Reading file ", A)') trim(path%input)
         call LogMessage(msg)
         call LogMessage("")
 

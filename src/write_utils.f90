@@ -58,7 +58,7 @@ contains
         end if
 
         ! Open file for writing
-        open(UNIT=UNIT_LMP, FILE=trim(output_path) // lammpstrj_filename, &
+        open(UNIT=UNIT_LMP, FILE=trim(path%outputs) // lammpstrj_filename, &
             STATUS='UNKNOWN', ACTION='write', POSITION=file_position)
 
         ! Write LAMMPS-style header
@@ -155,7 +155,7 @@ contains
         integer :: UNIT_ENERGY = 18
 
         ! Open energy.dat in append mode
-        open(unit=UNIT_ENERGY, file=trim(output_path) // 'energy.dat', &
+        open(unit=UNIT_ENERGY, file=trim(path%outputs) // 'energy.dat', &
             status=file_status, action='write', position='append')
 
         ! Write header only at first block
@@ -205,7 +205,7 @@ contains
                 if (input%is_active(type_residue) > 0) then
 
                     ! Construct the file name
-                    filename = trim(output_path) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
+                    filename = trim(path%outputs) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
 
                     ! Open file in append mode
                     open(unit=UNIT_WIDOM, file=filename, status=file_status, action='write', position='append')
@@ -254,7 +254,7 @@ contains
 
             if (input%is_active(resi) == 1) then
                 ! Construct the filename for this residue
-                filename = trim(output_path) // 'number_' // trim(res%names_1d(resi)) // '.dat'
+                filename = trim(path%outputs) // 'number_' // trim(res%names_1d(resi)) // '.dat'
 
                 ! Open file for append (create if not exists)
                 open(unit=UNIT_COUNT, file=filename, status=file_status, action='write', position='append')
@@ -296,7 +296,7 @@ contains
         first_block = (current_block == 0)
 
         ! Open file
-        open(unit=UNIT_MOVES, file=trim(output_path)//'moves.dat', &
+        open(unit=UNIT_MOVES, file=trim(path%outputs)//'moves.dat', &
             status=file_status, action='write', position='append')
 
         ! -----------------------
@@ -458,7 +458,7 @@ contains
         box%num_impropers = cpt_improper
 
         ! Open file
-        open(UNIT=unit_data, FILE=trim(output_path) // data_filename, STATUS='REPLACE', ACTION='write')
+        open(UNIT=unit_data, FILE=trim(path%outputs) // data_filename, STATUS='REPLACE', ACTION='write')
 
         write(unit_data, *) "! LAMMPS data file (atom_style full)"
         write(unit_data, *) box%num_atoms, " atoms"

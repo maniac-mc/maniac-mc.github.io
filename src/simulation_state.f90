@@ -6,11 +6,15 @@ module simulation_state
 
     implicit none
 
-    character(len=200) :: output_path               ! Path for saving outputs
-    character(len=200) :: maniac_file               ! Main input file
-    character(len=200) :: data_file                 ! Topology/data file
-    character(len=200) :: inc_file                  ! Parameters include file
-    character(len=200) :: res_file                  ! Optional reservoir file
+    type path_type
+        character(len=200) :: outputs                   ! Path of the folder for saving outputs
+        character(len=200) :: input                     ! Main input file
+        character(len=200) :: topology                  ! Topology/data file
+        character(len=200) :: parameters                ! Parameters include file
+        character(len=200) :: reservoir                 ! Optional reservoir file
+    end type path_type
+    type(path_type) :: path
+
     integer :: current_block                        ! Current Monte Carlo block number
     integer :: current_step                         ! Current Monte Carlo step within the block
     integer :: out_unit = 10                        ! Default log file unit

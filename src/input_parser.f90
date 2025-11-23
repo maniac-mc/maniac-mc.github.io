@@ -18,13 +18,13 @@ contains
     subroutine read_input_file()
 
         ! Pre-scan input file
-        call prescan_input_file(maniac_file)
+        call prescan_input_file(path%input)
 
         ! Allocate required arrays
         call allocate_atom_arrays()
         
         ! Parse input file and populate data
-        call ReadFullInputFile(maniac_file)
+        call ReadFullInputFile(path%input)
         
         ! Validate and rescale move probabilities
         call ValidateAndRescaleMoveProbabilities()

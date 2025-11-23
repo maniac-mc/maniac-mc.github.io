@@ -49,16 +49,16 @@ contains
         !-----------------------------
         ! Read primary system
         !-----------------------------
-        call ReadLMPData(data_file, primary, .true.)
+        call ReadLMPData(path%topology, primary, .true.)
 
         !-----------------------------
         ! Read reservoir if provided
         !-----------------------------
-        if (trim(res_file) == '') then
+        if (trim(path%reservoir) == '') then
             has_reservoir = .false.
         else
             has_reservoir = .true.
-            call ReadLMPData(res_file, reservoir, .false.)
+            call ReadLMPData(path%reservoir, reservoir, .false.)
             call AssertMassConsistency() ! Ensure masses in reservoir are consistent with primary
         end if
 
