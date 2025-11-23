@@ -87,44 +87,44 @@ module simulation_state
     ! Simulation box definition
     type :: type_box
         ! Generic box geometry parameters
-        real(real64) :: reciprocal(3,3)     ! Reciprocal box matrix
-        real(real64) :: matrix(3,3)         ! Simulation box matrix
-        real(real64) :: bounds(3,2)         ! Box dimensions (lo, hi)
-        real(real64) :: metrics(9)          ! Misc. box properties (e.g., lengths, cosines of angles)
-        real(real64) :: tilt(3)             ! Tilt factors (xy, xz, yz)
-        real(real64) :: determinant         ! Volume scaling factor of a linear transformation
-        real(real64) :: volume              ! Box volume
+        real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
+        real(real64) :: matrix(3,3)                 ! Simulation box matrix
+        real(real64) :: bounds(3,2)                 ! Box dimensions (lo, hi)
+        real(real64) :: metrics(9)                  ! Misc. box properties (e.g., lengths, cosines of angles)
+        real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
+        real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
+        real(real64) :: volume                      ! Box volume
         ! About box content
-        logical :: is_triclinic             ! Indicate if box is triclinic
-        integer :: type = 0                 ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
-        integer :: num_atoms                ! Number of atoms in the box
-        integer :: num_atomtypes            ! Number of atom types
-        integer :: num_bonds                ! Number of bonds
-        integer :: num_bondtypes            ! Number of bond types
-        integer :: num_angles               ! Number of angles
-        integer :: num_angletypes           ! Number of angle types
-        integer :: num_dihedrals            ! Number of dihedrals
-        integer :: num_dihedraltypes        ! Number of dihedral types
-        integer :: num_impropers            ! Number of impropers
-        integer :: num_impropertypes        ! Number of improper types
-        integer, allocatable :: num_residues(:) ! Number of residue of each type
+        logical :: is_triclinic                     ! Indicate if box is triclinic
+        integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+        integer :: num_atoms                        ! Number of atoms in the box
+        integer :: num_atomtypes                    ! Number of atom types
+        integer :: num_bonds                        ! Number of bonds
+        integer :: num_bondtypes                    ! Number of bond types
+        integer :: num_angles                       ! Number of angles
+        integer :: num_angletypes                   ! Number of angle types
+        integer :: num_dihedrals                    ! Number of dihedrals
+        integer :: num_dihedraltypes                ! Number of dihedral types
+        integer :: num_impropers                    ! Number of impropers
+        integer :: num_impropertypes                ! Number of improper types
+        integer, allocatable :: num_residues(:)     ! Number of residue of each type
         ! Atom information
-        real(real64), dimension(:), allocatable :: site_masses_vector    ! Mass vector for all atom types in initial inputs
-        real(real64), dimension(:, :), allocatable :: atom_charges       ! Partial charges on sites (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :), allocatable :: atom_masses        ! Masses of atoms (1,:,:)=system, (2,:,:)=reservoir
-        character(len=10), dimension(:, :), allocatable :: atom_names    ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
-        integer, dimension(:, :), allocatable :: atom_types              ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
-        integer, dimension(:, :), allocatable :: atom_ids                ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :, :), allocatable :: mol_com         ! X Y Z coordinate of molecule centers or atoms (1,:,:,:)=system, (2,:,:,:)=reservoir
-        real(real64), dimension(:, :, :, :), allocatable :: site_offset  ! Local site X Y Z displacements from molecule center (1,:,:,:,:)=system, (2,:,:,:,:)=reservoir
+        real(real64), dimension(:), allocatable :: site_masses_vector ! Mass vector for all atom types in initial inputs
+        real(real64), dimension(:, :), allocatable :: atom_charges ! Partial charges on sites (1,:,:)=system, (2,:,:)=reservoir
+        real(real64), dimension(:, :), allocatable :: atom_masses ! Masses of atoms (1,:,:)=system, (2,:,:)=reservoir
+        character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
+        integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
+        integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
+        real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms (1,:,:,:)=system, (2,:,:,:)=reservoir
+        real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center (1,:,:,:,:)=system, (2,:,:,:,:)=reservoir
     end type type_box
     type(type_box) :: primary, reservoir
 
     ! Simulation box definition
     type :: type_number
-        integer :: type_residue             ! Total number of residues
-        integer :: max_atom_in_residue      ! Max number of atoms in the largest residue
-        integer :: max_type_per_residue     ! Max number of type per residue
+        integer :: type_residue                     ! Total number of residues
+        integer :: max_atom_in_residue              ! Max number of atoms in the largest residue
+        integer :: max_type_per_residue             ! Max number of type per residue
         integer, dimension(:), allocatable :: atom_in_residue ! Number of atoms in the residue
         integer, dimension(:), allocatable :: types_per_residue ! Number of atom types in the residue
         integer, dimension(:), allocatable :: bonds_per_residue ! Number of bonds in the residue
@@ -137,34 +137,34 @@ module simulation_state
 
     ! Residues information
     type :: type_residue
-        real(real64), dimension(:), allocatable :: mass                ! de Broglie length
-        real(real64), dimension(:), allocatable :: lambda              ! Array of mass of residue
-        real(real64), dimension(:), allocatable :: masses_1d           ! Array of atoms masses
-        character(len=10), dimension(:), allocatable :: names_1d       ! Array of residue names
-        character(len=10), dimension(:, :), allocatable :: names_2d    ! Site names for each residue
-        integer, dimension(:, :), allocatable :: types_2d              ! Site types for each residue
-        integer, dimension(:, :, :), allocatable :: bond_type_2d       ! Site bonds for each residue
-        integer, dimension(:, :, :), allocatable :: angle_type_2d      ! Site angles for each residue
-        integer, dimension(:, :, :), allocatable :: dihedral_type_2d   ! Site dihedrals for each residue
-        integer, dimension(:, :, :), allocatable :: improper_type_2d   ! Site impropers for each residue
-        real(real64), dimension(:, :), allocatable :: site_offset_old    ! Local site X Y Z displacements from molecule center
-        real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
+        real(real64), dimension(:), allocatable :: mass ! de Broglie length
+        real(real64), dimension(:), allocatable :: lambda ! Array of mass of residue
+        real(real64), dimension(:), allocatable :: masses_1d ! Array of atoms masses
+        character(len=10), dimension(:), allocatable :: names_1d ! Array of residue names
+        character(len=10), dimension(:, :), allocatable :: names_2d ! Site names for each residue
+        integer, dimension(:, :), allocatable :: types_2d ! Site types for each residue
+        integer, dimension(:, :, :), allocatable :: bond_type_2d ! Site bonds for each residue
+        integer, dimension(:, :, :), allocatable :: angle_type_2d ! Site angles for each residue
+        integer, dimension(:, :, :), allocatable :: dihedral_type_2d ! Site dihedrals for each residue
+        integer, dimension(:, :, :), allocatable :: improper_type_2d ! Site impropers for each residue
+        real(real64), dimension(:, :), allocatable :: site_offset_old ! Local site X Y Z displacements from molecule center
+        real(real64), dimension(3) :: mol_com_old   ! For storing old molecule center-of-mass
     end type type_residue
     type(type_residue) :: res
 
     ! Widom statistic
     type :: type_widom
-        real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
-        real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
-        real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
-        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
+        real(real64), dimension(:), allocatable :: weight ! Accumulated Boltzmann weight sum for chemical potential
+        real(real64), dimension(:), allocatable :: mu_ex ! Excess chemical potential
+        real(real64), dimension(:), allocatable :: mu_tot ! Total chemical potential
+        integer, dimension(:), allocatable :: sample ! Indices or count of Widom trial samples
     end type type_widom
     type(type_widom) :: widom_stat
 
     ! Interaction arrays
     type :: type_coeff
-        real(real64), dimension(:, :, :, :), allocatable :: sigma       ! Lennard-Jones coefficients
-        real(real64), dimension(:, :, :, :), allocatable :: epsilon     ! Lennard-Jones oefficients
+        real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
+        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
     end type type_coeff
     type(type_coeff) :: coeff
 
@@ -173,17 +173,17 @@ module simulation_state
         integer :: kx
         integer :: ky
         integer :: kz
-        real(real64) :: k_squared               ! Normalized k^2 (for validity)
-        real(real64) :: k_squared_mag           ! Cartesian squared magnitude (for W(k))
+        real(real64) :: k_squared                   ! Normalized k^2 (for validity)
+        real(real64) :: k_squared_mag               ! Cartesian squared magnitude (for W(k))
     end type kvector_type
 
     ! For Ewald calculation
     type :: type_ewald
-        integer :: num_kvectors                 ! Number of precomputed vectors
-        integer :: kmax(3)                      ! Maximum index for reciprocal lattice vector x y z component
-        real(real64) :: alpha                   ! Ewald summation alpha parameter (screening parameter)
-        real(real64) :: fourier_precision       ! Estimated precision required for reciprocal (Fourier) space summation
-        real(real64) :: screening_factor        ! Intermediate tolerance factor for real-space screening width calculation
+        integer :: num_kvectors                     ! Number of precomputed vectors
+        integer :: kmax(3)                          ! Maximum index for reciprocal lattice vector x y z component
+        real(real64) :: alpha                       ! Ewald summation alpha parameter (screening parameter)
+        real(real64) :: fourier_precision           ! Estimated precision required for reciprocal (Fourier) space summation
+        real(real64) :: screening_factor            ! Intermediate tolerance factor for real-space screening width calculation
         real(real64), dimension(:), allocatable :: recip_constants ! Constants for reciprocal space summations
         complex(real64), dimension(:, :, :, :, :), allocatable :: phase_factor   ! Complex exponentials for reciprocal space
         complex(real64), dimension(:, :, :), allocatable :: phase_factor_old ! Old complex exponential terms
@@ -202,14 +202,14 @@ module simulation_state
     ! For tabulating potential
     type :: tabulated
         ! Table properties
-        real(real64), allocatable :: x(:)       ! Grid points (r, k^2, etc.)
-        real(real64), allocatable :: f(:)       ! Function values
-        real(real64) :: dx                      ! Grid spacing
-        integer :: n                            ! Number of points
-        logical :: initialized = .false.        ! Flag to indicate table is ready
+        real(real64), allocatable :: x(:)           ! Grid points (r, k^2, etc.)
+        real(real64), allocatable :: f(:)           ! Function values
+        real(real64) :: dx                          ! Grid spacing
+        integer :: n                                ! Number of points
+        logical :: initialized = .false.            ! Flag to indicate table is ready
     end type tabulated
-    type(tabulated) :: erfc_r_table             ! For precomputed erfc(r) / r
-    type(tabulated) :: r6_table                 ! For precomputed r**6
-    type(tabulated) :: r12_table                ! For precomputed r**12
+    type(tabulated) :: erfc_r_table                 ! For precomputed erfc(r) / r
+    type(tabulated) :: r6_table                     ! For precomputed r**6
+    type(tabulated) :: r12_table                    ! For precomputed r**12
 
 end module simulation_state
