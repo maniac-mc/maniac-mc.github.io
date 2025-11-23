@@ -95,26 +95,25 @@ module simulation_state
         real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
         real(real64) :: volume                      ! Box volume
         ! About box content
-        logical :: is_triclinic                     ! Indicate if box is triclinic
         integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
         integer :: num_atoms                        ! Number of atoms in the box
-        integer :: num_atomtypes                    ! Number of atom types
         integer :: num_bonds                        ! Number of bonds
-        integer :: num_bondtypes                    ! Number of bond types
         integer :: num_angles                       ! Number of angles
-        integer :: num_angletypes                   ! Number of angle types
         integer :: num_dihedrals                    ! Number of dihedrals
-        integer :: num_dihedraltypes                ! Number of dihedral types
         integer :: num_impropers                    ! Number of impropers
+        integer :: num_atomtypes                    ! Number of atom types
+        integer :: num_bondtypes                    ! Number of bond types
+        integer :: num_angletypes                   ! Number of angle types
+        integer :: num_dihedraltypes                ! Number of dihedral types
         integer :: num_impropertypes                ! Number of improper types
         integer, allocatable :: num_residues(:)     ! Number of residue of each type
         ! Atom information
         real(real64), dimension(:), allocatable :: site_masses_vector ! Mass vector for all atom types in initial inputs
-        real(real64), dimension(:, :), allocatable :: atom_charges ! Partial charges on sites (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :), allocatable :: atom_masses ! Masses of atoms (1,:,:)=system, (2,:,:)=reservoir
-        character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
-        integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
-        integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
+        real(real64), dimension(:, :), allocatable :: atom_charges ! Partial charges on sites
+        real(real64), dimension(:, :), allocatable :: atom_masses ! Masses of atoms
+        character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue
+        integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue
+        integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue
         real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms (1,:,:,:)=system, (2,:,:,:)=reservoir
         real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center (1,:,:,:,:)=system, (2,:,:,:,:)=reservoir
     end type type_box

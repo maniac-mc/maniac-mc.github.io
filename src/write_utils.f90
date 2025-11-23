@@ -485,7 +485,7 @@ contains
         write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(3,1), box%bounds(3,2)
         write(unit_data, '(A)') "zlo zhi"
 
-        if (box%is_triclinic) then
+        if (box%type == 3) then
             write(unit_data, '(3(F15.8,1X))') box%tilt(1), box%tilt(2), box%tilt(3)
             write(unit_data, '(A)') "xy xz yz"
         end if
