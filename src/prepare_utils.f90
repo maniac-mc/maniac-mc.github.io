@@ -120,7 +120,7 @@ contains
 
         write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', input%real_space_cutoff
         call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', input%ewald_tolerance
+        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%tolerance
         call LogMessage(formatted_msg)
         write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
         call LogMessage(formatted_msg)
@@ -204,7 +204,7 @@ contains
     subroutine clamp_tolerance()
 
         ! Clamp accuracy tolerance to max 0.5
-        input%ewald_tolerance = min(abs(input%ewald_tolerance), half)
+        ewald%tolerance = min(abs(ewald%tolerance), half)
     
     end subroutine clamp_tolerance
 
@@ -215,14 +215,14 @@ contains
     subroutine compute_ewald_parameters()
     
         ! Intermediate tolerance factor for screening width
-        ewald%screening_factor = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff)))
+        ewald%screening_factor = sqrt(abs(log(ewald%tolerance * input%real_space_cutoff)))
 
         ! Compute Ewald damping parameter
-        ewald%alpha = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
+        ewald%alpha = sqrt(abs(log(ewald%tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
                     input%real_space_cutoff
 
         ! Estimate needed Fourier-space precision
-        ewald%fourier_precision = sqrt(-log(input%ewald_tolerance * input%real_space_cutoff * &
+        ewald%fourier_precision = sqrt(-log(ewald%tolerance * input%real_space_cutoff * &
                                 (two * ewald%screening_factor * ewald%alpha)**2))
 
     end subroutine compute_ewald_parameters

@@ -62,11 +62,10 @@ module simulation_state
         real(real64) :: temperature                 ! Temperature in Kelvin
         real(real64) :: translation_step            ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
-        real(real64) :: ewald_tolerance             ! Numerical accuracy for Ewald summation,
-        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
         integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         integer :: seed                             ! Initial seed for the random number generator
         logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
+        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
     end type input_type
     type(input_type) :: input
 
@@ -200,6 +199,7 @@ module simulation_state
         complex(real64), dimension(:), allocatable :: phase_new  ! Temporary array for new configuration phases
         complex(real64), dimension(:), allocatable :: phase_old  ! Temporary array for old configuration phases
         real(real64), dimension(:), allocatable :: charges ! Temporary array for atom charges    
+        real(real64) :: tolerance                   ! Numerical accuracy for Ewald summation,
     end type type_ewald
     type(type_ewald) :: ewald
 

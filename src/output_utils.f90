@@ -676,7 +676,7 @@ contains
 
         ! ===== ELECTROSTATIC =====
         call LogMessage("=== Electrostatic interactions")
-        write(msg, '("Ewald tolerance: ", F15.8)') input%ewald_tolerance
+        write(msg, '("Ewald tolerance: ", F15.8)') ewald%tolerance
         call LogMessage(msg)
         write(msg, '("Cutoff (Å): ", F10.2)') input%real_space_cutoff
         call LogMessage(msg)

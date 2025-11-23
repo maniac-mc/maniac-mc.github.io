@@ -381,7 +381,7 @@ contains
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading ewald_tolerance"
                 if (val_real <= zero) error stop "Invalid ewald_tolerance: must be > 0"
-                input%ewald_tolerance = val_real
+                ewald%tolerance = val_real
                 has_tolerance = .true.
 
             case ("real_space_cutoff")
