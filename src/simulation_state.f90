@@ -26,7 +26,7 @@ module simulation_state
         integer :: trial_rotations = 0       ! Counter for trial rotation moves
         integer :: trial_creations = 0       ! Counter for trial rotation moves
         integer :: trial_deletions = 0       ! Counter for trial deletion moves
-        integer :: trial_swaps = 0           ! Counter for swap moves
+        integer :: trial_swaps = 0           ! Counter for trial swap moves
         integer :: trial_widom = 0           ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
@@ -45,12 +45,12 @@ module simulation_state
     type :: input_type
         real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
         real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
-        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         real(real64) :: temperature             ! Temperature in Kelvin
         real(real64) :: translation_step        ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle     ! Maximum rotation for MC moves
         real(real64) :: ewald_tolerance         ! Numerical accuracy for Ewald summation,
         real(real64) :: real_space_cutoff       ! Cutoff radius - maximum interaction distance in real space
+        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         integer :: seed                         ! Initial seed for the random number generator
         integer :: nb_block                     ! Total desired Monte Carlo block number
         integer :: nb_step                      ! Total desired Monte Carlo step
