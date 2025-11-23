@@ -178,17 +178,17 @@ contains
     subroutine compute_all_fourier_terms()
 
         ! Local variables
-        integer :: residue_type_1
-        integer :: molecule_index_1
+        integer :: residue_type
+        integer :: molecule_index
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type = 1, nb%type_residue
 
             ! Loop over all molecules of this residue type
-            do molecule_index_1 = 1, primary%num_residues(residue_type_1)
+            do molecule_index = 1, primary%num_residues(residue_type)
 
                 ! Compute Fourier terms for a single molecule
-                call single_mol_fourier_terms(residue_type_1, molecule_index_1)
+                call single_mol_fourier_terms(residue_type, molecule_index)
 
             end do
         end do
@@ -214,6 +214,11 @@ contains
         write (*,*) nb%atom_in_residue(1), nb%atom_in_residue(2)
 
         write(*,*) nb%atom_in_residue(res_type), guest%max_nb_atom, guest%max_nb_molecule
+
+        write(*,*)
+        write(*,*) host%residue_exists(1), host%residue_exists(2)
+        write(*,*) guest%residue_exists(1), guest%residue_exists(2)
+        write (*,*)
 
         stop 778
 

@@ -327,10 +327,12 @@ contains
         end if
 
         ! Allocate molecular coordinates
+        allocate(type%residue_exists(nb%type_residue))
         allocate(type%com(dim, nb%type_residue, max_molecule))
         allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
         host%max_nb_atom = max_atom
         host%max_nb_molecule = max_molecule
+        type%residue_exists = .false.
 
     end subroutine allocate_coordinate
 

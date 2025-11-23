@@ -1421,6 +1421,7 @@ contains
                     ! Store CoM position
                     ! #tofix : deal with reservoirs
                     if (input%is_active(i) == 1) then ! Option 1, active residue
+                        guest%residue_exists(i) = .true.
                         do dim = 1, 3
                             guest%com(dim, i, l) = com(dim)
                         end do
@@ -1428,6 +1429,7 @@ contains
                             guest%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                         end do
                     else ! Option 2, inactive residue
+                        host%residue_exists(i) = .true.
                         do dim = 1, 3
                             host%com(dim, i, l) = com(dim)
                         end do
