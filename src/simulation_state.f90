@@ -6,38 +6,38 @@ module simulation_state
 
     implicit none
 
-    character(len=200) :: output_path   ! Path for saving outputs
-    character(len=200) :: maniac_file   ! Main input file
-    character(len=200) :: data_file     ! Topology/data file
-    character(len=200) :: inc_file      ! Parameters include file
-    character(len=200) :: res_file      ! Optional reservoir file
-    integer :: current_block            ! Current Monte Carlo block number
-    integer :: current_step             ! Current Monte Carlo step within the block
-    integer :: out_unit = 10            ! Default log file unit
-    logical :: has_reservoir            ! Wether a reservoir was provided or
+    character(len=200) :: output_path               ! Path for saving outputs
+    character(len=200) :: maniac_file               ! Main input file
+    character(len=200) :: data_file                 ! Topology/data file
+    character(len=200) :: inc_file                  ! Parameters include file
+    character(len=200) :: res_file                  ! Optional reservoir file
+    integer :: current_block                        ! Current Monte Carlo block number
+    integer :: current_step                         ! Current Monte Carlo step within the block
+    integer :: out_unit = 10                        ! Default log file unit
+    logical :: has_reservoir                        ! Wether a reservoir was provided or
 
     type :: counter_type
-        integer :: rotations = 0             ! Counter for rotational Monte Carlo moves
-        integer :: translations = 0          ! Counter for translational Monte Carlo moves
-        integer :: creations = 0             ! Counter for creation moves
-        integer :: deletions = 0             ! Counter for deletion moves
-        integer :: swaps = 0                 ! Counter for swap moves
-        integer :: trial_translations = 0    ! Counter for trial translation moves
-        integer :: trial_rotations = 0       ! Counter for trial rotation moves
-        integer :: trial_creations = 0       ! Counter for trial rotation moves
-        integer :: trial_deletions = 0       ! Counter for trial deletion moves
-        integer :: trial_swaps = 0           ! Counter for trial swap moves
-        integer :: trial_widom = 0           ! Counter for widom moves
+        integer :: rotations = 0                    ! Counter for rotational Monte Carlo moves
+        integer :: translations = 0                 ! Counter for translational Monte Carlo moves
+        integer :: creations = 0                    ! Counter for creation moves
+        integer :: deletions = 0                    ! Counter for deletion moves
+        integer :: swaps = 0                        ! Counter for swap moves
+        integer :: trial_translations = 0           ! Counter for trial translation moves
+        integer :: trial_rotations = 0              ! Counter for trial rotation moves
+        integer :: trial_creations = 0              ! Counter for trial rotation moves
+        integer :: trial_deletions = 0              ! Counter for trial deletion moves
+        integer :: trial_swaps = 0                  ! Counter for trial swap moves
+        integer :: trial_widom = 0                  ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
 
     ! Monte carlo move probability
     type :: proba_type
-        real(real64) :: translation             ! Probability of attempting a translation move
-        real(real64) :: rotation                ! Probability of attempting a rotation move
-        real(real64) :: insertion_deletion      ! Probability of attempting an insertion/deletion
-        real(real64) :: swap                    ! Probability of attempting a swap move
-        real(real64) :: widom                   ! Probability of attempting a widom move
+        real(real64) :: translation                 ! Probability of attempting a translation move
+        real(real64) :: rotation                    ! Probability of attempting a rotation move
+        real(real64) :: insertion_deletion          ! Probability of attempting an insertion/deletion
+        real(real64) :: swap                        ! Probability of attempting a swap move
+        real(real64) :: widom                       ! Probability of attempting a widom move
     end type proba_type
     type(proba_type) :: proba
 
@@ -45,44 +45,44 @@ module simulation_state
     type :: input_type
         real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
         real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
-        real(real64) :: temperature             ! Temperature in Kelvin
-        real(real64) :: translation_step        ! Maximum displacement for MC moves
-        real(real64) :: rotation_step_angle     ! Maximum rotation for MC moves
-        real(real64) :: ewald_tolerance         ! Numerical accuracy for Ewald summation,
-        real(real64) :: real_space_cutoff       ! Cutoff radius - maximum interaction distance in real space
+        real(real64) :: temperature                 ! Temperature in Kelvin
+        real(real64) :: translation_step            ! Maximum displacement for MC moves
+        real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
+        real(real64) :: ewald_tolerance             ! Numerical accuracy for Ewald summation,
+        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
         integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
-        integer :: seed                         ! Initial seed for the random number generator
-        integer :: nb_block                     ! Total desired Monte Carlo block number
-        integer :: nb_step                      ! Total desired Monte Carlo step
-        logical :: recalibrate_moves            ! Enable automatic recalibration of move steps (true/false)
+        integer :: seed                             ! Initial seed for the random number generator
+        integer :: nb_block                         ! Total desired Monte Carlo block number
+        integer :: nb_step                          ! Total desired Monte Carlo step
+        logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
     end type input_type
     type(input_type) :: input
 
     ! Energy terms
     type :: energy_type
-        real(real64) :: self_interaction          ! Site-site short-range energy
-        real(real64) :: coulomb                   ! Charged-electrostatic interaction energy
-        real(real64) :: non_coulomb               ! Neutral-charged interaction energy
-        real(real64) :: ewald_self                ! Ewald self-interaction energy
-        real(real64) :: ke_reciprocal             ! Reciprocal-space (k-space) energy
-        real(real64) :: intra_coulomb             ! Intramolecular Coulomb energy (alternative)
-        real(real64) :: total_coulomb             ! Total Coulomb energy
-        real(real64) :: total_non_coulomb         ! Total non-Coulomb energy
-        real(real64) :: recip_coulomb             ! Reciprocal-space Coulomb contribution
-        real(real64) :: total                     ! Total system energy
+        real(real64) :: self_interaction            ! Site-site short-range energy
+        real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
+        real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
+        real(real64) :: ewald_self                  ! Ewald self-interaction energy
+        real(real64) :: ke_reciprocal               ! Reciprocal-space (k-space) energy
+        real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy (alternative)
+        real(real64) :: total_coulomb               ! Total Coulomb energy
+        real(real64) :: total_non_coulomb           ! Total non-Coulomb energy
+        real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
+        real(real64) :: total                       ! Total system energy
     end type energy_type
     type(energy_type) :: energy
 
     ! Energy status for Monte Carlo move
     type :: energy_state
-        real(real64) :: non_coulomb             ! Old and new non-coulombic energy of molecule
-        real(real64) :: coulomb                 ! Old and new coulombic energy of molecule
-        real(real64) :: recip_coulomb           ! Old and new reciprocal-space energy
-        real(real64) :: ewald_self
-        real(real64) :: intra_coulomb
-        real(real64) :: total                   ! Total old and new energies
+        real(real64) :: non_coulomb                 ! Non-coulombic energy
+        real(real64) :: coulomb                     ! Coulombic energy
+        real(real64) :: recip_coulomb               ! Reciprocal-space energy
+        real(real64) :: ewald_self                  ! Ewald self contribution
+        real(real64) :: intra_coulomb               ! Intra-residue Coulomb contribution
+        real(real64) :: total                       ! Total energies
     end type energy_state
-    type(energy_state) :: old, new, old_bis, new_bis, intermediate
+    type(energy_state) :: old, new
 
     ! Simulation box definition
     type :: type_box
