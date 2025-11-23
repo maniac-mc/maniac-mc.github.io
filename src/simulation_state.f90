@@ -94,20 +94,20 @@ module simulation_state
         real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
         real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
         real(real64) :: volume                      ! Box volume
-        ! About box content
         integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+    end type type_box
+    type(type_box) :: primary, reservoir
+
+    ! Box atom content
+    type :: type_content
+        ! About box content
         integer :: num_atoms                        ! Number of atoms in the box
         integer :: num_bonds                        ! Number of bonds
         integer :: num_angles                       ! Number of angles
         integer :: num_dihedrals                    ! Number of dihedrals
         integer :: num_impropers                    ! Number of impropers
-        integer :: num_atomtypes                    ! Number of atom types
-        integer :: num_bondtypes                    ! Number of bond types
-        integer :: num_angletypes                   ! Number of angle types
-        integer :: num_dihedraltypes                ! Number of dihedral types
-        integer :: num_impropertypes                ! Number of improper types
-        integer, allocatable :: num_residues(:)     ! Number of residue of each type
         ! Atom information
+        integer, allocatable :: num_residues(:)     ! Number of residue of each type
         real(real64), dimension(:), allocatable :: site_masses_vector ! Mass vector for all atom types in initial inputs
         real(real64), dimension(:, :), allocatable :: atom_charges ! Partial charges on sites
         real(real64), dimension(:, :), allocatable :: atom_masses ! Masses of atoms
@@ -117,10 +117,15 @@ module simulation_state
         real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms (1,:,:,:)=system, (2,:,:,:)=reservoir
         real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center (1,:,:,:,:)=system, (2,:,:,:,:)=reservoir
     end type type_box
-    type(type_box) :: primary, reservoir
+    type(type_box) :: host, guest, gas
 
     ! Simulation box definition
     type :: type_number
+        integer :: atomtypes                    ! Number of atom types
+        integer :: bondtypes                    ! Number of bond types
+        integer :: angletypes                   ! Number of angle types
+        integer :: dihedraltypes                ! Number of dihedral types
+        integer :: impropertypes                ! Number of improper types
         integer :: type_residue                     ! Total number of residues
         integer :: max_atom_in_residue              ! Max number of atoms in the largest residue
         integer :: max_type_per_residue             ! Max number of type per residue
