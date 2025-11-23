@@ -107,28 +107,28 @@ contains
         ! Summary statistics (Trial / Accepted moves)
         if (proba%translation > 0) then
             write(line,'(A,I8,A,I8)') "  Translations (Trial/Accepted): ", &
-                counter%trial_translations, " / ", counter%translations
+                counter%translations(1), " / ", counter%translations(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
         if (proba%rotation > 0) then
             write(line,'(A,I8,A,I8)') "  Rotations    (Trial/Accepted): ", &
-                counter%trial_rotations, " / ", counter%rotations
+                counter%rotations(1), " / ", counter%rotations(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
         if (proba%insertion_deletion > 0) then
             write(line,'(A,I8,A,I8)') "  Creations    (Trial/Accepted): ", &
-                counter%trial_creations, " / ", counter%creations
+                counter%creations(1), " / ", counter%creations(2)
             call BoxLine(trim(line), BOX_WIDTH)
             write(line,'(A,I8,A,I8)') "  Deletions    (Trial/Accepted): ", &
-                counter%trial_deletions, " / ", counter%deletions
+                counter%deletions(1), " / ", counter%deletions(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
         if (proba%swap > 0) then
             write(line,'(A,I8,A,I8)') "  Swap         (Trial/Accepted): ", &
-                counter%trial_swaps, " / ", counter%swaps
+                counter%swaps(1), " / ", counter%swaps(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
@@ -208,29 +208,29 @@ contains
         move_msg = ""
 
         if (proba%translation > 0) then
-            write(tmp,'("T(",I0,"/",I0,")")') counter%translations, counter%trial_translations
+            write(tmp,'("T(",I0,"/",I0,")")') counter%translations(2), counter%translations(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%rotation > 0) then
-            write(tmp,'("R(",I0,"/",I0,")")') counter%rotations, counter%trial_rotations
+            write(tmp,'("R(",I0,"/",I0,")")') counter%rotations(2), counter%rotations(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%insertion_deletion > 0) then
-            write(tmp,'("C(",I0,"/",I0,")")') counter%creations, counter%trial_creations
+            write(tmp,'("C(",I0,"/",I0,")")') counter%creations(2), counter%creations(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
-            write(tmp,'("D(",I0,"/",I0,")")') counter%deletions, counter%trial_deletions
+            write(tmp,'("D(",I0,"/",I0,")")') counter%deletions(2), counter%deletions(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%swap > 0) then
-            write(tmp,'("S(",I0,"/",I0,")")') counter%swaps, counter%trial_swaps
+            write(tmp,'("S(",I0,"/",I0,")")') counter%swaps(2), counter%swaps(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%widom > 0) then
-            write(tmp,'("W(",I0,")")') counter%trial_widom
+            write(tmp,'("S(",I0,"/",I0,")")') counter%widom(2), counter%widom(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 

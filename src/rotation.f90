@@ -31,8 +31,8 @@ contains
         ! Exit early if molecule cannot rotate
         if ((nb%atom_in_residue(residue_type) == 1) .or. (molecule_index == 0)) return
 
-        ! Count trial move (success + fail)
-        counter%trial_rotations = counter%trial_rotations + 1
+        ! Count trial move
+        counter%rotations(1) = counter%rotations(1) + 1
 
         call save_molecule_state(residue_type, molecule_index, offset_old = res%site_offset_old)
 

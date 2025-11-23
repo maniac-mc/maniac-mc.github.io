@@ -358,33 +358,33 @@ contains
 
         ! Translation
         if (proba%translation > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%translations, counter%trial_translations
+            write(tmp,'(1X,I12,1X,I12)') counter%translations(2), counter%translations(1)
             line = trim(line)//tmp
         end if
 
         ! Rotation
         if (proba%rotation > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%rotations, counter%trial_rotations
+            write(tmp,'(1X,I12,1X,I12)') counter%rotations(2), counter%rotations(1)
             line = trim(line)//tmp
         end if
 
         ! Insertion / Deletion
         if (proba%insertion_deletion > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%creations, counter%trial_creations
+            write(tmp,'(1X,I12,1X,I12)') counter%creations(2), counter%creations(1)
             line = trim(line)//tmp
-            write(tmp,'(1X,I12,1X,I12)') counter%deletions, counter%trial_deletions
+            write(tmp,'(1X,I12,1X,I12)') counter%deletions(2), counter%deletions(1)
             line = trim(line)//tmp
         end if
 
         ! Swap
         if (proba%swap > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%swaps, counter%trial_swaps
+            write(tmp,'(1X,I12,1X,I12)') counter%swaps(2), counter%swaps(1)
             line = trim(line)//tmp
         end if
 
         ! Widom
         if (proba%widom > 0) then
-            write(tmp,'(1X,I12)') counter%trial_widom
+            write(tmp,'(1X,I12,1X,I12)') counter%widom(2), counter%widom(1)
             line = trim(line)//tmp
         end if
 

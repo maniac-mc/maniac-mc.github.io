@@ -10,11 +10,11 @@ module simulation_state
     ! Path and file names
     !---------------------------------------------------------------------------
     type path_type
-        character(len=200) :: outputs                   ! Path of the folder for saving outputs
-        character(len=200) :: input                     ! Main input file
-        character(len=200) :: topology                  ! Topology/data file
-        character(len=200) :: parameters                ! Parameters include file
-        character(len=200) :: reservoir                 ! Optional reservoir file
+        character(len=200) :: outputs               ! Folder for saving outputs
+        character(len=200) :: input                 ! Main input file
+        character(len=200) :: topology              ! Topology/data file
+        character(len=200) :: parameters            ! Parameters include file
+        character(len=200) :: reservoir             ! Optional reservoir file
     end type path_type
     type(path_type) :: path
 
@@ -22,26 +22,24 @@ module simulation_state
     ! Generic status information
     !---------------------------------------------------------------------------
     type status_type
-        integer :: desired_block                    ! Total desired Monte Carlo block number
-        integer :: desired_step                     ! Total desired Monte Carlo step
-        integer :: block                            ! Current Monte Carlo block number
-        integer :: step                             ! Current Monte Carlo step within the block
-        logical :: reservoir_provided               ! Wether a reservoir was provided by the user
+        integer :: desired_block                    ! Desired Monte Carlo block number
+        integer :: desired_step                     ! Desired Monte Carlo step
+        integer :: block                            ! Monte Carlo block number
+        integer :: step                             ! Monte Carlo step within the block
+        logical :: reservoir_provided               ! Is reservoir provided by the user
     end type status_type
     type(status_type) :: status
 
+    !---------------------------------------------------------------------------
+    ! Counters for Monte Carlo move (trial, success)
+    !---------------------------------------------------------------------------
     type :: counter_type
-        integer :: rotations = 0                    ! Counter for rotational Monte Carlo moves
-        integer :: translations = 0                 ! Counter for translational Monte Carlo moves
-        integer :: creations = 0                    ! Counter for creation moves
-        integer :: deletions = 0                    ! Counter for deletion moves
-        integer :: swaps = 0                        ! Counter for swap moves
-        integer :: trial_translations = 0           ! Counter for trial translation moves
-        integer :: trial_rotations = 0              ! Counter for trial rotation moves
-        integer :: trial_creations = 0              ! Counter for trial rotation moves
-        integer :: trial_deletions = 0              ! Counter for trial deletion moves
-        integer :: trial_swaps = 0                  ! Counter for trial swap moves
-        integer :: trial_widom = 0                  ! Counter for widom moves
+        integer :: rotations(2) = 0                 ! Counter for rotational Monte Carlo moves
+        integer :: translations(2) = 0              ! Counter for translational Monte Carlo moves
+        integer :: creations(2) = 0                 ! Counter for creation moves
+        integer :: deletions(2) = 0                 ! Counter for deletion moves
+        integer :: swaps(2) = 0                     ! Counter for swap moves
+        integer :: widom(2) = 0                     ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
 

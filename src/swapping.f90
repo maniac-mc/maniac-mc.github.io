@@ -53,8 +53,8 @@ contains
         ! Check that there is at least one molecule of the selected type to swap
         if (primary%num_residues(residue_type_bis)==0) return ! #todo : Is this really necessary ?
 
-        ! Count trial move (success + fail)
-        counter%trial_swaps = counter%trial_swaps + 1
+        ! Count trial move
+        counter%swaps(1) = counter%swaps(1) + 1
 
         ! Pick a molecule ID for the second type
         molecule_index_bis = primary%num_residues(residue_type_bis) + 1

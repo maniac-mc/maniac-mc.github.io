@@ -111,10 +111,10 @@ contains
         if (.not. input%recalibrate_moves) return
 
         ! Adjust translation step
-        if (counter%trial_translations > MIN_TRIALS_FOR_RECALIBRATION) then
+        if (counter%translations(1) > MIN_TRIALS_FOR_RECALIBRATION) then
 
-            acc_trans = real(counter%translations, real64) / &
-                real(counter%trial_translations, real64)
+            acc_trans = real(counter%translations(2), real64) / &
+                real(counter%translations(1), real64)
 
             input%translation_step = input%translation_step * &
                                     exp(gamma * (acc_trans - TARGET_ACCEPTANCE))
@@ -125,10 +125,10 @@ contains
         end if
 
         ! Adjust rotational step
-        if (counter%trial_rotations > MIN_TRIALS_FOR_RECALIBRATION) then
+        if (counter%rotations(1) > MIN_TRIALS_FOR_RECALIBRATION) then
 
-            acc_rot = real(counter%rotations,real64) / &
-                    real(counter%trial_rotations,real64)
+            acc_rot = real(counter%rotations(2),real64) / &
+                    real(counter%rotations(1),real64)
 
             input%rotation_step_angle = input%rotation_step_angle * &
                                         exp(gamma * (acc_rot - TARGET_ACCEPTANCE))
@@ -454,13 +454,13 @@ contains
 
         ! Input arguments
         type(energy_state), intent(in) :: old, new  ! Old and new energy states
-        integer, intent(inout) :: counter_var       ! Counter for succesfull move
+        integer, intent(inout) :: counter_var(2)    ! Counter for succesfull move
 
         energy%recip_coulomb = energy%recip_coulomb + new%recip_coulomb - old%recip_coulomb
         energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb
         energy%coulomb = energy%coulomb + new%coulomb - old%coulomb
         energy%total = energy%total + new%total - old%total
-        counter_var = counter_var + 1
+        counter_var(2) = counter_var(2) + 1
 
     end subroutine accept_molecule_move
 

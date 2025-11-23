@@ -38,8 +38,8 @@ contains
 
         call check_molecule_index(molecule_index)
 
-        ! Count trial move (success + fail)
-        counter%trial_widom = counter%trial_widom + 1
+        ! Count trial move
+        counter%widom(1) = counter%widom(1) + 1
 
         ! Compute old energy
         call compute_old_energy(residue_type, molecule_index, is_creation = .true.)

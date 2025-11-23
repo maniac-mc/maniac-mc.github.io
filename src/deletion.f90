@@ -39,8 +39,8 @@ contains
         ! Return immediately if no molecules of type residue_type exist
         if (primary%num_residues(residue_type)==0) return
 
-        ! Count trial move (success + fail)
-        counter%trial_deletions = counter%trial_deletions + 1
+        ! Count trial move
+        counter%deletions(1) = counter%deletions(1) + 1
 
         ! Energy of the previous configuration
         call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)

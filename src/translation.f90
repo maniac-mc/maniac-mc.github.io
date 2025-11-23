@@ -32,7 +32,7 @@ contains
         if (molecule_index == 0) return
 
         ! Increment trial move counter
-        counter%trial_translations = counter%trial_translations + 1
+        counter%translations(1) = counter%translations(1) + 1
 
         ! Save the current state of the molecule
         call save_molecule_state(residue_type, molecule_index, com_old = com_old)
