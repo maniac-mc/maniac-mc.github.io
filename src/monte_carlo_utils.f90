@@ -212,8 +212,8 @@ contains
     function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
         ! Input arguments
-        type(energy_state), intent(in) :: old   ! Old energy states
-        type(energy_state), intent(in) :: new   ! New energy states
+        type(energy_type), intent(in) :: old   ! Old energy states
+        type(energy_type), intent(in) :: new   ! New energy states
         integer, intent(in) :: move_type        ! MC move type (TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, or TYPE_ROTATION)
         integer, intent(in) :: residue_type     ! Index of the residue type
 
@@ -297,8 +297,8 @@ contains
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
         ! Arguments
-        type(energy_state), intent(in) :: old   ! Energy of system with old molecule
-        type(energy_state), intent(in) :: new   ! Energy of system with new molecule
+        type(energy_type), intent(in) :: old   ! Energy of system with old molecule
+        type(energy_type), intent(in) :: new   ! Energy of system with new molecule
         integer, intent(in) :: type_old         ! Residue type being removed
         integer, intent(in) :: type_new         ! Residue type being inserted
 
@@ -453,7 +453,7 @@ contains
     subroutine accept_molecule_move(old, new, counter_var)
 
         ! Input arguments
-        type(energy_state), intent(in) :: old, new  ! Old and new energy states
+        type(energy_type), intent(in) :: old, new  ! Old and new energy states
         integer, intent(inout) :: counter_var(2)    ! Counter for succesfull move
 
         energy%recip_coulomb = energy%recip_coulomb + new%recip_coulomb - old%recip_coulomb

@@ -70,31 +70,24 @@ module simulation_state
     end type input_type
     type(input_type) :: input
 
+    !---------------------------------------------------------------------------
     ! Energy terms
+    !---------------------------------------------------------------------------
     type :: energy_type
-        real(real64) :: self_interaction            ! Site-site short-range energy
-        real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
+        ! Main energy terms
         real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
+        real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
+        real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
         real(real64) :: ewald_self                  ! Ewald self-interaction energy
-        real(real64) :: ke_reciprocal               ! Reciprocal-space (k-space) energy
         real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy (alternative)
+        real(real64) :: total                       ! Total energies
+        ! Additional terms
+        real(real64) :: self_interaction            ! Site-site short-range energy
+        real(real64) :: ke_reciprocal               ! Reciprocal-space (k-space) energy
         real(real64) :: total_coulomb               ! Total Coulomb energy
         real(real64) :: total_non_coulomb           ! Total non-Coulomb energy
-        real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
-        real(real64) :: total                       ! Total system energy
     end type energy_type
-    type(energy_type) :: energy
-
-    ! Energy status for Monte Carlo move
-    type :: energy_state
-        real(real64) :: non_coulomb                 ! Non-coulombic energy
-        real(real64) :: coulomb                     ! Coulombic energy
-        real(real64) :: recip_coulomb               ! Reciprocal-space energy
-        real(real64) :: ewald_self                  ! Ewald self contribution
-        real(real64) :: intra_coulomb               ! Intra-residue Coulomb contribution
-        real(real64) :: total                       ! Total energies
-    end type energy_state
-    type(energy_state) :: old, new
+    type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
 
     ! Simulation box definition
     type :: type_box
