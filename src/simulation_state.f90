@@ -156,7 +156,7 @@ module simulation_state
     type :: type_widom
         real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
         real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
-        real(real64), dimension(:), allocatable :: mu_tot    ! Total chemical potential
+        real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
         integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
     end type type_widom
     type(type_widom) :: widom_stat
@@ -173,8 +173,8 @@ module simulation_state
         integer :: kx
         integer :: ky
         integer :: kz
-        real(real64) :: k_squared       ! Normalized k^2 (for validity)
-        real(real64) :: k_squared_mag   ! Cartesian squared magnitude (for W(k))
+        real(real64) :: k_squared               ! Normalized k^2 (for validity)
+        real(real64) :: k_squared_mag           ! Cartesian squared magnitude (for W(k))
     end type kvector_type
 
     ! For Ewald calculation
