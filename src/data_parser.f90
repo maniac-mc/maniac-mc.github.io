@@ -55,9 +55,9 @@ contains
         ! Read reservoir if provided
         !-----------------------------
         if (trim(path%reservoir) == '') then
-            has_reservoir = .false.
+            status%reservoir_provided = .false.
         else
-            has_reservoir = .true.
+            status%reservoir_provided = .true.
             call ReadLMPData(path%reservoir, reservoir, .false.)
             call AssertMassConsistency() ! Ensure masses in reservoir are consistent with primary
         end if

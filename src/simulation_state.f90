@@ -6,6 +6,9 @@ module simulation_state
 
     implicit none
 
+    !---------------------------------------------------------------------------
+    ! Path and file names
+    !---------------------------------------------------------------------------
     type path_type
         character(len=200) :: outputs                   ! Path of the folder for saving outputs
         character(len=200) :: input                     ! Main input file
@@ -15,10 +18,17 @@ module simulation_state
     end type path_type
     type(path_type) :: path
 
-    integer :: current_block                        ! Current Monte Carlo block number
-    integer :: current_step                         ! Current Monte Carlo step within the block
-    integer :: out_unit = 10                        ! Default log file unit
-    logical :: has_reservoir                        ! Wether a reservoir was provided or
+    !---------------------------------------------------------------------------
+    ! Generic status information
+    !---------------------------------------------------------------------------
+    type status_type
+        integer :: desired_block                    ! Total desired Monte Carlo block number
+        integer :: desired_step                     ! Total desired Monte Carlo step
+        integer :: block                            ! Current Monte Carlo block number
+        integer :: step                             ! Current Monte Carlo step within the block
+        logical :: reservoir_provided               ! Wether a reservoir was provided by the user
+    end type status_type
+    type(status_type) :: status
 
     type :: counter_type
         integer :: rotations = 0                    ! Counter for rotational Monte Carlo moves
@@ -56,8 +66,6 @@ module simulation_state
         real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
         integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         integer :: seed                             ! Initial seed for the random number generator
-        integer :: nb_block                         ! Total desired Monte Carlo block number
-        integer :: nb_step                          ! Total desired Monte Carlo step
         logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
     end type input_type
     type(input_type) :: input

@@ -562,7 +562,7 @@ contains
         end if
 
         ! Copy geometry from reservoir or rotate if no reservoir
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
 
                 if (present(rand_mol_index)) then
                     ! Pick a random (and existing) molecule in the reservoir

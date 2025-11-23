@@ -71,7 +71,7 @@ contains
         integer :: j, k
         character(len=128) :: msg
 
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             ! Check that system and reservoir atom masses are consistent
             do j = 1, nb%type_residue
                 do k = 1, nb%types_per_residue(j)

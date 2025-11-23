@@ -38,7 +38,7 @@ contains
         integer :: n_pairs                                  ! Counter for the number of unique atom type pairs found
 
         ! Determine the maximum atom type index for array allocation
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
         else
             max_atom_type = maxval(primary%atom_types(:,:))
@@ -118,7 +118,7 @@ contains
         integer :: max_atom_type            ! Maximum atom type index from atom_types_2d array
 
         ! Determine the maximum atom type index for array allocation
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
         else
             max_atom_type = maxval(primary%atom_types(:,:))

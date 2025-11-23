@@ -96,7 +96,7 @@ contains
         counter%deletions = counter%deletions + 1
 
         ! Add the molecule to the reservoir
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
 
             ! Generate three random numbers in [0,1) and shift to [-0.5,0.5)
             call random_number(trial_pos)

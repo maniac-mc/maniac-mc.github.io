@@ -13,6 +13,8 @@ module output_utils
 
     implicit none
 
+    integer :: out_unit = 10                        ! Default log file unit
+
 contains
 
     !---------------------------------------------------------------------------
@@ -236,7 +238,7 @@ contains
         ! Build the complete single-line status (numbers + MC moves)
         ! -----------------------
         write(numeric_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4)') &
-            current_block, e_tot, energy%non_coulomb, e_coul, e_long, &
+            status%block, e_tot, energy%non_coulomb, e_coul, e_long, &
             input%translation_step, input%rotation_step_angle
 
         ! Append MC move string to the same line
@@ -281,7 +283,7 @@ contains
 
         ! Energies line
         write(formatted_msg,'(I10,1X,F15.6,1X,F15.6,1X,F15.6,1X,F15.6)') &
-            current_block, e_tot, energy%non_coulomb, e_coul, e_long
+            status%block, e_tot, energy%non_coulomb, e_coul, e_long
         call BoxLine(trim(formatted_msg), BOX_WIDTH)
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
@@ -311,7 +313,7 @@ contains
         logical, allocatable :: printed(:,:)                    ! 2D array to track which atom type pairs have been recorded
         integer :: max_atom_type                                ! Maximum atom type index from atom_types_2d array
 
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
         else
             max_atom_type = maxval(primary%atom_types(:,:))
@@ -664,9 +666,9 @@ contains
 
         ! ===== GENERIC PARAMETERS =====
         call LogMessage("=== Generic parameters")
-        write(msg, '("Number of blocks: ", I0)') input%nb_block
+        write(msg, '("Number of blocks: ", I0)') status%desired_block
         call LogMessage(msg)
-        write(msg, '("Number of steps: ", I0)') input%nb_step
+        write(msg, '("Number of steps: ", I0)') status%desired_step
         call LogMessage(msg)
         write(msg, '("Temperature (K): ", F10.2)') input%temperature
         call LogMessage(msg)

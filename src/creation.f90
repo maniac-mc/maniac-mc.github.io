@@ -95,7 +95,7 @@ contains
         counter%creations = counter%creations + 1
 
         ! Remove molecule from reservoir if present
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
 
             ! Replace molecule_index with the last molecule in the list to maintain continuity
             last_molecule_index = reservoir%num_residues(residue_type)

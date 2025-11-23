@@ -355,13 +355,13 @@ contains
             case ("nb_block")
                 read(rest_line, *, iostat=ios) val_int
                 if (ios /= 0) error stop "Error reading nb_block"
-                input%nb_block = val_int
+                status%desired_block = val_int
                 has_nb_block = .true.
 
             case ("nb_step")
                 read(rest_line, *, iostat=ios) val_int
                 if (ios /= 0) error stop "Error reading nb_step"
-                input%nb_step = val_int
+                status%desired_step = val_int
                 has_nb_step = .true.
 
             case ("temperature")
