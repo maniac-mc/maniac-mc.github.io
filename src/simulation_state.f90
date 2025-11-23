@@ -131,11 +131,14 @@ module simulation_state
     type :: type_coordinate
         integer :: max_nb_atom
         integer :: max_nb_molecule
-        logical, dimension(:), allocatable :: residue_exists
+        logical, dimension(:), allocatable :: residue_exists            ! #tofix : remove?
         real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
         real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
     end type type_coordinate
-    type(type_coordinate) :: host, guest, gas                           ! Host and gest from the main, gas from reservoir
+    ! type(type_coordinate) :: host, guest, gas                           ! Host and gest from the main, gas from reservoir
+    type(type_coordinate), target :: host, guest, gas
+
+    integer, allocatable :: resid_location(:)   ! size = nb%type_residue
 
     ! Simulation box definition
     type :: type_number

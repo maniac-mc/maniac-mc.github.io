@@ -210,17 +210,18 @@ contains
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
         integer :: idim  ! component index: 1=X, 2=Y, 3=Z
+        type(type_coordinate), pointer :: coord
 
-        write (*,*) nb%atom_in_residue(1), nb%atom_in_residue(2)
+        write (*,*) resid_location
 
-        write(*,*) nb%atom_in_residue(res_type), guest%max_nb_atom, guest%max_nb_molecule
-
-        write(*,*)
-        write(*,*) host%residue_exists(1), host%residue_exists(2)
-        write(*,*) guest%residue_exists(1), guest%residue_exists(2)
-        write (*,*)
-
-        stop 778
+        select case (resid_location(res_type))
+            case (TYPE_HOST)
+                coord => host
+            case (TYPE_GUEST)
+                coord => guest
+            case (TYPE_GAS)
+                coord => gas
+        end select
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
@@ -228,8 +229,8 @@ contains
             ! atom = primary%mol_com(:, res_type, mol_index) + &
             !     primary%site_offset(:, res_type, mol_index, atom_index_1)
 
-            atom = guest%com(:, res_type, mol_index) + &
-                guest%offset(:, res_type, mol_index, atom_index_1)
+            atom = coord%com(:, res_type, mol_index) + &
+                coord%offset(:, res_type, mol_index, atom_index_1)
 
             ! Compute the phase vector components as the dot product of the atom position
             ! with each reciprocal lattice vector (columns of reciprocal_box), scaled by 2π.

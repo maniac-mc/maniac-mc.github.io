@@ -241,6 +241,7 @@ contains
         call allocate_coordinate(host, .true.)
         call allocate_coordinate(guest, .false.)
         call allocate_coordinate(gas, .false.)
+        allocate(resid_location(nb%type_residue))
 
         call allocate_atom_block(primary)
         call allocate_atom_block(reservoir)
