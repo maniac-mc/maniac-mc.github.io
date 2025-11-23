@@ -212,23 +212,21 @@ contains
         integer :: idim  ! component index: 1=X, 2=Y, 3=Z
         type(type_coordinate), pointer :: coord
 
-        write (*,*) resid_location
-
         select case (resid_location(res_type))
             case (TYPE_HOST)
                 coord => host
+                write (*,*) "HOST"
             case (TYPE_GUEST)
                 coord => guest
+                write (*,*) "GUEST"
             case (TYPE_GAS)
                 coord => gas
+                write (*,*) "GAS"
         end select
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
-            ! #tofix remove
-            ! atom = primary%mol_com(:, res_type, mol_index) + &
-            !     primary%site_offset(:, res_type, mol_index, atom_index_1)
-
+            ! Atom coordinate
             atom = coord%com(:, res_type, mol_index) + &
                 coord%offset(:, res_type, mol_index, atom_index_1)
 

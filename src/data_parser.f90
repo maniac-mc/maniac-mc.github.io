@@ -1433,6 +1433,7 @@ contains
                         host%residue_exists(i) = .true.
                         resid_location(i) = TYPE_HOST
                         do dim = 1, 3
+                            write (*,*) "dim, i, l", dim, i, l
                             host%com(dim, i, l) = com(dim)
                         end do
                         do m = 1, nb%atom_in_residue(i)

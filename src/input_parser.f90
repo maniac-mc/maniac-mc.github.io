@@ -330,6 +330,12 @@ contains
         ! Allocate molecular coordinates
         allocate(type%residue_exists(nb%type_residue))
         allocate(type%com(dim, nb%type_residue, max_molecule))
+
+
+        write (*,*) "dim, nb%type_residue, max_molecule, max_atom", dim, nb%type_residue, max_molecule, max_atom
+
+        stop 778
+
         allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
         host%max_nb_atom = max_atom
         host%max_nb_molecule = max_molecule
