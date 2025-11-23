@@ -74,7 +74,7 @@ module simulation_state
     ! Energy terms
     !---------------------------------------------------------------------------
     type :: energy_type
-        ! Main energy terms
+        ! Main terms
         real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
         real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
         real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
@@ -99,9 +99,8 @@ module simulation_state
         real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
         real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
         real(real64) :: volume                      ! Box volume
-        ! About box content
-        logical :: is_triclinic                     ! Indicate if box is triclinic
         integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+        ! About box content
         integer :: num_atoms                        ! Number of atoms in the box
         integer :: num_atomtypes                    ! Number of atom types
         integer :: num_bonds                        ! Number of bonds

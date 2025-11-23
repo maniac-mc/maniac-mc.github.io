@@ -55,7 +55,7 @@ contains
         integer :: dim                               ! Loop index
 
         ! Orthogonal / Rectangular Box
-        if (.not. box%is_triclinic) then
+        if (box%type <= 3) then
 
             do dim = 1,3
 

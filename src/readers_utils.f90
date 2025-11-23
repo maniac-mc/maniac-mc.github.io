@@ -190,7 +190,6 @@ contains
         real(real64) :: zero = 0.0_real64
         integer :: ios
 
-        box%is_triclinic = .false.
         box%tilt(:) = zero
 
         ! Initialize bounds to a tiny value to indicate "not set"
@@ -233,7 +232,6 @@ contains
                 box%tilt(1) = tmp1
                 box%tilt(2) = tmp2
                 box%tilt(3) = tmp3
-                box%is_triclinic = .true.
             end if
 
         end do
