@@ -211,10 +211,20 @@ contains
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
         integer :: idim  ! component index: 1=X, 2=Y, 3=Z
 
+        write (*,*) nb%atom_in_residue(1), nb%atom_in_residue(2)
+
+        write(*,*) nb%atom_in_residue(res_type), guest%max_nb_atom, guest%max_nb_molecule
+
+        stop 778
+
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
-            atom = primary%mol_com(:, res_type, mol_index) + &
-                primary%site_offset(:, res_type, mol_index, atom_index_1)
+            ! #tofix remove
+            ! atom = primary%mol_com(:, res_type, mol_index) + &
+            !     primary%site_offset(:, res_type, mol_index, atom_index_1)
+
+            atom = guest%com(:, res_type, mol_index) + &
+                guest%offset(:, res_type, mol_index, atom_index_1)
 
             ! Compute the phase vector components as the dot product of the atom position
             ! with each reciprocal lattice vector (columns of reciprocal_box), scaled by 2π.

@@ -129,6 +129,8 @@ module simulation_state
     ! Separate coordinate for host, guest, and gas residue
     !---------------------------------------------------------------------------
     type :: type_coordinate
+        integer :: max_nb_atom
+        integer :: max_nb_molecule
         real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
         real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
     end type type_coordinate

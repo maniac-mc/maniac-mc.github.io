@@ -329,6 +329,8 @@ contains
         ! Allocate molecular coordinates
         allocate(type%com(dim, nb%type_residue, max_molecule))
         allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
+        host%max_nb_atom = max_atom
+        host%max_nb_molecule = max_molecule
 
     end subroutine allocate_coordinate
 
