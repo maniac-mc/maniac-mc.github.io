@@ -19,7 +19,7 @@ contains
         character(*), intent(in) :: message
 
         if (.not. all(ieee_is_finite(vec))) then
-            call AbortRun(message)
+            call abort_run(message)
         end if
 
     end subroutine check_finite_vector

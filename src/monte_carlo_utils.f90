@@ -75,7 +75,7 @@ contains
 
             ! For small-step mode, make sure rotation_step_angle is reasonable
             if (input%rotation_step_angle <= zero .or. input%rotation_step_angle > TWOPI) then
-                call AbortRun('Invalid rotation_step_angle in ChooseRotationAngle')
+                call abort_run('Invalid rotation_step_angle in ChooseRotationAngle')
             end if
 
             ! Use small rotation
@@ -282,7 +282,7 @@ contains
 
 
             case default
-                call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
+                call abort_run("Unknown move_type in compute_acceptance_probability!", 1)
         end select
 
     end function compute_acceptance_probability
@@ -576,7 +576,7 @@ contains
                 else
 
                     ! Error: reservoir exists but no output index provided
-                    call AbortRun("Rand mol index must be provided when reservoir exists.", 1)
+                    call abort_run("Rand mol index must be provided when reservoir exists.", 1)
                 end if
 
         else

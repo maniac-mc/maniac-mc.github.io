@@ -83,7 +83,7 @@ contains
 
         ! Abort if proba invalid
         if (abs(proba_total - one) > error) then
-            call AbortRun("Invalid move probabilities: must sum to 1.0", 1)
+            call abort_run("Invalid move probabilities: must sum to 1.0", 1)
         end if
 
     end subroutine ValidateAndRescaleMoveProbabilities
@@ -95,10 +95,12 @@ contains
     subroutine allocate_atom_arrays()
 
         ! Allocate atom arrays for primary and reservoir
-
         call allocate_coordinate(host, .true.)
         call allocate_coordinate(guest, .false.)
         call allocate_coordinate(gas, .false.)
+
+
+
         allocate(resid_location(nb%type_residue))
 
         call allocate_atom_block(primary)
@@ -178,11 +180,19 @@ contains
 
         ! Detect max number of atom
         if (is_host) then
+            ! Host (i.., the inactive residue)
             max_atom = nb%max_atom_in_residue_inactive
-            max_molecule = 1
+            max_molecule = nb%max_inactive_residue
         else
             max_atom = nb%max_atom_in_residue_active
-            max_molecule = NB_MAX_MOLECULE
+            if (status%reservoir_provided) then
+                ! In presence of a reservoir, the maximum number of molecule is
+                ! the sum of residue in box and reservoir
+                max_molecule = nb%max_active_residue
+            else
+                ! In absence of a reservoir, use NB_MAX_MOLECULE
+                max_molecule = NB_MAX_MOLECULE
+            end if
         end if
 
         ! Allocate molecular coordinates
@@ -401,7 +411,7 @@ contains
                             input%is_active(nb%type_residue + 1) = 0
                         case default
                             call WarnUser("Unknown state: " // trim(val_cha))
-                            call AbortRun("Unknown residue state")
+                            call abort_run("Unknown residue state")
                     end select
                 end if
 
@@ -486,13 +496,13 @@ contains
 
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential)) then
-                call AbortRun("Neither fugacity nor chemical potential provided for active residue: " // &
+                call abort_run("Neither fugacity nor chemical potential provided for active residue: " // &
                             trim(res%names_1d(val_int)))
             end if
 
             ! Rule 2: cannot both be provided
             if (has_fugacity .and. has_chemical_potential) then
-                call AbortRun("Both fugacity and chemical potential were specified for active residue: " // &
+                call abort_run("Both fugacity and chemical potential were specified for active residue: " // &
                             trim(res%names_1d(val_int)))
             end if
 
@@ -525,11 +535,11 @@ contains
 
         ! === Check for impossible case ===
         if (proba_total < error) then
-            call AbortRun("Invalid move probabilities: all enabled moves have zero probability", 1)
+            call abort_run("Invalid move probabilities: all enabled moves have zero probability", 1)
         end if
 
         if (proba%widom > 0 .and. proba%insertion_deletion > 0) then
-            call AbortRun("Cannot enable both Widom insertions and physical insertion/deletion moves", 1)
+            call abort_run("Cannot enable both Widom insertions and physical insertion/deletion moves", 1)
         end if
 
         ! Use provided seed, or generate a new one

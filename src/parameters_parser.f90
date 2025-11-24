@@ -12,12 +12,11 @@ module parameters_parser
 contains
 
     !---------------------------------------------------------------
-    ! Subroutine: ReadParameters
     ! Reads Lennard-Jones parameters (epsilon, sigma) from input file,
     ! assigns them to atom type pairs in the system, and applies
     ! mixing rules (Lorentz-Berthelot) if needed.
     !---------------------------------------------------------------
-    subroutine ReadParameters()
+    subroutine read_parameters()
 
         ! Local variables
         integer :: ios                                      ! I/O status code for file operations
@@ -48,6 +47,8 @@ contains
         allocate(printed(max_atom_type, max_atom_type))     ! Allocate array to track logged atom type pairs
         allocate(pair1(max_pairs), pair2(max_pairs))        ! Allocate arrays for storing atom type indices of pairs
         allocate(epsilons(max_pairs), sigmas(max_pairs))    ! Allocate arrays for storing epsilon and sigma values
+
+        ! Initialise LJ coefficients to 0.0
         coeff%sigma = 0.0_real64
         coeff%epsilon = 0.0_real64
 
@@ -73,7 +74,7 @@ contains
                 case ("pair_coeff")
                 read(rest_line, *, IOSTAT=ios) val_int1, val_int2, epsilon, sigma
                 if (ios /= 0) then
-                    call AbortRun("Failed to read pair_coeff value", 1)
+                    call abort_run("Failed to read pair_coeff value", 1)
                 end if
             end select
 
@@ -101,14 +102,14 @@ contains
         close(INFILE)
 
         ! If cross parameters are missing, enforce Lorenz-Berthelot rule
-        call ApplyLorentzBerthelot()
+        call apply_lorentz_berthelot()
 
         ! Print parameters in log
-        call LogParameters(path%parameters, n_pairs, pair1, pair2, epsilons, sigmas)
+        call log_parameters(path%parameters, n_pairs, pair1, pair2, epsilons, sigmas)
 
-    end subroutine ReadParameters
+    end subroutine read_parameters
 
-    subroutine ApplyLorentzBerthelot()
+    subroutine apply_lorentz_berthelot()
 
         integer :: i, j, k, l               ! Loop indices for iterating over residues and atoms
         integer :: type_i, type_j           ! Atom type indices for the current pair of atoms
@@ -174,6 +175,6 @@ contains
                 end do
             end do
         end do
-    end subroutine ApplyLorentzBerthelot
+    end subroutine apply_lorentz_berthelot
 
 end module parameters_parser

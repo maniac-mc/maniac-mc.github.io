@@ -177,7 +177,7 @@ contains
 
         ! Check for denormal/underflow values in determinant
         if (abs(box%determinant) < one) then
-            call AbortRun("Error: Determinant fell into denormal/underflow range")
+            call abort_run("Error: Determinant fell into denormal/underflow range")
         end if
 
         ! Calculate reciprocal of determinant if non-zero

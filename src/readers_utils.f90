@@ -38,7 +38,7 @@ contains
 
         if (total_mass <= 0.0_real64) then
             write(mass_str, '(F12.5)') total_mass
-            call AbortRun("Total mass is zero or negative: " // trim(mass_str), 1)
+            call abort_run("Total mass is zero or negative: " // trim(mass_str), 1)
         end if
 
         com = com / total_mass
@@ -238,15 +238,15 @@ contains
 
         ! Make sure that box size were provided
         if (abs(box%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%bounds(1,2)) < 1.0e-11_real64) then
-            call AbortRun("ParseLAMMPSBox: xlo xhi not found in input file!")
+            call abort_run("ParseLAMMPSBox: xlo xhi not found in input file!")
         end if
 
         if (abs(box%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%bounds(2,2)) < 1.0e-11_real64) then
-            call AbortRun("ParseLAMMPSBox: ylo yhi not found in input file!")
+            call abort_run("ParseLAMMPSBox: ylo yhi not found in input file!")
         end if
 
         if (abs(box%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%bounds(3,2)) < 1.0e-11_real64) then
-            call AbortRun("ParseLAMMPSBox: zlo zhi not found in input file!")
+            call abort_run("ParseLAMMPSBox: zlo zhi not found in input file!")
         end if
 
         ! Box lengths
@@ -314,7 +314,7 @@ contains
                 ! Back to Cartesian
                 delta_r_cart = matmul(box%matrix, delta_r_frac)
             else
-                call AbortRun("ERROR in repair_molecule: box%type is invalid.", 1)
+                call abort_run("ERROR in repair_molecule: box%type is invalid.", 1)
             end if
 
             ! Update atom position
@@ -377,7 +377,7 @@ contains
         integer, intent(in) :: ios
 
         if (ios /= 0) then
-            call AbortRun("I/O error on file: "//trim(filename), ios)
+            call abort_run("I/O error on file: "//trim(filename), ios)
         end if
 
     end subroutine check_IO_status

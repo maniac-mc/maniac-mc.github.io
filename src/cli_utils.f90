@@ -63,7 +63,7 @@ contains
 
             case ('-i')
                 if (seen_maniac_file) then
-                    call AbortRun("Duplicate option: -i", 1)
+                    call abort_run("Duplicate option: -i", 1)
                 end if
                 call expect_value(i, nargs, "-i", path%input)
                 seen_maniac_file = .true.
@@ -71,7 +71,7 @@ contains
 
             case ('-d')
                 if (seen_data_file) then
-                    call AbortRun("Duplicate option: -d", 1)
+                    call abort_run("Duplicate option: -d", 1)
                 end if
                 call expect_value(i, nargs, "-d", path%topology)
                 seen_data_file = .true.
@@ -79,7 +79,7 @@ contains
 
             case ('-p')
                 if (seen_inc_file) then
-                    call AbortRun("Duplicate option: -p", 1)
+                    call abort_run("Duplicate option: -p", 1)
                 end if
                 call expect_value(i, nargs, "-p", path%parameters)
                 seen_inc_file = .true.
@@ -87,7 +87,7 @@ contains
 
             case ('-r')
                 if (seen_res_file) then
-                    call AbortRun("Duplicate option: -r", 1)
+                    call abort_run("Duplicate option: -r", 1)
                 end if
                 call expect_value(i, nargs, "-r", path%reservoir)
                 seen_res_file = .true.
@@ -95,7 +95,7 @@ contains
 
             case ('-o')
                 if (seen_output_path) then
-                    call AbortRun("Duplicate option: -o", 1)
+                    call abort_run("Duplicate option: -o", 1)
                 end if
                 call expect_value(i, nargs, "-o", path%outputs)
                 seen_output_path = .true.
@@ -103,7 +103,7 @@ contains
                 
             case default ! If argument starts with '-', it's an unknown flag
                 if (arg(1:1) == '-') then
-                    call AbortRun("Unknown option: "//trim(arg), 1)
+                    call abort_run("Unknown option: "//trim(arg), 1)
                 end if
 
             end select
@@ -117,23 +117,23 @@ contains
     subroutine validate_CLI_arguments()
 
         if (trim(path%input) == '' .or. trim(path%topology) == '' .or. trim(path%parameters) == '') then
-            call AbortRun("Missing mandatory input arguments: -i, -d, -p required.", 1)
+            call abort_run("Missing mandatory input arguments: -i, -d, -p required.", 1)
         end if
 
         if (.not. file_exists(path%input)) then
-            call AbortRun("Input file not found: "//trim(path%input), 1)
+            call abort_run("Input file not found: "//trim(path%input), 1)
         end if
         
         if (.not. file_exists(path%topology)) then
-            call AbortRun("Data file not found: "//trim(path%topology), 1)
+            call abort_run("Data file not found: "//trim(path%topology), 1)
         end if 
 
         if (.not. file_exists(path%parameters)) then
-            call AbortRun("Parameter file not found: "//trim(path%parameters), 1)
+            call abort_run("Parameter file not found: "//trim(path%parameters), 1)
         end if
 
         if (trim(path%reservoir) /= '' .and. .not. file_exists(path%reservoir)) then
-            call AbortRun("Reservoir file not found: "//trim(path%reservoir), 1)
+            call abort_run("Reservoir file not found: "//trim(path%reservoir), 1)
         end if
 
     end subroutine validate_CLI_arguments
@@ -183,7 +183,7 @@ contains
 
         ! Ensure value exists after the flag
         if (idx >= nargs) then
-            call AbortRun("Missing value after option "//trim(flag), 1)
+            call abort_run("Missing value after option "//trim(flag), 1)
         end if
 
         ! Read next argument
@@ -191,12 +191,12 @@ contains
 
         ! Check empty value (e.g. "-i  ")
         if (len_trim(tmp) == 0) then
-            call AbortRun("Empty value after option "//trim(flag), 1)
+            call abort_run("Empty value after option "//trim(flag), 1)
         end if
 
         ! Check empty value (e.g. "-i  ")
         if (len_trim(tmp) == 0) then
-            call AbortRun("Empty value after option "//trim(flag), 1)
+            call abort_run("Empty value after option "//trim(flag), 1)
         end if
 
         value_out = trim(tmp)

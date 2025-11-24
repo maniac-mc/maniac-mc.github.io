@@ -47,7 +47,7 @@ contains
         
             call execute_command_line(command, exitstat=exit_status)
         
-            if (exit_status /= 0) call AbortRun("Failed to create output directory: "//trim(path), exit_status)
+            if (exit_status /= 0) call abort_run("Failed to create output directory: "//trim(path), exit_status)
         end if
 
     end subroutine ensure_directory_exists
@@ -82,7 +82,7 @@ contains
         open(unit=unit_to_use, file=join_path(path, logname), status='replace', iostat=ios)
 
         if (ios /= 0) then
-            call AbortRun("Failed to open log file: "//trim(path)//trim(logname), ios)
+            call abort_run("Failed to open log file: "//trim(path)//trim(logname), ios)
         end if
     
     end subroutine open_log_file

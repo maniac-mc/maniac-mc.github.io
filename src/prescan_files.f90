@@ -18,9 +18,12 @@ contains
     subroutine prescan_inputs()
 
         ! Pre-scan input files
+
         call prescan_input_file(path%input)
         call prescan_topology(path%topology, is_reservoir = .false.)
-        call prescan_topology(path%reservoir, is_reservoir = .true.)
+        if (status%reservoir_provided) then
+            call prescan_topology(path%reservoir, is_reservoir = .true.)
+        end if
 
     end subroutine prescan_inputs
 
@@ -305,6 +308,7 @@ contains
         integer :: mol_id                              ! Molecule index from file
         integer :: residue_id                          ! Current residue index
         integer :: type_id                             ! Loop counter
+        integer :: nb_residue                          ! Local variable for number of residue
 
         ! Temporary dynamic table for residue atom count
         integer, allocatable :: residue_atom_count(:)
@@ -347,36 +351,64 @@ contains
             do residue_id = 1, nb%type_residue
                 do type_id = 1, res_infos(residue_id)%nb_types
                     if (atom_type == res_infos(residue_id)%types(type_id)) then
+
+                        ! Check for overflow in atom counts
+                        if (residue_atom_count(residue_id) + 1 < residue_atom_count(residue_id)) then
+                            call abort_run("Error: Atom count overflow")
+                        end if
+
                         residue_atom_count(residue_id) = residue_atom_count(residue_id) + 1
                     end if
+
                 end do
             end do
         end do
 
         close(unit)
 
-        ! ---------------------------------------------------------
-        ! Compute number of residues of each type
-        ! ---------------------------------------------------------
-
-        ! Initialise nb_res to 0
+        !----------------------------------------------------------
+        ! Compute number of residues
+        !----------------------------------------------------------
         do residue_id = 1, nb%type_residue
+
             res_infos(residue_id)%nb_res = 0
+
+            if (res_infos(residue_id)%nb_atoms <= 0) cycle  ! Skip invalid residue
+
+            ! Compute main/reservoir counts as real then round
+            if (is_reservoir) then
+                res_infos(residue_id)%nb_res(2) = nint( real(residue_atom_count(residue_id), kind=real64) &
+                                                    / real(res_infos(residue_id)%nb_atoms, kind=real64) )
+            else
+                res_infos(residue_id)%nb_res(1) = nint( real(residue_atom_count(residue_id), kind=real64) &
+                                                    / real(res_infos(residue_id)%nb_atoms, kind=real64) )
+            end if
+
+            ! Check for anomalous values
+            if (res_infos(residue_id)%nb_res(1) < 0 .or. res_infos(residue_id)%nb_res(2) < 0) then
+                call abort_run("Error: Determinant fell into denormal/underflow range")
+            end if
+
         end do
 
-        if (is_reservoir) then
-            do residue_id = 1, nb%type_residue
-                if (res_infos(residue_id)%nb_atoms > 0) then
-                    res_infos(residue_id)%nb_res(2) = residue_atom_count(residue_id) / res_infos(residue_id)%nb_atoms
+        !----------------------------------------------------------
+        ! Determine maximum active and inactive residues
+        !----------------------------------------------------------
+        nb%max_active_residue = 0
+        nb%max_inactive_residue = 0
+
+        do residue_id = 1, nb%type_residue
+            nb_residue = res_infos(residue_id)%nb_res(1) + res_infos(residue_id)%nb_res(2)
+            if (res_infos(residue_id)%is_active) then
+                if (nb_residue > nb%max_active_residue) then
+                    nb%max_active_residue = nb_residue
                 end if
-            end do
-        else
-            do residue_id = 1, nb%type_residue
-                if (res_infos(residue_id)%nb_atoms > 0) then
-                    res_infos(residue_id)%nb_res(1) = residue_atom_count(residue_id) / res_infos(residue_id)%nb_atoms
+            else
+                if (nb_residue > nb%max_inactive_residue) then
+                    nb%max_inactive_residue = nb_residue
                 end if
-            end do
-        end if
+            end if
+        end do
 
     end subroutine prescan_topology
 

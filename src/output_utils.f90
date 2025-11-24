@@ -298,7 +298,7 @@ contains
 
     end subroutine FinalReport
 
-    subroutine LogParameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
+    subroutine log_parameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
 
         character(len=*), intent(in) :: input_file_name         ! Name of the parameter input file being processed
         integer, intent(out) :: n_pairs                         ! Counter for the number of unique atom type pairs
@@ -361,7 +361,7 @@ contains
                 end do
             end do
         end do
-    end subroutine LogParameters
+    end subroutine log_parameters
 
     subroutine LogData(data_file_name, box, is_primary)
 
@@ -401,7 +401,7 @@ contains
                     trim(res%names_1d(i)), box%num_residues(i)
             else if ((box%num_residues(i) == 0) .and. (input%is_active(i) == 0) .and. (is_primary)) then
                 ! Inactive residue defined in input but not present in data file
-                call AbortRun("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
+                call abort_run("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
             end if
             call LogMessage(formatted_msg)
@@ -550,7 +550,7 @@ contains
 
     end subroutine LogConnectivity
 
-    subroutine AbortRun(error_msg, exit_code)
+    subroutine abort_run(error_msg, exit_code)
 
         ! Input parameters
         character(len=*), intent(in) :: error_msg   ! Error description
@@ -576,7 +576,7 @@ contains
 
         stop code
 
-    end subroutine AbortRun
+    end subroutine abort_run
 
     !-----------------------------------------------------------------------------
     ! Print a standardized warning message without terminating
@@ -624,7 +624,7 @@ contains
         if (molecule_index > NB_MAX_MOLECULE) then
             write(formatted_msg, '(A, I0)') &
                 "Trying to insert a molecule with index = " , molecule_index
-            call AbortRun(trim(formatted_msg)//new_line('a')// &
+            call abort_run(trim(formatted_msg)//new_line('a')// &
                         "This exceeds the maximum allowed number of molecules = "// &
                         trim(adjustl(to_string(NB_MAX_MOLECULE)))//new_line('a')// &
                         "Increase 'NB_MAX_MOLECULE' in src/parameters.f90 and recompile.")
