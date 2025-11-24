@@ -168,7 +168,6 @@ module simulation_state
         integer :: nb_types
         integer :: nb_atoms
     end type residue_info
-
     type(residue_info), allocatable :: res_infos(:)
 
 

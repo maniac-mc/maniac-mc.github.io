@@ -17,24 +17,8 @@ contains
     !---------------------------------------------------------------------------
     subroutine prescan_inputs()
 
-        integer :: i, j
-
         ! Pre-scan input files
         call prescan_input_file(path%input)
-
-        do i = 1, size(res_infos)
-            write(*,*) "Residue", i
-            write(*,*) "  nb_types =", res_infos(i)%nb_types
-            if (res_infos(i)%nb_types > 0) then
-                write(*,'(A)', advance='no') "  types = "
-                do j = 1, res_infos(i)%nb_types
-                    write(*,'(I4)', advance='no') res_infos(i)%types(j)
-                end do
-                write (*,*) "res_infos(i)%nb_atoms", i, res_infos(i)%nb_atoms
-                write(*,*)
-            end if
-        end do
-
         call prescan_topology(path%topology)
 
     end subroutine prescan_inputs
@@ -291,7 +275,7 @@ contains
 
         integer :: unit, ios
         character(len=256) :: line, token, rest
-        integer :: pos, atom_type, r, i
+        integer :: pos, atom_id, atom_type, mol_id, r, i
 
         ! Temporary dynamic table for residue atom count
         integer, allocatable :: residue_atom_count(:)
@@ -323,8 +307,9 @@ contains
                 cycle
             end if
 
-            ! Detect an ATOM LINE: "<index> <type>"
-            read(rest,*,iostat=ios) atom_type
+            ! Note, the atome type is expected to be in second position
+            ! Read atom-ID, molecule-ID, atom-type
+            read(line,*,iostat=ios) atom_id, mol_id, atom_type
             if (ios /= 0) cycle
 
             ! ---------------------------------------------------------
@@ -352,14 +337,6 @@ contains
                 nb%residue_count(r) = 0
             end if
         end do
-
-        ! Debug print
-        write(*,*) "Residue counts:"
-        do r = 1, nb%type_residue
-            write(*,'(A,I2,A,I6)') "  Type ", r, ": ", nb%residue_count(r)
-        end do
-
-        stop 889
 
     end subroutine prescan_topology
 
