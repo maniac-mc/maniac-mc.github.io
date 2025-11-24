@@ -20,12 +20,10 @@ module montecarlo_module
 contains
 
     !------------------------------------------------------------------------------
-    ! subroutine MonteCarloLoop
-    !
     ! Performs the main Monte Carlo simulation loop, executing a series of molecular
     ! moves and exchanges over multiple blocks and steps.
     !------------------------------------------------------------------------------
-    subroutine MonteCarloLoop()
+    subroutine monte_carlo_loop()
 
         implicit none
 
@@ -116,6 +114,6 @@ contains
 
         end do
 
-    end subroutine MonteCarloLoop
+    end subroutine monte_carlo_loop
 
 end module montecarlo_module
