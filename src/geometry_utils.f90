@@ -372,31 +372,31 @@ contains
         ! Local variable
         character(200) :: formatted_msg ! Buffer for formatted output messages
 
-        call LogMessage("====== Simulation preparation ======")
-        call LogMessage("")
+        call log_message("====== Simulation preparation ======")
+        call log_message("")
 
         select case (box%type)
             case (1)
 
-                call LogMessage("Box symmetry type: Cubic")
+                call log_message("Box symmetry type: Cubic")
             
             case (2)
             
-                call LogMessage("Box symmetry type: Orthorhombic")
+                call log_message("Box symmetry type: Orthorhombic")
             
             case (3)
             
-                call LogMessage("Box symmetry type: Triclinic")
+                call log_message("Box symmetry type: Triclinic")
             
             case default
             
                 write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%type
-                call LogMessage(formatted_msg)
+                call log_message(formatted_msg)
         
         end select
 
         write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%volume
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
 
     end subroutine log_geometry_parameters
 

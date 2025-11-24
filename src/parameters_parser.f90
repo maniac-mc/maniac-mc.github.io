@@ -150,7 +150,7 @@ contains
                                     ! Print the "rule enforcement" warning only once globally
                                     if (.not. any(warned)) then
                                         call InfoMessage("Enforcing the Lorentz-Berthelot rule")
-                                        call LogMessage("typei typej epsilon sigma")
+                                        call log_message("typei typej epsilon sigma")
                                     end if
 
                                     if (type_i < type_j) then
@@ -160,7 +160,7 @@ contains
                                         write(formatted_msg,'("",I3," -",I3," : ",F8.4," Å ",F8.4," kcal/mol")') &
                                             type_j, type_i, sigma, epsilon
                                     end if
-                                    call LogMessage(formatted_msg)
+                                    call log_message(formatted_msg)
 
                                     warned(type_i, type_j) = .true.
                                     warned(type_j, type_i) = .true.

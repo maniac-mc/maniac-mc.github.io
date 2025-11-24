@@ -95,10 +95,10 @@ contains
         integer, parameter :: box_width = 78 ! width of the box
 
         ! Blank line before header
-        call LogMessage("")
+        call log_message("")
 
         ! Top border
-        call LogMessage("+" // repeat_char("-", box_width-2) // "+")
+        call log_message("+" // repeat_char("-", box_width-2) // "+")
 
         ! Version info lines
         call BoxLine("MANIAC-MC - Version " // version, box_width)
@@ -107,10 +107,10 @@ contains
         call BoxLine("Code written and maintained by Simon Gravelle, LIPhy, CNRS", box_width)
 
         ! Bottom border
-        call LogMessage("+" // repeat_char("-", box_width-2) // "+")
+        call log_message("+" // repeat_char("-", box_width-2) // "+")
 
         ! Blank line after header
-        call LogMessage("")
+        call log_message("")
 
     end subroutine write_header
 
