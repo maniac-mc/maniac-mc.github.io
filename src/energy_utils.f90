@@ -25,7 +25,7 @@ contains
         ! Compute each energy components
         call compute_pairwise_energy(box)
         call ComputeEwaldSelf()
-        call ComputeEwaldRecip()
+        call compute_ewald_recip()
         call compute_total_intra_residue_coulomb_energy()
 
         ! Calculate total energy
@@ -143,7 +143,8 @@ contains
 
                     ! Enforce ordering to avoid double-counting
                     if ((residue_type_2 < residue_type_1) .or. &
-                        ((residue_type_2 == residue_type_1) .and. (molecule_index_2 <= molecule_index_1))) cycle
+                        ((residue_type_2 == residue_type_1) .and. &
+                        (molecule_index_2 <= molecule_index_1))) cycle
 
                     ! Loop over all side of the selected molecule 2
                     do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
@@ -159,10 +160,10 @@ contains
                                    residue_type_2, molecule_index_2, atom_index_2)                      ! In Angstrom
 
                         ! Update non-Coulomb energy
-                        e_non_coulomb = e_non_coulomb + LennardJonesEnergy(distance, sigma, epsilon)    ! In kcal/mol
+                        e_non_coulomb = e_non_coulomb + lennard_jones_energy(distance, sigma, epsilon)    ! In kcal/mol
 
                         ! Update Coulomb energy
-                        e_coulomb = e_coulomb + CoulombEnergy(distance, charge_1, charge_2)             ! In e^2/Å
+                        e_coulomb = e_coulomb + coulomb_energy(distance, charge_1, charge_2)             ! In e^2/Å
 
                     end do
                 end do
@@ -177,7 +178,7 @@ contains
     !------------------------------------------------------------------------------
     ! Function to compute Lennard-Jones interaction energy
     !------------------------------------------------------------------------------
-    pure function LennardJonesEnergy(r, sigma, epsilon) result(energy)
+    pure function lennard_jones_energy(r, sigma, epsilon) result(energy)
 
         ! Input variables
         real(real64), intent(in) :: r          ! Distance between the two atoms (in Å)
@@ -214,12 +215,12 @@ contains
 
         end if
 
-    end function LennardJonesEnergy
+    end function lennard_jones_energy
 
     !------------------------------------------------------------------------------
     ! Function to compute Coulomb interaction energy (Ewald direct-space term)
     !------------------------------------------------------------------------------
-    pure function CoulombEnergy(r, q1, q2) result(energy)
+    pure function coulomb_energy(r, q1, q2) result(energy)
 
         ! Input variables
         real(real64), intent(in) :: r       ! Distance between the two atoms (in Å)
@@ -252,7 +253,7 @@ contains
 
         end if
 
-    end function CoulombEnergy
+    end function coulomb_energy
 
     !------------------------------------------------------------------------------
     ! Computes the reciprocal-space contribution to the Ewald electrostatic energy.
@@ -262,7 +263,7 @@ contains
     !   2. Compute Fourier structure factors (∑ q_j exp(i·k·r_j)) for each molecule.
     !   3. Accumulate the reciprocal-space energy using precomputed factors.
     !------------------------------------------------------------------------------
-    subroutine ComputeEwaldRecip()
+    subroutine compute_ewald_recip()
 
         ! Step 1: Precompute weighting coefficients that depend only on |k|-vectors.
         ! These account for the Gaussian charge screening used in the Ewald method.
@@ -276,7 +277,7 @@ contains
         ! factors and the precomputed reciprocal weighting coefficients.
         call compute_reciprocal_energy(energy%recip_coulomb)
 
-    end subroutine ComputeEwaldRecip
+    end subroutine compute_ewald_recip
 
     !------------------------------------------------------------------------------
     ! Computes the Ewald self-interaction correction.

@@ -223,4 +223,26 @@ contains
     
     end function join_path
 
+    !--------------------------------------------------------------------
+    ! Returns the coordinate pointer for a given residue type
+    !--------------------------------------------------------------------
+    function get_coord(res_type) result(coord)
+
+        integer, intent(in) :: res_type
+        type(type_coordinate), pointer :: coord
+
+        select case (resid_location(res_type))
+            case (TYPE_HOST)
+                coord => host
+            case (TYPE_GUEST)
+                coord => guest
+            case (TYPE_GAS)
+                coord => gas
+            case default
+                nullify(coord)
+        end select
+        
+    end function get_coord
+
+
 end module helper_utils

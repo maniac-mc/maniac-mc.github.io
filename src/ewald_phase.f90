@@ -209,17 +209,11 @@ contains
         integer :: atom_index_1                 ! Atom index
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
-        integer :: idim  ! component index: 1=X, 2=Y, 3=Z
-        type(type_coordinate), pointer :: coord
+        integer :: idim                         ! component index: 1=X, 2=Y, 3=Z
+        type(type_coordinate), pointer :: coord ! Pointer for host, guest, or gas
 
-        select case (resid_location(res_type))
-            case (TYPE_HOST)
-                coord => host
-            case (TYPE_GUEST)
-                coord => guest
-            case (TYPE_GAS)
-                coord => gas
-        end select
+        ! Return the correct pointer (host, guest, or gas)
+        coord => get_coord(res_type)
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
