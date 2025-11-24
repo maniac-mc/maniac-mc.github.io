@@ -117,9 +117,9 @@ contains
 
         ! Allocate interaction parameters
         allocate(coeff%sigma(nb%type_residue, nb%type_residue, &
-                            nb%max_atom_in_residue, nb%max_atom_in_residue))
+                            nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
         allocate(coeff%epsilon(nb%type_residue, nb%type_residue, &
-                            nb%max_atom_in_residue, nb%max_atom_in_residue))
+                            nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
 
         ! Allocate input arrays
         allocate(input%fugacity(nb%type_residue))
@@ -133,7 +133,7 @@ contains
         allocate(nb%angles_per_residue(nb%type_residue))
         allocate(nb%dihedrals_per_residue(nb%type_residue))
         allocate(nb%impropers_per_residue(nb%type_residue))
-        allocate(nb%types_pattern(nb%type_residue, nb%max_atom_in_residue))
+        allocate(nb%types_pattern(nb%type_residue, nb%max_atom_in_any_residue))
 
     end subroutine allocate_atom_arrays
 
@@ -147,15 +147,15 @@ contains
         type(type_box), intent(inout) :: system
 
         ! Allocate basic atom properties
-        allocate(system%atom_charges(nb%type_residue, nb%max_atom_in_residue))
-        allocate(system%atom_masses(nb%type_residue, nb%max_atom_in_residue))
-        allocate(system%atom_names(nb%type_residue, nb%max_atom_in_residue))
-        allocate(system%atom_types(nb%type_residue, nb%max_atom_in_residue))
-        allocate(system%atom_ids(nb%type_residue, nb%max_atom_in_residue))
+        allocate(system%atom_charges(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atom_masses(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atom_names(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atom_types(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atom_ids(nb%type_residue, nb%max_atom_in_any_residue))
 
         ! Allocate molecular coordinates
         allocate(system%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
-        allocate(system%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_residue))
+        allocate(system%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_any_residue))
 
         ! Allocate residue counters
         allocate(system%num_residues(nb%type_residue))

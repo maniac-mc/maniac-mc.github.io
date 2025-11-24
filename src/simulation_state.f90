@@ -143,7 +143,7 @@ module simulation_state
     ! Simulation box definition
     type :: type_number
         integer :: type_residue                     ! Total number of residues
-        integer :: max_atom_in_residue              ! Max number of atoms in the largest residue
+        integer :: max_atom_in_any_residue          ! Max number of atoms in the largest residue
         integer :: max_type_per_residue             ! Max number of type per residue
         integer, dimension(:), allocatable :: atom_in_residue ! Number of atoms in the residue
         integer, dimension(:), allocatable :: types_per_residue ! Number of atom types in the residue

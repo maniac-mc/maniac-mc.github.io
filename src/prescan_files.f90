@@ -74,7 +74,7 @@ contains
         ! Initialize counters
         nb%type_residue = 0
         nb%max_type_per_residue = 0
-        nb%max_atom_in_residue = 0
+        nb%max_atom_in_any_residue = 0
         in_residue_block = .false.
 
         ! Loop over lines in input file
@@ -151,8 +151,8 @@ contains
                 read(rest_line, *, iostat=ios) max_atom_in_residue
 
                 ! Update global maximum
-                if (max_atom_in_residue > nb%max_atom_in_residue) then
-                    nb%max_atom_in_residue = max_atom_in_residue
+                if (max_atom_in_residue > nb%max_atom_in_any_residue) then
+                    nb%max_atom_in_any_residue = max_atom_in_residue
                 end if
 
                 ! Update active / inactive maxima
