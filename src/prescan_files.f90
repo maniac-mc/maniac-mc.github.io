@@ -359,6 +359,8 @@ contains
             write(*,'(A,I2,A,I6)') "  Type ", r, ": ", nb%residue_count(r)
         end do
 
+        stop 889
+
     end subroutine prescan_topology
 
 end module prescan_files
