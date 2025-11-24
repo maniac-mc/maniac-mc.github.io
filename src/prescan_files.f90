@@ -19,7 +19,8 @@ contains
 
         ! Pre-scan input files
         call prescan_input_file(path%input)
-        call prescan_topology(path%topology)
+        call prescan_topology(path%topology, is_reservoir = .false.)
+        call prescan_topology(path%reservoir, is_reservoir = .true.)
 
     end subroutine prescan_inputs
 
@@ -267,12 +268,13 @@ contains
 
     end subroutine predetect_type
 
-    subroutine prescan_topology(filename)
+    subroutine prescan_topology(filename, is_reservoir)
 
-        implicit none
-
+        ! Input parameters
         character(len=*), intent(in) :: filename
+        logical, intent(in) :: is_reservoir
 
+        ! Local variables
         integer :: unit, ios
         character(len=256) :: line, token, rest
         integer :: pos, atom_id, atom_type, mol_id, r, i
@@ -329,14 +331,23 @@ contains
         ! ---------------------------------------------------------
         ! Compute number of residues of each type
         ! ---------------------------------------------------------
-        allocate(nb%residue_count(nb%type_residue))
-        do r = 1, nb%type_residue
-            if (res_infos(r)%nb_atoms > 0) then
-                nb%residue_count(r) = residue_atom_count(r) / res_infos(r)%nb_atoms
-            else
-                nb%residue_count(r) = 0
-            end if
-        end do
+        if (is_reservoir) then
+            do r = 1, nb%type_residue
+                if (res_infos(r)%nb_atoms > 0) then
+                    res_infos(r)%nb_res(2) = residue_atom_count(r) / res_infos(r)%nb_atoms
+                else
+                    res_infos(r)%nb_res(2) = 0
+                end if
+            end do
+        else
+            do r = 1, nb%type_residue
+                if (res_infos(r)%nb_atoms > 0) then
+                    res_infos(r)%nb_res(1) = residue_atom_count(r) / res_infos(r)%nb_atoms
+                else
+                    res_infos(r)%nb_res(1) = 0
+                end if
+            end do
+        end if
 
     end subroutine prescan_topology
 

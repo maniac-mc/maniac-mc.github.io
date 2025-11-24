@@ -154,22 +154,22 @@ module simulation_state
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
         integer :: max_atom_in_residue_active
         integer :: max_atom_in_residue_inactive
-        integer, allocatable :: residue_count(:)
+        ! integer, allocatable :: residue_count(:)
     end type type_number
     type(type_number) :: nb
 
-
-
-
-    ! #todo : merge with the rest eventually
-    ! possible doublons
-    type residue_info
-        integer, allocatable :: types(:)
-        integer :: nb_types
-        integer :: nb_atoms
-    end type residue_info
-    type(residue_info), allocatable :: res_infos(:)
-
+    !---------------------------------------------------------------------------
+    ! Information extracted during the prescan for each residue type.
+    ! Stores the list of atom types, the number of types, and the expected atom
+    ! count for that residue as defined in the Maniac input file.
+    !---------------------------------------------------------------------------
+    type residue
+        integer, allocatable :: types(:)    ! List of atom types belonging to this residue
+        integer :: nb_types                 ! Number of atom types in this residue
+        integer :: nb_atoms                 ! Total number of atoms in this residue
+        integer :: nb_res(2)                ! Total number of residue in primary and reservoir 
+    end type residue
+    type(residue), allocatable :: res_infos(:)
 
     ! Residues information
     type :: type_residue
