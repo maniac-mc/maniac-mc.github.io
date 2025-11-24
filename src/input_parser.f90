@@ -17,9 +17,6 @@ contains
     !-----------------------------------------------------------------------------
     subroutine read_input_file()
 
-        ! Pre-scan input file
-        call prescan_input_file(path%input)
-
         ! Allocate required arrays
         call allocate_atom_arrays()
         
@@ -53,28 +50,6 @@ contains
         close(unit)
 
     end subroutine ReadFullInputFile
-
-    !---------------------------------------------------------------------------
-    ! Open the main input file, pre-detect sizes and counts for allocation,
-    ! then close the file.
-    !---------------------------------------------------------------------------
-    subroutine prescan_input_file(filename)
-
-        ! Input parameter
-        character(len=*), intent(in) :: filename
-
-        ! Local variables
-        integer :: unit                             ! Fortran unit number used to open the input file
-        integer :: ios                              ! I/O status returned by open/read operations
-
-        open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
-
-            call check_IO_status(filename, ios)
-            call predetect_number_info(unit)
-        
-        close(unit)
-
-    end subroutine prescan_input_file
 
     !---------------------------------------------------------------------------
     ! Ensures the sum of move probabilities equals 1.0.
@@ -112,123 +87,6 @@ contains
         end if
 
     end subroutine ValidateAndRescaleMoveProbabilities
-
-    !-----------------------------------------------------------------------------
-    ! Pre-scans a residue input file to determine the maximum sizes needed
-    ! for array allocations
-    !-----------------------------------------------------------------------------
-    subroutine predetect_number_info(INFILE)
-
-        ! Input parameters
-        integer, intent(in) :: INFILE
-
-        ! Local variables
-        character(len=256) :: line, token, rest_line
-        integer :: ios, ios_val
-        integer :: pos, len_rest, val, pos_space
-        integer :: nb_type_per_residue
-        integer :: max_atom_in_residue
-        logical :: in_residue_block
-        logical :: is_active_residue
-
-        ! Initialize counters
-        nb%type_residue = 0
-        nb%max_type_per_residue = 0
-        nb%max_atom_in_residue = 0
-        in_residue_block = .false.
-
-        ! Loop over lines in input file
-        do
-            read(INFILE, '(A)', iostat=ios) line
-            if (ios /= 0) exit  ! End of file or read error
-
-            line = adjustl(trim(line))
-
-            ! Detect start/end of residue block
-            select case (trim(line))
-            case ('begin_residue')
-                in_residue_block = .true.
-                cycle
-            case ('end_residue')
-                in_residue_block = .false.
-                nb%type_residue = nb%type_residue + 1
-                cycle
-            end select
-
-            if (.not. in_residue_block) cycle
-
-            ! Tokenize line: first word and remainder
-            pos_space = index(line, ' ')
-            if (pos_space > 0) then
-                token = line(1:pos_space-1)
-                rest_line = adjustl(line(pos_space+1:))
-            else
-                token = line
-                rest_line = ''
-            end if
-
-            ! Count atom types per residue
-            if (trim(token) == 'types') then
-                len_rest = len_trim(rest_line)
-                pos = 1
-                nb_type_per_residue = 0
-
-                do
-                    read(rest_line(pos:), *, iostat=ios_val) val
-                    if (ios_val /= 0) exit
-                    nb_type_per_residue = nb_type_per_residue + 1
-
-                    ! Advance to next word
-                    pos = pos + index(rest_line(pos:), ' ')
-                    if (pos == 0 .or. pos > len_rest) exit
-                end do
-
-                ! Update global max
-                if (nb_type_per_residue > nb%max_type_per_residue) then
-                    nb%max_type_per_residue = nb_type_per_residue
-                end if
-            end if
-
-            ! Determine max number of atoms per residue
-            pos = index(line, ' ')
-            if (pos > 0) then
-                token = line(1:pos-1)
-                rest_line = adjustl(line(pos+1:))
-            else
-                token = trim(line)
-                rest_line = ''
-            end if
-
-            if (trim(token) == 'state') then
-                if (trim(rest_line) == 'actif') then
-                    is_active_residue = .true.
-                else
-                    is_active_residue = .false.
-                end if
-            end if
-
-            if (trim(token) == 'nb-atoms') then
-                read(rest_line, *, iostat=ios) max_atom_in_residue
-
-                ! Update global maximum
-                if (max_atom_in_residue > nb%max_atom_in_residue) then
-                    nb%max_atom_in_residue = max_atom_in_residue
-                end if
-
-                ! Update active / inactive maxima
-                if (is_active_residue) then
-                    if (max_atom_in_residue > nb%max_atom_in_residue_active) then
-                        nb%max_atom_in_residue_active = max_atom_in_residue
-                    end if
-                else
-                    if (max_atom_in_residue > nb%max_atom_in_residue_inactive) then
-                        nb%max_atom_in_residue_inactive = max_atom_in_residue
-                    end if
-                end if
-            end if
-        end do
-
-    end subroutine predetect_number_info
 
     !-----------------------------------------------------------------------------
     ! Allocates all arrays for atoms, residues, molecules, and interaction parameters
@@ -318,10 +176,10 @@ contains
         integer :: max_atom                             ! Maximum number of atom in the residue
         integer :: max_molecule                         ! Maximum number of molecule
 
-        ! Detect max number of atom (generaly much larger for host)
+        ! Detect max number of atom
         if (is_host) then
             max_atom = nb%max_atom_in_residue_inactive
-            max_molecule = 1 ! Only one host (may be too rigid?)
+            max_molecule = 1
         else
             max_atom = nb%max_atom_in_residue_active
             max_molecule = NB_MAX_MOLECULE
@@ -330,11 +188,6 @@ contains
         ! Allocate molecular coordinates
         allocate(type%residue_exists(nb%type_residue))
         allocate(type%com(dim, nb%type_residue, max_molecule))
-
-
-        write (*,*) "dim, nb%type_residue, max_molecule, max_atom", dim, nb%type_residue, max_molecule, max_atom
-
-        stop 778
 
         allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
         host%max_nb_atom = max_atom
@@ -759,21 +612,5 @@ contains
                 tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
     end subroutine SortResidues
-
-    !-----------------------------------------------------------------------------    !
-    ! Checks the I/O status returned by Fortran read/open/write operations
-    ! and aborts the program with a message if an error occurred.
-    !-----------------------------------------------------------------------------
-    subroutine check_IO_status(filename, ios)
-
-        ! Input parameters
-        character(len=*), intent(in) :: filename
-        integer, intent(in) :: ios
-
-        if (ios /= 0) then
-            call AbortRun("I/O error on file: "//trim(filename), ios)
-        end if
-
-    end subroutine check_IO_status
 
 end module input_parser

@@ -337,7 +337,6 @@ contains
 
     end function wrap_nearest
 
-
     subroutine sort_pairs(n, p1, p2, eps, sig)
         integer, intent(in) :: n
         integer, intent(inout) :: p1(n), p2(n)
@@ -366,6 +365,22 @@ contains
             end do
         end do
     end subroutine sort_pairs
+
+    !-----------------------------------------------------------------------------    !
+    ! Checks the I/O status returned by Fortran read/open/write operations
+    ! and aborts the program with a message if an error occurred.
+    !-----------------------------------------------------------------------------
+    subroutine check_IO_status(filename, ios)
+
+        ! Input parameters
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: ios
+
+        if (ios /= 0) then
+            call AbortRun("I/O error on file: "//trim(filename), ios)
+        end if
+
+    end subroutine check_IO_status
 
 end module readers_utils
 

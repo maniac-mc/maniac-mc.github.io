@@ -154,8 +154,23 @@ module simulation_state
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
         integer :: max_atom_in_residue_active
         integer :: max_atom_in_residue_inactive
+        integer, allocatable :: residue_count(:)
     end type type_number
     type(type_number) :: nb
+
+
+
+
+    ! #todo : merge with the rest eventually
+    ! possible doublons
+    type residue_info
+        integer, allocatable :: types(:)
+        integer :: nb_types
+        integer :: nb_atoms
+    end type residue_info
+
+    type(residue_info), allocatable :: res_infos(:)
+
 
     ! Residues information
     type :: type_residue
