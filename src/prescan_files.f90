@@ -92,6 +92,7 @@ contains
             case ('end_residue')
                 in_residue_block = .false.
                 nb%type_residue = nb%type_residue + 1
+
                 cycle
             end select
 
@@ -198,8 +199,7 @@ contains
         do residue_id = 1, nb%type_residue
             res_infos(residue_id)%nb_types = 0
             res_infos(residue_id)%nb_atoms = 0
-            if (allocated(res_infos(residue_id)%types)) &
-                deallocate(res_infos(residue_id)%types)
+            if (allocated(res_infos(residue_id)%types)) deallocate(res_infos(residue_id)%types)
         end do
 
         rewind(infile)
@@ -222,6 +222,7 @@ contains
             case ('end_residue')
                 in_residue_block = .false.
                 cycle
+
             end select
 
             if (.not. in_residue_block) cycle
@@ -270,10 +271,16 @@ contains
 
             end if
 
+            if (trim(token) == 'state') then
+                if (trim(rest_line) == 'actif') then
+                    res_infos(residue_id)%is_active = .true.
+                else
+                    res_infos(residue_id)%is_active = .false.
+                end if
+            end if
+
             if (trim(token) == 'nb-atoms') then
-
                 read(rest_line,*) res_infos(residue_id)%nb_atoms
-
             end if
 
         end do
@@ -351,20 +358,22 @@ contains
         ! ---------------------------------------------------------
         ! Compute number of residues of each type
         ! ---------------------------------------------------------
+
+        ! Initialise nb_res to 0
+        do residue_id = 1, nb%type_residue
+            res_infos(residue_id)%nb_res = 0
+        end do
+
         if (is_reservoir) then
             do residue_id = 1, nb%type_residue
                 if (res_infos(residue_id)%nb_atoms > 0) then
                     res_infos(residue_id)%nb_res(2) = residue_atom_count(residue_id) / res_infos(residue_id)%nb_atoms
-                else
-                    res_infos(residue_id)%nb_res(2) = 0
                 end if
             end do
         else
             do residue_id = 1, nb%type_residue
                 if (res_infos(residue_id)%nb_atoms > 0) then
                     res_infos(residue_id)%nb_res(1) = residue_atom_count(residue_id) / res_infos(residue_id)%nb_atoms
-                else
-                    res_infos(residue_id)%nb_res(1) = 0
                 end if
             end do
         end if

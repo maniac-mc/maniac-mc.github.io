@@ -168,6 +168,7 @@ module simulation_state
         integer :: nb_types                 ! Number of atom types in this residue
         integer :: nb_atoms                 ! Total number of atoms in this residue
         integer :: nb_res(2)                ! Total number of residue in primary and reservoir 
+        logical :: is_active                ! The residue is active
     end type residue
     type(residue), allocatable :: res_infos(:)
 

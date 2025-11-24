@@ -34,6 +34,13 @@ program MANIAC
         write(*,'(A,I6)')   "   Total atoms in residue:    ", res_infos(i)%nb_atoms
         write(*,'(A,I6,I6)') "   Residue counts (main/resv): ", res_infos(i)%nb_res(1), res_infos(i)%nb_res(2)
 
+        if (res_infos(i)%is_active) then
+            write(*,'(A,A)') "   Active status:             ", "Active"
+        else
+            write(*,'(A,A)') "   Active status:             ", "Inactive"
+        end if
+
+
         if (res_infos(i)%nb_types > 0) then
             write(*,'(A)', advance='no') "   Atom types:                "
             do j = 1, res_infos(i)%nb_types
