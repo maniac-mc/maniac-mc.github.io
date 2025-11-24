@@ -24,7 +24,7 @@ contains
 
         ! Compute each energy components
         call compute_pairwise_energy(box)
-        call ComputeEwaldSelf()
+        call compute_ewald_self()
         call compute_ewald_recip()
         call compute_total_intra_residue_coulomb_energy()
 
@@ -181,14 +181,14 @@ contains
     pure function lennard_jones_energy(r, sigma, epsilon) result(energy)
 
         ! Input variables
-        real(real64), intent(in) :: r          ! Distance between the two atoms (in Å)
-        real(real64), intent(in) :: sigma      ! Lennard-Jones sigma parameter (in Å)
-        real(real64), intent(in) :: epsilon    ! Lennard-Jones epsilon parameter (in kJ/mol)
+        real(real64), intent(in) :: r           ! Distance between the two atoms (in Å)
+        real(real64), intent(in) :: sigma       ! Lennard-Jones sigma parameter (in Å)
+        real(real64), intent(in) :: epsilon     ! Lennard-Jones epsilon parameter (in kJ/mol)
 
         ! Local variables
-        real(real64) :: r6      ! (σ / r)^6 term of the LJ potential
-        real(real64) :: r12     ! (σ / r)^12 term of the LJ potential
-        real(real64) :: energy  ! Lennard-Jones energy contribution (kcal/mol)
+        real(real64) :: r6                      ! (sigma / r)^6 term of the LJ potential
+        real(real64) :: r12                     ! (sigma / r)^12 term of the LJ potential
+        real(real64) :: energy                  ! Lennard-Jones energy contribution (kcal/mol)
 
         if (r >= input%real_space_cutoff) then
 
@@ -241,16 +241,12 @@ contains
 
         ! Compute Coulomb energy (tabulated or direct)
         if (use_table .and. erfc_r_table%initialized) then
-
             ! energy = q1*q2 * f(r)  , f(r) is erfc(r) / r from lookup table
             energy = q1 * q2 * LookupTabulated(erfc_r_table, r)     ! In units of e^2/Å
-
         else
-
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r
             energy = q1 * q2 * erfc(ewald%alpha * r) / r            ! In units of e^2/Å
-
         end if
 
     end function coulomb_energy
@@ -286,7 +282,7 @@ contains
     ! with its own Gaussian "image". The self-energy term removes this contribution
     ! to avoid overcounting.
     !------------------------------------------------------------------------------
-    subroutine ComputeEwaldSelf()
+    subroutine compute_ewald_self()
 
         ! Local variables
         integer :: residue_type_1
@@ -297,7 +293,7 @@ contains
 
             ! Compute self-energy for a single molecule of this residue type
             e_ewald_self = zero
-            call SingleMolEwaldSelf(residue_type_1, e_ewald_self)
+            call single_mol_ewald_self(residue_type_1, e_ewald_self)
 
             ! Multiply by the number of molecules of this residue type
             e_ewald_self = e_ewald_self * primary%num_residues(residue_type_1)
@@ -307,7 +303,7 @@ contains
 
         end do
 
-    end subroutine ComputeEwaldSelf
+    end subroutine compute_ewald_self
 
     !------------------------------------------------------------------------------
     ! Computes the Ewald self-energy correction for a single molecule.
@@ -317,7 +313,7 @@ contains
     ! self-interaction energy that must be subtracted to obtain the correct total
     ! electrostatic energy.
     !------------------------------------------------------------------------------
-    subroutine SingleMolEwaldSelf(residue_type, self_energy_1)
+    subroutine single_mol_ewald_self(residue_type, self_energy_1)
 
         ! Input arguments
         integer, intent(in) :: residue_type           ! Residue type for the molecule
@@ -346,12 +342,12 @@ contains
         ! Convert to kcal/mol at the end
         self_energy_1 = self_energy_1 * EPS0_INV_real  ! In kcal/mol
 
-    end subroutine SingleMolEwaldSelf
+    end subroutine single_mol_ewald_self
 
     !------------------------------------------------------------------------------
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
-    subroutine ComputePairInteractionEnergy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
+    subroutine compute_pair_interaction_energy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -419,6 +415,6 @@ contains
         ! Convert to kcal/mol at the end
         e_coulomb = e_coulomb * EPS0_INV_real                          ! In kcal/mol
 
-    end subroutine ComputePairInteractionEnergy_singlemol
+    end subroutine compute_pair_interaction_energy_singlemol
 
 end module energy_utils

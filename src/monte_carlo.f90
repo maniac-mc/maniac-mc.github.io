@@ -27,19 +27,19 @@ contains
 
         implicit none
 
-        ! 1. Local Variables
+        ! Local Variables
         real(real64) :: random_draw     ! Random number used for move selection
         integer :: residue_type         ! Index of molecule to be moved
         integer :: molecule_index       ! Index of molecule copy
 
-        ! 2. Initialization
+        ! Initialization
         call LogStartMC()               ! Log starting message
         call update_output_files(.false.)       ! Write initial topology
         status%block = 1 ! Initialize Monte Carlo counters
         status%step  = 1 ! Initialize Monte Carlo counters
 
         !----------------------------------------------
-        ! 3. Main Monte Carlo Loop
+        ! Main Monte Carlo Loop
         !----------------------------------------------
         do
             ! Pick a molecule type and instance
@@ -57,7 +57,7 @@ contains
             else if (random_draw <= proba%rotation + proba%translation) then
 
                 ! Case 2: Rotation move
-                call Rotation(residue_type, molecule_index)
+                call attempt_rotation_move(residue_type, molecule_index)
 
             else if (random_draw <= proba%rotation + proba%translation + proba%swap) then
 
@@ -103,7 +103,7 @@ contains
                 !----------------------------------------------
                 ! Adjust step sizes & output status at the end of the block
                 !----------------------------------------------
-                call AdjustMoveStepSizes()        ! Adjust MC step sizes
+                call adjust_move_step_sizes()        ! Adjust MC step sizes
                 call PrintStatus()                ! Print current simulation status
                 call update_output_files(.true.)  ! Update output files
 

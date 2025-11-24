@@ -90,19 +90,8 @@ contains
     !----------------------------------------------------------------------
     ! Adjust the Monte Carlo translation and rotation step sizes using a
     ! Robbins–Monro adaptive scheme.
-    !
-    ! This routine updates the translational and rotational move amplitudes
-    ! based on the acceptance ratios observed over recent trial moves.
-    ! The adjustment follows the Robbins–Monro stochastic approximation:
-    !
-    !     step_new = step_old * exp( γ * (acc - TARGET) )
-    !
-    ! where:
-    !     acc   = observed acceptance ratio for the move type
-    !     γ     = learning rate (small positive constant)
-    !     TARGET = desired acceptance probability
     !----------------------------------------------------------------------
-    subroutine AdjustMoveStepSizes()
+    subroutine adjust_move_step_sizes()
 
         ! Local variables
         real(real64) :: acc_trans, acc_rot
@@ -138,7 +127,7 @@ contains
 
         end if
 
-    end subroutine AdjustMoveStepSizes
+    end subroutine adjust_move_step_sizes
 
     !----------------------------------------------------------------------
     ! PickRandomResidueType: randomly selects an active residue type from the
@@ -352,7 +341,7 @@ contains
 
             call single_mol_fourier_terms(residue_type, molecule_index)
             call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb, is_creation = creation_flag)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(residue_type, new%ewald_self)
             call compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, new%intra_coulomb)
         
@@ -380,7 +369,7 @@ contains
 
             call single_mol_fourier_terms(residue_type, molecule_index)
             call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
@@ -426,7 +415,7 @@ contains
             ! Note: In deletion scenario, compute all energy components
             call compute_ewald_self_interaction_single_mol(residue_type, old%ewald_self)
             call compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, old%intra_coulomb)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
             call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
 
             ! Recalculate total energy
@@ -437,7 +426,7 @@ contains
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
             call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb

@@ -19,7 +19,7 @@ contains
     ! angle. The move is accepted or rejected based on the Metropolis
     ! criterion using energy differences.
     !---------------------------------------------------------------------------
-    subroutine Rotation(residue_type, molecule_index)
+    subroutine attempt_rotation_move(residue_type, molecule_index)
 
         ! Input arguments
         integer, intent(in) :: residue_type             ! Residue type to be moved
@@ -57,6 +57,6 @@ contains
             call reject_molecule_move(residue_type, molecule_index, site_offset_old = res%site_offset_old)
         end if
 
-    end subroutine Rotation
+    end subroutine attempt_rotation_move
 
 end module molecule_rotation
