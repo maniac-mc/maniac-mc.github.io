@@ -7,12 +7,14 @@ module tabulated_utils
 contains
 
     ! Initialize all precomputed tables for the simulation
-    subroutine PrecomputeTable()
-        ! Example: only erfc/r table for now
+    subroutine precompute_table()
+
+        ! Initialise table for erfc_r_table, r6_table, and r12_table
         call InitializeTabulatedErfcR(erfc_r_table, ewald%alpha, input%real_space_cutoff)
         call InitializeTabulatedRPower(r6_table, input%real_space_cutoff, 6)
         call InitializeTabulatedRPower(r12_table, input%real_space_cutoff, 12)
-    end subroutine PrecomputeTable
+    
+    end subroutine precompute_table
 
     ! Precomputes a tabulated version of the function erfc(alpha*r)/r for faster
     ! evaluation during simulations. Useful for Ewald direct-space Coulomb energy.
@@ -110,6 +112,7 @@ contains
         f2 = table%f(i+1)
         t = (r - table%x(i)) / table%dx
         f_r = (one - t) * f1 + t * f2
+        
     end function LookupTabulated
 
 end module tabulated_utils

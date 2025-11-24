@@ -252,9 +252,9 @@ contains
     end subroutine PrintStatus
 
     !------------------------------------------------------------------------------
-    ! Subroutine: FinalReport
+    ! Subroutine: final_report
     !------------------------------------------------------------------------------
-    subroutine FinalReport()
+    subroutine final_report()
 
         ! Energy components in kcal/mol
         real(real64) :: e_tot          ! Total energy for reporting (computed)
@@ -296,7 +296,7 @@ contains
 
         call CloseOutput()                  ! Close files and finalize
 
-    end subroutine FinalReport
+    end subroutine final_report
 
     subroutine log_parameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
 

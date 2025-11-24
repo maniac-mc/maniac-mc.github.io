@@ -215,13 +215,10 @@ contains
         select case (resid_location(res_type))
             case (TYPE_HOST)
                 coord => host
-                write (*,*) "HOST"
             case (TYPE_GUEST)
                 coord => guest
-                write (*,*) "GUEST"
             case (TYPE_GAS)
                 coord => gas
-                write (*,*) "GAS"
         end select
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)

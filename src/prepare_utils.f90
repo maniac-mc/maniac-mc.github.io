@@ -5,6 +5,8 @@ module prepare_utils
     use ewald_kvectors
     use ewald_phase
     use ewald_energy
+    use tabulated_utils
+
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
@@ -15,7 +17,7 @@ contains
     ! Convert fugacities to dimensionless activities and
     ! initialize Ewald summation parameters for the simulation.
     !-----------------------------------------------------------
-    subroutine prepare_simulation_parameters()
+    subroutine setup_simulation_parameters()
 
         ! Initialize Ewald summation parameters
         ! (cutoff, precision, reciprocal space, etc.)
@@ -35,13 +37,17 @@ contains
         ! reproducibility and debugging
         call log_ewald_parameters()
 
-    end subroutine prepare_simulation_parameters
+        ! Precompute tables for faster calculation
+        call precompute_table()
+
+    end subroutine setup_simulation_parameters
 
     !-------------------------------------------------------------------
     ! Allocate arrays used for Fourier components and related data
     !-------------------------------------------------------------------
     subroutine allocate_array()
 
+        ! Local variable
         integer :: kmax_max
 
         allocate(res%site_offset_old(3, nb%max_atom_in_any_residue))
