@@ -51,19 +51,25 @@ contains
     ! Pre-scans a residue input file to determine the maximum sizes needed
     ! for array allocations
     !-----------------------------------------------------------------------------
-    subroutine predetect_number_info(INFILE)
+    subroutine predetect_number_info(infile)
 
         ! Input parameters
-        integer, intent(in) :: INFILE
+        integer, intent(in) :: infile                 ! File unit to read residue definitions
 
         ! Local variables
-        character(len=256) :: line, token, rest_line
-        integer :: ios, ios_val
-        integer :: pos, len_rest, val, pos_space
-        integer :: nb_type_per_residue
-        integer :: max_atom_in_residue
-        logical :: in_residue_block
-        logical :: is_active_residue
+        character(len=256) :: line                    ! Current line read from input file
+        character(len=256) :: token                   ! First word of the line
+        character(len=256) :: rest_line               ! Remaining part of the line after token
+        integer :: ios                                ! I/O status of read operation
+        integer :: ios_val                            ! Temporary I/O status for internal reads
+        integer :: pos                                ! Position of first space in line
+        integer :: len_rest                            ! Length of rest_line
+        integer :: val                                ! Temporary value parsed from line
+        integer :: pos_space                           ! Position of space for tokenization
+        integer :: nb_type_per_residue                ! Number of types in current residue
+        integer :: max_atom_in_residue                ! Max number of atoms in current residue
+        logical :: in_residue_block                   ! True if inside a residue block
+        logical :: is_active_residue                  ! True if residue is active
 
         ! Initialize counters
         nb%type_residue = 0
@@ -73,7 +79,7 @@ contains
 
         ! Loop over lines in input file
         do
-            read(INFILE, '(A)', iostat=ios) line
+            read(infile, '(A)', iostat=ios) line
             if (ios /= 0) exit  ! End of file or read error
 
             line = adjustl(trim(line))
@@ -167,17 +173,23 @@ contains
     !-----------------------------------------------------------------------------
     ! Extract the atom-type list for each residue definition in the input file
     !-----------------------------------------------------------------------------
-    subroutine predetect_type(INFILE)
+    subroutine predetect_type(infile)
 
-        integer, intent(in) :: INFILE
+        ! Input argument
+        integer, intent(in) :: infile           ! Input file unit number
 
-        character(len=256) :: line, token, rest_line
-        integer :: ios, ios_val
-        integer :: pos_space, pos, len_rest
-        integer :: residue_id
-        integer :: val
-
-        logical :: in_residue_block
+        ! Local variables
+        character(len=256) :: line              ! Current line read from file
+        character(len=256) :: token             ! First word of the line
+        character(len=256) :: rest_line         ! Remaining part of the line
+        integer :: ios                          ! I/O status of the read statement
+        integer :: ios_val                      ! I/O status for numeric reads
+        integer :: pos_space                    ! Position of first space in line
+        integer :: pos                          ! Current parsing position in rest_line
+        integer :: len_rest                     ! Length of rest_line
+        integer :: residue_id                   ! Current residue index
+        integer :: val                          ! Temporary value read from line
+        logical :: in_residue_block             ! Flag: inside a residue block
 
         ! Safety: allocate res_infos
         if (allocated(res_infos)) deallocate(res_infos)
@@ -190,13 +202,13 @@ contains
                 deallocate(res_infos(residue_id)%types)
         end do
 
-        rewind(INFILE)
+        rewind(infile)
         in_residue_block = .false.
         residue_id = 0
 
         ! Parse again to extract "types" entries
         do
-            read(INFILE, '(A)', iostat=ios) line
+            read(infile, '(A)', iostat=ios) line
             if (ios /= 0) exit
 
             line = adjustl(trim(line))
@@ -271,13 +283,21 @@ contains
     subroutine prescan_topology(filename, is_reservoir)
 
         ! Input parameters
-        character(len=*), intent(in) :: filename
-        logical, intent(in) :: is_reservoir
+        character(len=*), intent(in) :: filename      ! Name of the topology file
+        logical, intent(in) :: is_reservoir           ! Flag: true if reservoir file
 
         ! Local variables
-        integer :: unit, ios
-        character(len=256) :: line, token, rest
-        integer :: pos, atom_id, atom_type, mol_id, r, i
+        integer :: unit                                ! Fortran unit number for file
+        integer :: ios                                 ! I/O status
+        character(len=256) :: line                     ! Current line read from file
+        character(len=256) :: token                    ! First word of the line
+        character(len=256) :: rest                     ! Remaining part of the line
+        integer :: pos                                 ! Position of first space in line
+        integer :: atom_id                             ! Atom index from file
+        integer :: atom_type                           ! Atom type from file
+        integer :: mol_id                              ! Molecule index from file
+        integer :: residue_id                          ! Current residue index
+        integer :: type_id                             ! Loop counter
 
         ! Temporary dynamic table for residue atom count
         integer, allocatable :: residue_atom_count(:)
@@ -317,10 +337,10 @@ contains
             ! ---------------------------------------------------------
             ! Classify this atom according to which residue type it belongs to
             ! ---------------------------------------------------------
-            do r = 1, nb%type_residue
-                do i = 1, res_infos(r)%nb_types
-                    if (atom_type == res_infos(r)%types(i)) then
-                        residue_atom_count(r) = residue_atom_count(r) + 1
+            do residue_id = 1, nb%type_residue
+                do type_id = 1, res_infos(residue_id)%nb_types
+                    if (atom_type == res_infos(residue_id)%types(type_id)) then
+                        residue_atom_count(residue_id) = residue_atom_count(residue_id) + 1
                     end if
                 end do
             end do
@@ -332,19 +352,19 @@ contains
         ! Compute number of residues of each type
         ! ---------------------------------------------------------
         if (is_reservoir) then
-            do r = 1, nb%type_residue
-                if (res_infos(r)%nb_atoms > 0) then
-                    res_infos(r)%nb_res(2) = residue_atom_count(r) / res_infos(r)%nb_atoms
+            do residue_id = 1, nb%type_residue
+                if (res_infos(residue_id)%nb_atoms > 0) then
+                    res_infos(residue_id)%nb_res(2) = residue_atom_count(residue_id) / res_infos(residue_id)%nb_atoms
                 else
-                    res_infos(r)%nb_res(2) = 0
+                    res_infos(residue_id)%nb_res(2) = 0
                 end if
             end do
         else
-            do r = 1, nb%type_residue
-                if (res_infos(r)%nb_atoms > 0) then
-                    res_infos(r)%nb_res(1) = residue_atom_count(r) / res_infos(r)%nb_atoms
+            do residue_id = 1, nb%type_residue
+                if (res_infos(residue_id)%nb_atoms > 0) then
+                    res_infos(residue_id)%nb_res(1) = residue_atom_count(residue_id) / res_infos(residue_id)%nb_atoms
                 else
-                    res_infos(r)%nb_res(1) = 0
+                    res_infos(residue_id)%nb_res(1) = 0
                 end if
             end do
         end if
