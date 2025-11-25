@@ -74,8 +74,6 @@ module simulation_state
     end type energy_type
     type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
 
-
-
     ! Parameters provided in the input file
     type input_type
         real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)

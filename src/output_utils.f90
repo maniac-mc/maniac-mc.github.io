@@ -190,10 +190,7 @@ contains
         call log_message(header_msg)
 
         ! Composite energies
-        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
-                        energy%ewald_self +  energy%intra_coulomb
-        e_coul = energy%coulomb +  energy%intra_coulomb
-        e_long = energy%recip_coulomb + energy%ewald_self
+        call compute_composite_energies(e_tot, e_coul, e_long)
 
         ! -----------------------
         ! Print header for energy and MC moves
@@ -251,6 +248,22 @@ contains
 
     end subroutine PrintStatus
 
+    !----------------------------------------------------------------------
+    ! Computes composite energies from the energy components in 'energy'.
+    !----------------------------------------------------------------------
+    subroutine compute_composite_energies(e_tot, e_coul, e_long)
+
+        ! Output parameter
+        real(real64), intent(out) :: e_tot, e_coul, e_long
+
+        ! Compute composite energies
+        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
+                energy%ewald_self + energy%intra_coulomb
+        e_coul = energy%coulomb + energy%intra_coulomb
+        e_long = energy%recip_coulomb + energy%ewald_self
+
+    end subroutine compute_composite_energies
+
     !------------------------------------------------------------------------------
     ! Subroutine: final_report
     !------------------------------------------------------------------------------
@@ -262,11 +275,8 @@ contains
         real(real64) :: e_long         ! Long-range Coulombic energy (reciprocal + self)
         character(LEN=1024) :: formatted_msg   ! Formatted message for logging
 
-
         ! Compute combined components
-        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + energy%ewald_self + energy%intra_coulomb ! In kcal/mol
-        e_coul = energy%coulomb + energy%intra_coulomb ! In kcal/mol
-        e_long = energy%recip_coulomb + energy%ewald_self ! In kcal/mol
+        call compute_composite_energies(e_tot, e_coul, e_long)
 
         ! Blank line before box
         call log_message("")
