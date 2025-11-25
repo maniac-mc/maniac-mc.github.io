@@ -213,48 +213,34 @@ module simulation_state
     ! Per residues information
     !---------------------------------------------------------------------------
     type type_residue
+        integer :: number                                       ! Total number of residues
+        integer, allocatable :: role(:)                         ! Guest or host
+        integer, dimension(:), allocatable :: atom              ! Number of atoms in the residue
         real(real64), dimension(:), allocatable :: mass         ! Array of mass of residue
         real(real64), dimension(:), allocatable :: lambda       ! De Broglie length
         integer, dimension(:, :), allocatable :: site_types     ! Site types for each residue
+        integer, dimension(:, :), allocatable :: pattern_types  ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
+        integer, dimension(:), allocatable :: types             ! Number of atom types in the residue
+        integer, dimension(:), allocatable :: bonds             ! Number of bonds in the residue
+        integer, dimension(:), allocatable :: angles            ! Number of angles in the residue
+        integer, dimension(:), allocatable :: dihedrals         ! Number of dihedrals in the residue
+        integer, dimension(:), allocatable :: impropers         ! Number of impropers in the residue
         character(len=10), dimension(:), allocatable :: names   ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: site_names ! Site names for each residue
     end type type_residue
     type(type_residue) :: res
 
-
-
-
-
-
-
-
-
-    ! Parameters provided in the input file
+    !---------------------------------------------------------------------------
+    ! Monte Carlo parameters provided in the input file
+    !---------------------------------------------------------------------------
     type input_type
         real(real64) :: translation_step            ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
         real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
-        integer :: seed                             ! Initial seed for the random number generator
         logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
+        integer :: seed                             ! Initial seed for the random number generator
     end type input_type
-    type(input_type) :: input
-
-
-    ! Simulation box definition
-    type type_number
-        integer :: type_residue                     ! Total number of residues
-        integer, dimension(:), allocatable :: atom_in_residue ! Number of atoms in the residue
-        integer, dimension(:), allocatable :: types_per_residue ! Number of atom types in the residue
-        integer, dimension(:), allocatable :: bonds_per_residue ! Number of bonds in the residue
-        integer, dimension(:), allocatable :: angles_per_residue ! Number of angles in the residue
-        integer, dimension(:), allocatable :: dihedrals_per_residue ! Number of dihedrals in the residue
-        integer, dimension(:), allocatable :: impropers_per_residue ! Number of impropers in the residue
-        integer, allocatable :: resid_location(:) ! size = nb%type_residue
-        integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
-    end type type_number
-    type(type_number) :: nb
-
-
+    type(input_type) :: mc_input
 
     !---------------------------------------------------------------------------
     ! Type to store precomputed reciprocal vectors (used in ewald)

@@ -79,7 +79,7 @@ contains
         type(type_coordinate), pointer :: coord     ! Pointer for host or guest coordinate
 
         ! Generate random move of max size "translation_step/2"
-        trial_pos = rand_symmetric(3) * input%translation_step
+        trial_pos = rand_symmetric(3) * mc_input%translation_step
 
         ! Return the correct pointer (host or guest)
         coord => get_coord(res_type)

@@ -35,7 +35,7 @@ contains
         !----------------------------------------------------------
         ! Save per-atom Fourier phase factors (IKX, IKY, IKZ)
         !----------------------------------------------------------
-        do atom_index = 1, nb%atom_in_residue(residue_type)
+        do atom_index = 1, res%atom(residue_type)
 
             do dim = 1, 3
 
@@ -93,7 +93,7 @@ contains
         !----------------------------------------------------------
         ! Restore per-atom Fourier phase factors (IKX, IKY, IKZ)
         !----------------------------------------------------------
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type)
+        do atom_index_1 = 1, res%atom(residue_type)
 
             do dim = 1, 3
 
@@ -147,7 +147,7 @@ contains
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
         ! Restore IKX, IKY, IKZ from backups
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type)
+        do atom_index_1 = 1, res%atom(residue_type)
 
             do dim = 1, 3
 
@@ -182,7 +182,7 @@ contains
         integer :: molecule_index
 
         ! Loop over all residue types
-        do residue_type = 1, nb%type_residue
+        do residue_type = 1, res%number
 
             ! Loop over all molecules of this residue type
             do molecule_index = 1, primary%num%residues(residue_type)
@@ -215,7 +215,7 @@ contains
         ! Return the correct pointer (host, guest, or gas)
         coord => get_coord(res_type)
 
-        do atom_index_1 = 1, nb%atom_in_residue(res_type)
+        do atom_index_1 = 1, res%atom(res_type)
 
             ! Atom coordinate
             atom = coord%com(:, res_type, mol_index) + &

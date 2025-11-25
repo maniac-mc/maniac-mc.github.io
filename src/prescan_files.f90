@@ -88,7 +88,7 @@ contains
         logical :: is_active_residue                  ! True if residue is active
 
         ! Initialize counters
-        nb%type_residue = 0
+        res%number = 0
         nmax%types_per_residue = 0
         nmax%atoms_per_residue = 0
         in_residue_block = .false.
@@ -107,7 +107,7 @@ contains
                 cycle
             case ('end_residue')
                 in_residue_block = .false.
-                nb%type_residue = nb%type_residue + 1
+                res%number = res%number + 1
 
                 cycle
             end select
@@ -210,9 +210,9 @@ contains
         logical :: in_residue_block             ! Flag: inside a residue block
 
         if (allocated(res_infos)) deallocate(res_infos)
-        allocate(res_infos(nb%type_residue))
+        allocate(res_infos(res%number))
 
-        do residue_id = 1, nb%type_residue
+        do residue_id = 1, res%number
             res_infos(residue_id)%nb_types = 0
             res_infos(residue_id)%nb_atoms = 0
             if (allocated(res_infos(residue_id)%types)) deallocate(res_infos(residue_id)%types)
@@ -329,7 +329,7 @@ contains
 
         ! Temporary dynamic table for residue atom count
         integer, allocatable :: residue_atom_count(:)
-        allocate(residue_atom_count(nb%type_residue))
+        allocate(residue_atom_count(res%number))
         residue_atom_count = 0
 
         ! ---------------------------------------------------------
@@ -365,7 +365,7 @@ contains
             ! ---------------------------------------------------------
             ! Classify this atom according to which residue type it belongs to
             ! ---------------------------------------------------------
-            do residue_id = 1, nb%type_residue
+            do residue_id = 1, res%number
                 do type_id = 1, res_infos(residue_id)%nb_types
                     if (atom_type == res_infos(residue_id)%types(type_id)) then
 
@@ -386,7 +386,7 @@ contains
         !----------------------------------------------------------
         ! Compute number of residues
         !----------------------------------------------------------
-        do residue_id = 1, nb%type_residue
+        do residue_id = 1, res%number
 
             res_infos(residue_id)%nb_res = 0
 
@@ -414,7 +414,7 @@ contains
         nmax%active_residues = 0
         nmax%inactive_residues = 0
 
-        do residue_id = 1, nb%type_residue
+        do residue_id = 1, res%number
             nb_residue = res_infos(residue_id)%nb_res(1) + res_infos(residue_id)%nb_res(2)
             if (res_infos(residue_id)%is_active) then
                 if (nb_residue > nmax%active_residues) then

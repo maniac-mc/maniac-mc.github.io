@@ -50,7 +50,7 @@ contains
         energy%intra_coulomb = zero ! In kcal/mol
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type_1 = 1, res%number
             
             ! Skip inactive residues
             if (thermo%is_active(residue_type_1)) then
@@ -88,7 +88,7 @@ contains
         energy%coulomb = zero
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type_1 = 1, res%number
             ! Loop over all molecule of type "residue_type_1"
             do molecule_index_1 = 1, box%num%residues(residue_type_1)
 
@@ -129,10 +129,10 @@ contains
         e_coulomb = zero
 
         ! Loop over sites in molecule residue_type
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type_1)
+        do atom_index_1 = 1, res%atom(residue_type_1)
 
             ! Loop over all molecule types 2
-            do residue_type_2 = 1, nb%type_residue
+            do residue_type_2 = 1, res%number
 
                 ! Loop over all molecule index 2
                 do molecule_index_2 = 1, box%num%residues(residue_type_2)
@@ -147,7 +147,7 @@ contains
                         (molecule_index_2 <= molecule_index_1))) cycle
 
                     ! Loop over all side of the selected molecule 2
-                    do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
+                    do atom_index_2 = 1, res%atom(residue_type_2)
 
                         ! Read pair parameters
                         sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Angstrom
@@ -190,7 +190,7 @@ contains
         real(real64) :: r12                     ! (sigma / r)^12 term of the LJ potential
         real(real64) :: energy                  ! Lennard-Jones energy contribution (kcal/mol)
 
-        if (r >= input%real_space_cutoff) then
+        if (r >= mc_input%real_space_cutoff) then
 
             ! Return 0 if distance larger than cutoff
             energy = zero                                           ! kcal/mol
@@ -289,7 +289,7 @@ contains
         real(real64) :: e_ewald_self
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type_1 = 1, res%number
 
             ! Compute self-energy for a single molecule of this residue type
             e_ewald_self = zero
@@ -327,7 +327,7 @@ contains
         self_energy_1 = zero
 
         ! Loop over all atoms in the residue
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type)
+        do atom_index_1 = 1, res%atom(residue_type)
 
             charge_1 = primary%atoms%charges(residue_type, atom_index_1)
 
@@ -369,10 +369,10 @@ contains
         e_coulomb = zero
 
         ! Loop over sites in molecule residue_type
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type_1)
+        do atom_index_1 = 1, res%atom(residue_type_1)
 
             ! Loop over all molecule types 2
-            do residue_type_2 = 1, nb%type_residue
+            do residue_type_2 = 1, res%number
 
                 ! Loop over all molecule index 2
                 do molecule_index_2 = 1, box%num%residues(residue_type_2)
@@ -382,12 +382,12 @@ contains
                         (residue_type_1 == residue_type_2)) cycle
 
                     ! Loop over all side of the selected molecule 2
-                    do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
+                    do atom_index_2 = 1, res%atom(residue_type_2)
 
                         distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                                    residue_type_2, molecule_index_2, atom_index_2)
 
-                        if (distance < input%real_space_cutoff) then
+                        if (distance < mc_input%real_space_cutoff) then
 
                             ! LJ potential
                             sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Å

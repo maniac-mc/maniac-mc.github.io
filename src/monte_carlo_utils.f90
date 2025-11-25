@@ -40,7 +40,7 @@ contains
         if (present(full_rotation)) use_full_rotation = full_rotation
 
         ! Exit if single-atom residue (nothing to rotate)
-        n_atoms = nb%atom_in_residue(res_type)
+        n_atoms = res%atom(res_type)
         if (n_atoms == 1) return
 
         ! Choose rotation angle
@@ -76,12 +76,12 @@ contains
         if (.not. use_full_rotation) then
 
             ! For small-step mode, make sure rotation_step_angle is reasonable
-            if (input%rotation_step_angle <= zero .or. input%rotation_step_angle > TWOPI) then
+            if (mc_input%rotation_step_angle <= zero .or. mc_input%rotation_step_angle > TWOPI) then
                 call abort_run('Invalid rotation_step_angle in choose_rotation_angle')
             end if
 
             ! Use small rotation
-            theta = (rand_uniform() - half) * input%rotation_step_angle
+            theta = (rand_uniform() - half) * mc_input%rotation_step_angle
         else
             ! Use large rotation
             theta = rand_uniform() * TWOPI
@@ -99,7 +99,7 @@ contains
         real(real64) :: acc_trans, acc_rot
         real(real64), parameter :: gamma = 0.10d0  ! learning rate
 
-        if (.not. input%recalibrate_moves) return
+        if (.not. mc_input%recalibrate_moves) return
 
         ! Adjust translation step
         if (counter%translations(1) > MIN_TRIALS_FOR_RECALIBRATION) then
@@ -107,11 +107,11 @@ contains
             acc_trans = real(counter%translations(2), real64) / &
                 real(counter%translations(1), real64)
 
-            input%translation_step = input%translation_step * &
+            mc_input%translation_step = mc_input%translation_step * &
                                     exp(gamma * (acc_trans - TARGET_ACCEPTANCE))
 
-            input%translation_step = max(MIN_TRANSLATION_STEP, &
-                                    min(input%translation_step, MAX_TRANSLATION_STEP))
+            mc_input%translation_step = max(MIN_TRANSLATION_STEP, &
+                                    min(mc_input%translation_step, MAX_TRANSLATION_STEP))
 
         end if
 
@@ -121,11 +121,11 @@ contains
             acc_rot = real(counter%rotations(2),real64) / &
                     real(counter%rotations(1),real64)
 
-            input%rotation_step_angle = input%rotation_step_angle * &
+            mc_input%rotation_step_angle = mc_input%rotation_step_angle * &
                                         exp(gamma * (acc_rot - TARGET_ACCEPTANCE))
 
-            input%rotation_step_angle = max(MIN_ROTATION_ANGLE, &
-                                        min(input%rotation_step_angle, MAX_ROTATION_ANGLE))
+            mc_input%rotation_step_angle = max(MIN_ROTATION_ANGLE, &
+                                        min(mc_input%rotation_step_angle, MAX_ROTATION_ANGLE))
 
         end if
 
@@ -460,7 +460,7 @@ contains
 
         ! Save site offsets if requested (rotation)
         if (present(offset_old)) then
-            natoms = nb%atom_in_residue(res_type)
+            natoms = res%atom(res_type)
             offset_old(:, 1:natoms) = guest%offset(:, res_type, mol_index, 1:natoms)
         end if
 
@@ -488,7 +488,7 @@ contains
 
         ! Restore site offsets if present (rotation)
         if (present(site_offset_old)) then
-            natoms = nb%atom_in_residue(res_type)
+            natoms = res%atom(res_type)
             guest%offset(:, res_type, mol_index, 1:natoms) = &
                 site_offset_old(:, 1:natoms)
         end if
@@ -540,8 +540,8 @@ contains
                     rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1
 
                     ! Copy site offsets from the chosen molecule
-                    guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                        gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+                    guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                        gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type))
 
                 else
 
@@ -552,8 +552,8 @@ contains
         else
 
             ! Copy site offsets from the first molecule
-            guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                guest%offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
+            guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                guest%offset(:, residue_type, 1, 1:res%atom(residue_type))
 
             ! Rotate the new molecule randomly (using full 360° rotation)
             full_rotation = .true.
@@ -573,7 +573,7 @@ contains
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Restore previous residue/atom numbers
-        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type)
+        primary%num%atoms = primary%num%atoms - res%atom(residue_type)
         primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
@@ -599,7 +599,7 @@ contains
         real(real64) :: rho         ! Number density (molecules/m^3)
 
         ! Loop over all residue types
-        do type_residue = 1, nb%type_residue
+        do type_residue = 1, res%number
             if (statistic%sample(type_residue) > 0) then
 
                 ! Compute average Boltzmann factor from Widom sampling
@@ -639,8 +639,8 @@ contains
         ! Replace with the last molecule
         guest%com(:, residue_type, molecule_index) = &
             guest%com(:, residue_type, last_molecule_index)
-        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            guest%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+        guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+            guest%offset(:, residue_type, last_molecule_index, 1:res%atom(residue_type))
 
         ! Replace Fourier terms
         call replace_fourier_terms_single_mol(residue_type, molecule_index, last_molecule_index)

@@ -79,7 +79,7 @@ contains
         write(UNIT_LMP, '(A)') "ITEM: ATOMS id type x y z"
 
         atom_id = 0
-        do res_type = 1, nb%type_residue
+        do res_type = 1, res%number
 
             if (is_reservoir) then
                 coord => gas
@@ -97,7 +97,7 @@ contains
                     call wrap_into_box(com, box)
                 end if
 
-                do atom_index = 1, nb%atom_in_residue(res_type)
+                do atom_index = 1, res%atom(res_type)
 
                     atom_id = atom_id + 1
                     atom_type = box%atoms%types(res_type, atom_index)
@@ -207,7 +207,7 @@ contains
             call CalculateExcessMu()
 
             ! Loop over residue types
-            do type_residue = 1, nb%type_residue
+            do type_residue = 1, res%number
 
                 if (thermo%is_active(type_residue)) then
 
@@ -257,7 +257,7 @@ contains
         integer :: UNIT_COUNT  = 19
 
         ! Loop over residues
-        do resi = 1, nb%type_residue
+        do resi = 1, res%number
 
             if (thermo%is_active(resi)) then
                 ! Construct the filename for this residue
@@ -422,9 +422,9 @@ contains
 
         ! Update bond number count
         cpt_bond = 0
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             do j = 1, box%num%residues(i)
-                do k = 1, nb%bonds_per_residue(i)
+                do k = 1, res%bonds(i)
                     cpt_bond = cpt_bond + 1
                 end do
             end do
@@ -433,9 +433,9 @@ contains
 
         ! Update angle number count
         cpt_angle = 0
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             do j = 1, box%num%residues(i)
-                do k = 1, nb%angles_per_residue(i)
+                do k = 1, res%angles(i)
                     cpt_angle = cpt_angle + 1
                 end do
             end do
@@ -444,9 +444,9 @@ contains
 
         ! Update dihedral number count
         cpt_dihedral = 0
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             do j = 1, box%num%residues(i)
-                do k = 1, nb%dihedrals_per_residue(i)
+                do k = 1, res%dihedrals(i)
                     cpt_dihedral = cpt_dihedral + 1
                 end do
             end do
@@ -455,9 +455,9 @@ contains
 
         ! Update improper number count
         cpt_improper = 0
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             do j = 1, box%num%residues(i)
-                do k = 1, nb%impropers_per_residue(i)
+                do k = 1, res%impropers(i)
                     cpt_improper = cpt_improper + 1
                 end do
             end do
@@ -514,7 +514,7 @@ contains
 
         atom_id = 0
         mol_id = 0
-        do i = 1, nb%type_residue
+        do i = 1, res%number
 
             if (is_reservoir) then
                 coord => gas
@@ -524,7 +524,7 @@ contains
 
             do j = 1, box%num%residues(i)
                 mol_id = mol_id + 1
-                do k = 1, nb%atom_in_residue(i)
+                do k = 1, res%atom(i)
 
                     atom_id = atom_id + 1
                     atom_type = box%atoms%types(i,k)
@@ -553,15 +553,15 @@ contains
             write(unit_data, *)
             cpt_bond = 1
             cpt_atom = 0
-            do i = 1, nb%type_residue
+            do i = 1, res%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, nb%bonds_per_residue(i)
+                    do k = 1, res%bonds(i)
                         write(unit_data, *) cpt_bond, connect%bonds(i, k, 1), &
                             cpt_atom + connect%bonds(i, k, 2), &
                             cpt_atom + connect%bonds(i, k, 3)
                         cpt_bond = cpt_bond + 1
                     end do
-                    cpt_atom = cpt_atom + nb%atom_in_residue(i)
+                    cpt_atom = cpt_atom + res%atom(i)
                 end do
             end do
         end if
@@ -573,16 +573,16 @@ contains
             write(unit_data, *)
             cpt_angle = 1
             cpt_atom = 0
-            do i = 1, nb%type_residue
+            do i = 1, res%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, nb%angles_per_residue(i)
+                    do k = 1, res%angles(i)
                         write(unit_data, *) cpt_angle, connect%angles(i, k, 1), &
                             cpt_atom + connect%angles(i, k, 2), &
                             cpt_atom + connect%angles(i, k, 3), &
                             cpt_atom + connect%angles(i, k, 4)
                         cpt_angle = cpt_angle + 1
                     end do
-                    cpt_atom = cpt_atom + nb%atom_in_residue(i)
+                    cpt_atom = cpt_atom + res%atom(i)
                 end do
             end do
         end if
@@ -594,9 +594,9 @@ contains
             write(unit_data, *)
             cpt_dihedral = 1
             cpt_atom = 0
-            do i = 1, nb%type_residue
+            do i = 1, res%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, nb%dihedrals_per_residue(i)
+                    do k = 1, res%dihedrals(i)
                         write(unit_data, *) cpt_dihedral, connect%dihedrals(i, k, 1), &
                             cpt_atom + connect%dihedrals(i, k, 2), &
                             cpt_atom + connect%dihedrals(i, k, 3), &
@@ -604,7 +604,7 @@ contains
                             cpt_atom + connect%dihedrals(i, k, 5)
                         cpt_dihedral= cpt_dihedral + 1
                     end do
-                    cpt_atom = cpt_atom + nb%atom_in_residue(i)
+                    cpt_atom = cpt_atom + res%atom(i)
                 end do
             end do
         end if
@@ -616,9 +616,9 @@ contains
             write(unit_data, *)
             cpt_improper = 1
             cpt_atom = 0
-            do i = 1, nb%type_residue
+            do i = 1, res%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, nb%impropers_per_residue(i)
+                    do k = 1, res%impropers(i)
                         write(unit_data, *) cpt_improper, connect%impropers(i, k, 1), &
                             cpt_atom + connect%impropers(i, k, 2), &
                             cpt_atom + connect%impropers(i, k, 3), &
@@ -626,7 +626,7 @@ contains
                             cpt_atom + connect%impropers(i, k, 5)
                         cpt_improper= cpt_improper + 1
                     end do
-                    cpt_atom = cpt_atom + nb%atom_in_residue(i)
+                    cpt_atom = cpt_atom + res%atom(i)
                 end do
             end do
         end if

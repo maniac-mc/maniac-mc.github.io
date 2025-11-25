@@ -12,9 +12,9 @@ contains
     subroutine precompute_table()
 
         ! Initialise table for erfc_r_table, r6_table, and r12_table
-        call initialize_tabulated_erfc(erfc_r_table, ewald%alpha, input%real_space_cutoff)
-        call initialize_tabulated_rpower(r6_table, input%real_space_cutoff, 6)
-        call initialize_tabulated_rpower(r12_table, input%real_space_cutoff, 12)
+        call initialize_tabulated_erfc(erfc_r_table, ewald%alpha, mc_input%real_space_cutoff)
+        call initialize_tabulated_rpower(r6_table, mc_input%real_space_cutoff, 6)
+        call initialize_tabulated_rpower(r12_table, mc_input%real_space_cutoff, 12)
     
     end subroutine precompute_table
 

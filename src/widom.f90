@@ -46,7 +46,7 @@ contains
 
         ! Increase the residue and atom counts
         primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
-        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
+        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
 
         ! Save current Fourier terms (should be all zeros here)
         call save_single_mol_fourier_terms(residue_type, molecule_index)

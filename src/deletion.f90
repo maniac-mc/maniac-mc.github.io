@@ -54,7 +54,7 @@ contains
 
         ! Update molecule and atom counts
         primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
-        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type)
+        primary%num%atoms = primary%num%atoms - res%atom(residue_type)
 
         ! Calculate new energy
         call compute_new_energy(residue_type, molecule_index, is_deletion = .true.)
@@ -108,11 +108,11 @@ contains
                 trial_pos(2)*reservoir%cell%matrix(:, 2) + &
                 trial_pos(3)*reservoir%cell%matrix(:, 3)
             gas%offset(:, residue_type, reservoir%num%residues(residue_type)+1, &
-                1:nb%atom_in_residue(residue_type)) = &
-                gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+                1:res%atom(residue_type)) = &
+                gas%offset(:, residue_type, last_molecule_index, 1:res%atom(residue_type))
 
             reservoir%num%residues(residue_type) = reservoir%num%residues(residue_type) + 1
-            reservoir%num%atoms = reservoir%num%atoms + nb%atom_in_residue(residue_type)
+            reservoir%num%atoms = reservoir%num%atoms + res%atom(residue_type)
 
         end if
 
@@ -132,12 +132,12 @@ contains
 
         ! Restore previous residue/atom numbers
         primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
-        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
+        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
 
         ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)
-        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            site_offset_old(:, 1:nb%atom_in_residue(residue_type))
+        guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+            site_offset_old(:, 1:res%atom(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)
         call restore_single_mol_fourier(residue_type, molecule_index)

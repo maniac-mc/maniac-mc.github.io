@@ -73,13 +73,13 @@ contains
 
         ! Update molecule and atom counts
         primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
-        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type)
+        primary%num%atoms = primary%num%atoms - res%atom(residue_type)
 
         ! STEP 2 - Place a new molecule at the same location
 
         ! Update molecule and atom counts (second time)
         primary%num%residues(residue_type_bis) = primary%num%residues(residue_type_bis) + 1
-        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type_bis)
+        primary%num%atoms = primary%num%atoms + res%atom(residue_type_bis)
 
         ! Use the CoM of the deleted molecule
         guest%com(:, residue_type_bis, molecule_index_bis) = saved%com
@@ -119,16 +119,16 @@ contains
         real(real64), dimension(:, :) :: site_offset_old
 
         ! Restore previous residue/atom numbers
-        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
+        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
         primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
 
-        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type_bis)
+        primary%num%atoms = primary%num%atoms - res%atom(residue_type_bis)
         primary%num%residues(residue_type_bis) = primary%num%residues(residue_type_bis) - 1
 
         ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)
-        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            site_offset_old(:, 1:nb%atom_in_residue(residue_type))
+        guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+            site_offset_old(:, 1:res%atom(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
         call restore_single_mol_fourier(residue_type, molecule_index)

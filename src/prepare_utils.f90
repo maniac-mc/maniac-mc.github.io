@@ -61,7 +61,7 @@ contains
 
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%kmax)
-        allocate(ewald%phase_factor(3, nb%type_residue, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase_factor(3, res%number, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
         allocate(ewald%phase_factor_old(3, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
 
         allocate(ewald%temp_1d(-kmax_max:kmax_max))
@@ -77,10 +77,10 @@ contains
 
         ! Allocate widom
         if (proba%widom > 0) then
-            allocate(statistic%weight(nb%type_residue))
-            allocate(statistic%sample(nb%type_residue))
-            allocate(statistic%mu_ex(nb%type_residue))
-            allocate(statistic%mu_tot(nb%type_residue))
+            allocate(statistic%weight(res%number))
+            allocate(statistic%sample(res%number))
+            allocate(statistic%mu_ex(res%number))
+            allocate(statistic%mu_tot(res%number))
             statistic%weight(:) = 0
             statistic%sample(:) = 0
         end if
@@ -101,9 +101,9 @@ contains
         character(200) :: msg           ! Buffer for logging
         real(real64) :: safe_cutoff     ! Adjusted real-space cutoff length to fit inside the simulation box safely
 
-        if (input%real_space_cutoff > primary%cell%metrics(1) &
-                .or. input%real_space_cutoff > primary%cell%metrics(2) &
-                .or. input%real_space_cutoff > primary%cell%metrics(3)) then
+        if (mc_input%real_space_cutoff > primary%cell%metrics(1) &
+                .or. mc_input%real_space_cutoff > primary%cell%metrics(2) &
+                .or. mc_input%real_space_cutoff > primary%cell%metrics(3)) then
 
             if (do_log) then
 
@@ -113,7 +113,7 @@ contains
             end if
             
             safe_cutoff = min(primary%cell%metrics(1), primary%cell%metrics(2), primary%cell%metrics(3)) / two
-            input%real_space_cutoff = safe_cutoff
+            mc_input%real_space_cutoff = safe_cutoff
         
         end if
 
@@ -198,14 +198,14 @@ contains
     subroutine compute_ewald_parameters()
     
         ! Intermediate tolerance factor for screening width
-        ewald%screening_factor = sqrt(abs(log(ewald%tolerance * input%real_space_cutoff)))
+        ewald%screening_factor = sqrt(abs(log(ewald%tolerance * mc_input%real_space_cutoff)))
 
         ! Compute Ewald damping parameter
-        ewald%alpha = sqrt(abs(log(ewald%tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
-                    input%real_space_cutoff
+        ewald%alpha = sqrt(abs(log(ewald%tolerance * mc_input%real_space_cutoff * ewald%screening_factor))) / &
+                    mc_input%real_space_cutoff
 
         ! Estimate needed Fourier-space precision
-        ewald%fourier_precision = sqrt(-log(ewald%tolerance * input%real_space_cutoff * &
+        ewald%fourier_precision = sqrt(-log(ewald%tolerance * mc_input%real_space_cutoff * &
                                 (two * ewald%screening_factor * ewald%alpha)**2))
 
     end subroutine compute_ewald_parameters
@@ -222,7 +222,7 @@ contains
         ! Compute inverse thermal energy β = 1/(k_B T)
         beta = 1/(KB_kcalmol*thermo%temperature) ! 1/(kB T) in 1/(kcal/mol)
 
-        do val_int = 1, nb%type_residue
+        do val_int = 1, res%number
 
             if (.not. thermo%is_active(val_int)) cycle
 
