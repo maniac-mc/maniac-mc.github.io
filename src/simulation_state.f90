@@ -120,8 +120,6 @@ module simulation_state
         character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
         integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
         integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms
-        real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center
     end type type_box
     type(type_box) :: primary, reservoir
 

@@ -82,7 +82,7 @@ contains
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type_bis)
 
         ! Use the CoM of the deleted molecule
-        primary%mol_com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
+        guest%com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
 
         ! Generate or pick orientation for the new molecule
         call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_mol_index, place_random_com = .false.)
@@ -126,8 +126,8 @@ contains
         primary%num_residues(residue_type_bis) = primary%num_residues(residue_type_bis) - 1
 
         ! Restore previous positions and orientation
-        primary%mol_com(:, residue_type, molecule_index) = mol_com_old(:)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+        guest%com(:, residue_type, molecule_index) = mol_com_old(:)
+        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
             site_offset_old(:, 1:nb%atom_in_residue(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)

@@ -139,12 +139,13 @@ contains
         call sort_atoms_by_original_ID(box)
         call detect_molecules(box)
         call repair_active_molecules(box)
-        call transform_to_COM_frame(box)
 
-        ! #tofix : improve that by only using "is_reservoir" everywhere
+        ! #tofix : simplify by only using "is_reservoir" everywhere
         if (is_primary) then
+            call transform_to_COM_frame(box, .false.)
             call validate_molecule_geometry(box, .false.)
         else
+            call transform_to_COM_frame(box, .true.)
             call validate_molecule_geometry(box, .true.)
         end if 
 
@@ -1378,17 +1379,18 @@ contains
     ! Transform absolute atom coordinates into relative coordinates
     ! with respect to the molecule's center of mass (CoM).
     !---------------------------------------------------------------
-    subroutine transform_to_COM_frame(box)
+    subroutine transform_to_COM_frame(box, is_reservoir)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
+        logical, intent(in) :: is_reservoir                             ! To indicate if reservoir
 
         ! Local variables
         integer :: i, j, k, l, m, cpt
         real(real64), dimension(3) :: com, original_com
-        integer :: dim                      ! Dimension index (x, y, z)
-        integer :: nb_res                   ! Number of molecules of this type
+        integer :: nb_res                                               ! Number of molecules of this type
         real(real64) :: total_mass
+        type(type_coordinate), pointer :: coord                         ! Pointer for host or guest coordinate
 
         ! Temporary arrays (assumed declared module-wide or can be moved here)
         real(real64), allocatable :: tmp_atom_masses_1d(:)
@@ -1405,6 +1407,12 @@ contains
 
         cpt = 1
         do i = 1, nb%type_residue
+
+            if (is_reservoir) then
+                coord => gas
+            else
+                coord => get_coord(i)
+            end if
 
             nb_res = 0
 
@@ -1460,35 +1468,17 @@ contains
                     end if
 
                     ! Store CoM position
-                    ! #tofix : to remove
-                    do dim = 1, 3
-                        box%mol_com(dim, i, l) = com(dim)
-                    end do
-                    do m = 1, nb%atom_in_residue(i)
-                        box%site_offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
-                    end do
-
-                    ! Store CoM position
-                    ! #tofix : deal with reservoirs
-                    if (input%is_active(i) == 1) then ! Option 1, active residue
-                        guest%residue_exists(i) = .true.
+                    if (input%is_active(i) == 1) then
                         resid_location(i) = TYPE_GUEST
-                        do dim = 1, 3
-                            guest%com(dim, i, l) = com(dim)
-                        end do
-                        do m = 1, nb%atom_in_residue(i)
-                            guest%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
-                        end do
-                    else ! Option 2, inactive residue
-                        host%residue_exists(i) = .true.
+                    else
                         resid_location(i) = TYPE_HOST
-                        do dim = 1, 3
-                            host%com(dim, i, l) = com(dim)
-                        end do
-                        do m = 1, nb%atom_in_residue(i)
-                            host%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
-                        end do
                     end if
+
+                    coord%residue_exists(i) = .true.
+                    coord%com(:, i, l) = com(:)
+                    do m = 1, nb%atom_in_residue(i)
+                        coord%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
+                    end do
 
                     l = l + 1 ! Move to next molecule slot
                 else

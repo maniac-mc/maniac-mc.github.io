@@ -103,13 +103,13 @@ contains
             trial_pos = trial_pos - half
 
             ! Place the deleted molecule randomly in the reservoir
-            reservoir%mol_com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
+            gas%com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
                 trial_pos(1)*reservoir%matrix(:, 1) + &
                 trial_pos(2)*reservoir%matrix(:, 2) + &
                 trial_pos(3)*reservoir%matrix(:, 3)
-            reservoir%site_offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
+            gas%offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
                 1:nb%atom_in_residue(residue_type)) = &
-                primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+                gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
             reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) + 1
             reservoir%num_atoms = reservoir%num_atoms + nb%atom_in_residue(residue_type)
@@ -135,8 +135,8 @@ contains
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
 
         ! Restore previous positions and orientation
-        primary%mol_com(:, residue_type, molecule_index) = mol_com_old(:)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+        guest%com(:, residue_type, molecule_index) = mol_com_old(:)
+        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
             site_offset_old(:, 1:nb%atom_in_residue(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)

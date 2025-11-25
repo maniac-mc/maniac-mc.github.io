@@ -455,13 +455,13 @@ contains
 
         ! Save center-of-mass if requested (translation)
         if (present(com_old)) then
-            com_old(:) = primary%mol_com(:, res_type, mol_index)
+            com_old(:) = guest%com(:, res_type, mol_index)
         end if
 
         ! Save site offsets if requested (rotation)
         if (present(offset_old)) then
             natoms = nb%atom_in_residue(res_type)
-            offset_old(:, 1:natoms) = primary%site_offset(:, res_type, mol_index, 1:natoms)
+            offset_old(:, 1:natoms) = guest%offset(:, res_type, mol_index, 1:natoms)
         end if
 
     end subroutine save_molecule_state
@@ -483,13 +483,13 @@ contains
 
         ! Restore COM if present (translation)
         if (present(com_old)) then
-            primary%mol_com(:, res_type, mol_index) = com_old(:)
+            guest%com(:, res_type, mol_index) = com_old(:)
         end if
 
         ! Restore site offsets if present (rotation)
         if (present(site_offset_old)) then
             natoms = nb%atom_in_residue(res_type)
-            primary%site_offset(:, res_type, mol_index, 1:natoms) = &
+            guest%offset(:, res_type, mol_index, 1:natoms) = &
                 site_offset_old(:, 1:natoms)
         end if
 
@@ -527,7 +527,7 @@ contains
         ! Generate a random position in the simulation box (if enabled)
         if (do_place_com) then
             call random_number(trial_pos) ! Random numbers in [0,1)
-            primary%mol_com(:, residue_type, molecule_index) = primary%bounds(:,1) &
+            guest%com(:, residue_type, molecule_index) = primary%bounds(:,1) &
                 + matmul(primary%matrix, trial_pos)
         end if
 
@@ -540,8 +540,8 @@ contains
                     rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1
 
                     ! Copy site offsets from the chosen molecule
-                    primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                        reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+                    guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                        gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
 
                 else
 
@@ -552,8 +552,8 @@ contains
         else
 
             ! Copy site offsets from the first molecule
-            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                primary%site_offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
+            guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                guest%offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
 
             ! Rotate the new molecule randomly (using full 360° rotation)
             full_rotation = .true.
@@ -637,10 +637,10 @@ contains
         integer, intent(in):: last_molecule_index ! Index of the last molecule in the primary box
 
         ! Replace with the last molecule
-        primary%mol_com(:, residue_type, molecule_index) = &
-            primary%mol_com(:, residue_type, last_molecule_index)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+        guest%com(:, residue_type, molecule_index) = &
+            guest%com(:, residue_type, last_molecule_index)
+        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+            guest%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
         ! Replace Fourier terms
         call replace_fourier_terms_single_mol(residue_type, molecule_index, last_molecule_index)

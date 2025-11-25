@@ -155,11 +155,6 @@ contains
         allocate(system%atom_types(nb%type_residue, nb%max_atom_in_any_residue))
         allocate(system%atom_ids(nb%type_residue, nb%max_atom_in_any_residue))
 
-        ! Allocate molecular coordinates
-        ! #todo : remove
-        allocate(system%mol_com(3, nb%type_residue, NB_MAX_MOLECULE))
-        allocate(system%site_offset(3, nb%type_residue, NB_MAX_MOLECULE, nb%max_atom_in_any_residue))
-
         ! Allocate residue counters
         allocate(system%num_residues(nb%type_residue))
 
