@@ -244,20 +244,6 @@ module simulation_state
     end type type_number
     type(type_number) :: nb
 
-    !---------------------------------------------------------------------------
-    ! Information extracted during the prescan for each residue type.
-    ! Stores the list of atom types, the number of types, and the expected atom
-    ! count for that residue as defined in the Maniac input file.
-    !---------------------------------------------------------------------------
-    type residue
-        integer, allocatable :: types(:)    ! List of atom types belonging to this residue
-        integer :: nb_types                 ! Number of atom types in this residue
-        integer :: nb_atoms                 ! Total number of atoms in this residue
-        integer :: nb_res(2)                ! Total number of residue in primary and reservoir 
-        logical :: is_active                ! The residue is active
-    end type residue
-    type(residue), allocatable :: res_infos(:)
-
     ! Residues information
     type type_residue
         real(real64), dimension(:), allocatable :: mass     ! de Broglie length

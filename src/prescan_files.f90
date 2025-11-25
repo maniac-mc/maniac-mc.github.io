@@ -10,6 +10,20 @@ module prescan_files
 
     implicit none
 
+    !---------------------------------------------------------------------------
+    ! Information extracted during the prescan for each residue type.
+    ! Stores the list of atom types, the number of types, and the expected atom
+    ! count for that residue as defined in the Maniac input file.
+    !---------------------------------------------------------------------------
+    type residue
+        integer, allocatable :: types(:)    ! List of atom types belonging to this residue
+        integer :: nb_types                 ! Number of atom types in this residue
+        integer :: nb_atoms                 ! Total number of atoms in this residue
+        integer :: nb_res(2)                ! Total number of residue in primary and reservoir 
+        logical :: is_active                ! The residue is active
+    end type residue
+    type(residue), allocatable :: res_infos(:)
+
 contains
 
     !---------------------------------------------------------------------------
@@ -18,11 +32,10 @@ contains
     subroutine prescan_inputs()
 
         ! Pre-scan input files
-
-        call prescan_input_file(path%input)
-        call prescan_topology(path%topology, is_reservoir = .false.)
+        call prescan_input_file(path%input) ! Detect residue definitions and sizes
+        call prescan_topology(path%topology, is_reservoir = .false.) ! Count residues in primary topology
         if (status%reservoir_provided) then
-            call prescan_topology(path%reservoir, is_reservoir = .true.)
+            call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
         end if
 
     end subroutine prescan_inputs
@@ -37,15 +50,15 @@ contains
         character(len=*), intent(in) :: filename
 
         ! Local variables
-        integer :: unit                             ! Fortran unit number used to open the input file
-        integer :: ios                              ! I/O status returned by open/read operations
+        integer :: unit                         ! Fortran unit number used to open the input file
+        integer :: ios                          ! I/O status returned by open/read operations
 
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
 
-            call check_IO_status(filename, ios)
-            call predetect_number_info(unit)
-            call predetect_type(unit)
-        
+        call check_IO_status(filename, ios)     ! Verify file opened correctly
+        call predetect_number_info(unit)        ! Scan residue blocks for size limits
+        call predetect_type(unit)               ! Extract per-residue atom-type lists
+
         close(unit)
 
     end subroutine prescan_input_file
@@ -175,7 +188,8 @@ contains
     end subroutine predetect_number_info
 
     !-----------------------------------------------------------------------------
-    ! Extract the atom-type list for each residue definition in the input file
+    ! Scans the residue definition blocks again to extract the explicit list of
+    ! atom types, activation state, and declared atom counts for each residue.
     !-----------------------------------------------------------------------------
     subroutine predetect_type(infile)
 
@@ -195,7 +209,6 @@ contains
         integer :: val                          ! Temporary value read from line
         logical :: in_residue_block             ! Flag: inside a residue block
 
-        ! Safety: allocate res_infos
         if (allocated(res_infos)) deallocate(res_infos)
         allocate(res_infos(nb%type_residue))
 
@@ -290,6 +303,10 @@ contains
 
     end subroutine predetect_type
 
+    !-----------------------------------------------------------------------------
+    ! Parses the topology file to count how many atoms of each residue type
+    ! actually appear in the system.
+    !-----------------------------------------------------------------------------
     subroutine prescan_topology(filename, is_reservoir)
 
         ! Input parameters
