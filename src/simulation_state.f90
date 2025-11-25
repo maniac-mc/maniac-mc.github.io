@@ -10,8 +10,8 @@ module simulation_state
     ! Path and file names
     !---------------------------------------------------------------------------
     type path_type
-        character(len=LENPATH) :: outputs               ! Folder for saving outputs
         character(len=LENPATH) :: input                 ! Main input file
+        character(len=LENPATH) :: outputs               ! Folder for saving outputs
         character(len=LENPATH) :: topology              ! Topology/data file
         character(len=LENPATH) :: parameters            ! Parameters include file
         character(len=LENPATH) :: reservoir             ! Optional reservoir file
@@ -22,11 +22,11 @@ module simulation_state
     ! Generic simulation status information
     !---------------------------------------------------------------------------
     type status_type
-        logical :: reservoir_provided               ! Is reservoir provided by the user
-        integer :: desired_block                    ! Desired Monte Carlo block number
-        integer :: desired_step                     ! Desired Monte Carlo step
-        integer :: block                            ! Monte Carlo block number
         integer :: step                             ! Monte Carlo step within the block
+        integer :: block                            ! Monte Carlo block number
+        integer :: desired_step                     ! Desired Monte Carlo step
+        integer :: desired_block                    ! Desired Monte Carlo block number
+        logical :: reservoir_provided               ! Is reservoir provided by the user
     end type status_type
     type(status_type) :: status
 
@@ -50,8 +50,8 @@ module simulation_state
         real(real64) :: insertion_deletion          ! Probability of attempting an insertion or a deletion
         real(real64) :: translation                 ! Probability of attempting a translation move
         real(real64) :: rotation                    ! Probability of attempting a rotation move
-        real(real64) :: swap                        ! Probability of attempting a swap move
         real(real64) :: widom                       ! Probability of attempting a widom move
+        real(real64) :: swap                        ! Probability of attempting a swap move
     end type proba_type
     type(proba_type) :: proba
 
@@ -83,8 +83,6 @@ module simulation_state
     ! Coordinate for host, guest, and gas residue
     !---------------------------------------------------------------------------
     type type_coordinate
-        integer :: max_nb_atom
-        integer :: max_nb_molecule
         real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
         real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
     end type type_coordinate
