@@ -209,7 +209,17 @@ module simulation_state
     end type type_connections
     type(type_connections) :: connect                           ! Array of residue definitions and intramolecular connectivity
 
-
+    !---------------------------------------------------------------------------
+    ! Per residues information
+    !---------------------------------------------------------------------------
+    type type_residue
+        real(real64), dimension(:), allocatable :: mass         ! Array of mass of residue
+        real(real64), dimension(:), allocatable :: lambda       ! De Broglie length
+        integer, dimension(:, :), allocatable :: site_types     ! Site types for each residue
+        character(len=10), dimension(:), allocatable :: names   ! Array of residue names
+        character(len=10), dimension(:, :), allocatable :: site_names ! Site names for each residue
+    end type type_residue
+    type(type_residue) :: res
 
 
 
@@ -243,17 +253,6 @@ module simulation_state
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
     end type type_number
     type(type_number) :: nb
-
-    ! Residues information
-    type type_residue
-        real(real64), dimension(:), allocatable :: mass     ! de Broglie length
-        real(real64), dimension(:), allocatable :: lambda   ! Array of mass of residue
-        real(real64), dimension(:), allocatable :: masses_1d ! Array of atoms masses
-        character(len=10), dimension(:), allocatable :: names_1d ! Array of residue names
-        character(len=10), dimension(:, :), allocatable :: names_2d ! Site names for each residue
-        integer, dimension(:, :), allocatable :: types_2d   ! Site types for each residue
-    end type type_residue
-    type(type_residue) :: res
 
 
 

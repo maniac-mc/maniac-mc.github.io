@@ -177,7 +177,7 @@ contains
         header_msg = "  Energy report | Active molecules: "
         do nb_type_residue = 1, nb%type_residue
             if (thermo%is_active(nb_type_residue)) then
-                write(tmp,'(A,"=",I0)') trim(res%names_1d(nb_type_residue)), primary%num%residues(nb_type_residue)
+                write(tmp,'(A,"=",I0)') trim(res%names(nb_type_residue)), primary%num%residues(nb_type_residue)
                 if (len_trim(header_msg) > 0) then
                     header_msg = trim(header_msg)//" "//trim(tmp)
                 else
@@ -341,8 +341,8 @@ contains
             do j = 1, nb%types_per_residue(i)
                 do k = 1, nb%type_residue
                     do l = 1, nb%types_per_residue(k)
-                        type1 = res%types_2d(i, j) ! Get atom type for site j in residue i
-                        type2 = res%types_2d(k, l) ! Get atom type for site l in residue k
+                        type1 = res%site_types(i, j) ! Get atom type for site j in residue i
+                        type2 = res%site_types(k, l) ! Get atom type for site l in residue k
                         found_pair = .false.        ! Reset found_pair flag (unused in logic)
                         if (type1 <= type2) then    ! Process pairs where type1 <= type2 to avoid duplicates
                             do m = 1, nb%atom_in_residue(i)
@@ -401,15 +401,15 @@ contains
                 ! Active residue present in data file
                 active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Active residue ", A, " found in the data file: ", I0)') &
-                    trim(res%names_1d(i)), box%num%residues(i)
+                    trim(res%names(i)), box%num%residues(i)
             else if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Inactive residue present in data file
                 active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Inactive residue ", A, " found in the data file: ", I0)') &
-                    trim(res%names_1d(i)), box%num%residues(i)
+                    trim(res%names(i)), box%num%residues(i)
             else if ((box%num%residues(i) == 0) .and. (thermo%is_active(i)) .and. (is_primary)) then
                 ! Inactive residue defined in input but not present in data file
-                call abort_run("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
+                call abort_run("Inactive residue '" // trim(res%names(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
             end if
             call log_message(formatted_msg)
@@ -453,7 +453,7 @@ contains
             do i = 1, nb%type_residue
                 if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " bonds")') &
-                        trim(res%names_1d(i)), nb%bonds_per_residue(i)
+                        trim(res%names(i)), nb%bonds_per_residue(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT bonds
@@ -478,7 +478,7 @@ contains
 
                 if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " angles")') &
-                        trim(res%names_1d(i)), nb%angles_per_residue(i)
+                        trim(res%names(i)), nb%angles_per_residue(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT angles
@@ -504,7 +504,7 @@ contains
 
                 if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " dihedrals")') &
-                        trim(res%names_1d(i)), nb%dihedrals_per_residue(i)
+                        trim(res%names(i)), nb%dihedrals_per_residue(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT dihedrals
@@ -532,7 +532,7 @@ contains
 
                 if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " impropers")') &
-                        trim(res%names_1d(i)), nb%impropers_per_residue(i)
+                        trim(res%names(i)), nb%impropers_per_residue(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT impropers
@@ -716,7 +716,7 @@ contains
 
         do i = 1, nb%type_residue
 
-            write(msg, '("  Residue ", A)') trim(res%names_1d(i))
+            write(msg, '("  Residue ", A)') trim(res%names(i))
             call log_message(msg)
 
             write(msg, '("  Is active: ", A)') merge("yes", "no ", thermo%is_active(i))
@@ -743,7 +743,7 @@ contains
             ! Types
             msg = "  Types: "
             do j = 1, nb%types_per_residue(i)
-                write(temp, '(I0)') res%types_2d(i, j)
+                write(temp, '(I0)') res%site_types(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
             call log_message(msg)
@@ -751,7 +751,7 @@ contains
             ! Names
             msg = "  Names: "
             do j = 1, nb%types_per_residue(i)
-                temp = res%names_2d(i, j)
+                temp = res%site_names(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
             call log_message(msg)

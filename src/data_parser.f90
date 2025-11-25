@@ -305,8 +305,8 @@ contains
             atom_names_1d(k) = '' ! Initialize to empty string
             do i = 1, nb%type_residue
                 do j = 1, nb%types_per_residue(i)
-                    if (res%types_2d(i, j) == atom_types_1d(k)) then
-                        atom_names_1d(k) = res%names_2d(i, j)
+                    if (res%site_types(i, j) == atom_types_1d(k)) then
+                        atom_names_1d(k) = res%site_names(i, j)
                         exit  ! Exit inner loop once match is found
                     end if
                 end do
@@ -1170,7 +1170,7 @@ contains
             ! find which residue this atom belongs to
             do i = 1, nb%type_residue
                 do j = 1, nb%types_per_residue(i)
-                    if (res%types_2d(i,j) == tmp_atom_types_1d(idx)) then
+                    if (res%site_types(i,j) == tmp_atom_types_1d(idx)) then
                         found = .true.
                         residue = i
                         exit  ! break from j-loop
@@ -1399,10 +1399,6 @@ contains
         ! Allocate temporaries (size depends on max atoms per residue)
         allocate(tmp_atom_masses_1d(box%num%atoms))
 
-        if (.not. allocated(res%masses_1d)) then
-            allocate(res%masses_1d(primary%num%atomtypes))
-        end if
-
         allocate(tmp_atom_xyz(3, box%num%atoms))
 
         cpt = 1
@@ -1427,8 +1423,7 @@ contains
             ! Build mass vector for the residue type i
             do j = 1, nb%atom_in_residue(i)
                 do l = 1, nb%types_per_residue(i)
-                    if (res%types_2d(i, l) == primary%atoms%types(i, j)) then
-                        res%masses_1d(primary%atoms%types(i, j)) = primary%atoms%masses(i, l)
+                    if (res%site_types(i, l) == primary%atoms%types(i, j)) then
                         tmp_atom_masses_1d = primary%atoms%masses(i, l)
                         cpt = cpt + 1
                     end if

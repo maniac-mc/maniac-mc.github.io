@@ -111,9 +111,9 @@ contains
         ! Allocate residue-level arrays
         allocate(res%mass(nb%type_residue))
         allocate(res%lambda(nb%type_residue))
-        allocate(res%types_2d(nb%type_residue, nmax%types_per_residue))
-        allocate(res%names_2d(nb%type_residue, nmax%types_per_residue))
-        allocate(res%names_1d(nb%type_residue))
+        allocate(res%site_types(nb%type_residue, nmax%types_per_residue))
+        allocate(res%site_names(nb%type_residue, nmax%types_per_residue))
+        allocate(res%names(nb%type_residue))
         allocate(connect%bonds(nb%type_residue, NB_MAX_BOND, 3))
         allocate(connect%angles(nb%type_residue, NB_MAX_ANGLE, 4))
         allocate(connect%dihedrals(nb%type_residue, NB_MAX_DIHEDRAL, 5))
@@ -393,7 +393,7 @@ contains
                 if (trim(token) == "name") then
 
                     ! Store the residue name in the 1D array of residue names
-                    res%names_1d(nb%type_residue + 1) = trim(val_cha)
+                    res%names(nb%type_residue + 1) = trim(val_cha)
 
                 ! Store the activity state of the residue: active (1) or inactive (0)
                 else if (trim(token) == "state") then
@@ -459,7 +459,7 @@ contains
                     read(rest_line(pos:), *, iostat=ios) val
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%types_2d(nb%type_residue + 1, n_ids) = val
+                    res%site_types(nb%type_residue + 1, n_ids) = val
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
                 nb%types_per_residue(nb%type_residue + 1) = n_ids
@@ -473,7 +473,7 @@ contains
                     read(rest_line(pos:), *, iostat=ios) val_str
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%names_2d(nb%type_residue + 1, n_ids) = val_str
+                    res%site_names(nb%type_residue + 1, n_ids) = val_str
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
             end if
@@ -490,13 +490,13 @@ contains
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential)) then
                 call abort_run("Neither fugacity nor chemical potential provided for active residue: " // &
-                            trim(res%names_1d(val_int)))
+                            trim(res%names(val_int)))
             end if
 
             ! Rule 2: cannot both be provided
             if (has_fugacity .and. has_chemical_potential) then
                 call abort_run("Both fugacity and chemical potential were specified for active residue: " // &
-                            trim(res%names_1d(val_int)))
+                            trim(res%names(val_int)))
             end if
 
         end do
@@ -568,12 +568,12 @@ contains
         allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
         allocate(tmp_types_per_residue(n))
-        allocate(tmp_types_2d(size(res%types_2d,1), size(res%types_2d,2)))
-        allocate(tmp_names_2d(size(res%names_2d,1), size(res%names_2d,2)))
+        allocate(tmp_types_2d(size(res%site_types,1), size(res%site_types,2)))
+        allocate(tmp_names_2d(size(res%site_names,1), size(res%site_names,2)))
 
         ! Compute sorting key for each residue: minimum atom type ID
         do i = 1, n
-            keys(i) = minval(res%types_2d(i, 1:nb%types_per_residue(i)))
+            keys(i) = minval(res%site_types(i, 1:nb%types_per_residue(i)))
         end do
 
         ! Initialize the order array to [1,2,3,...,n]
@@ -593,25 +593,25 @@ contains
         ! Reorder all residue arrays based on the computed order
         do i = 1, n
             k = order(i)
-            tmp_names_1d(i) = res%names_1d(k)
+            tmp_names_1d(i) = res%names(k)
             tmp_is_active(i) = thermo%is_active(k)
             tmp_fugacity(i) = thermo%fugacity(k)
             tmp_chemical_potential(i) = thermo%chemical_potential(k)
             tmp_atom_in_residue(i) = nb%atom_in_residue(k)
             tmp_types_per_residue(i) = nb%types_per_residue(k)
-            tmp_types_2d(i,:) = res%types_2d(k,:)
-            tmp_names_2d(i,:) = res%names_2d(k,:)
+            tmp_types_2d(i,:) = res%site_types(k,:)
+            tmp_names_2d(i,:) = res%site_names(k,:)
         end do
 
         ! Copy temporary arrays back into original arrays
-        res%names_1d = tmp_names_1d
+        res%names = tmp_names_1d
         thermo%is_active = tmp_is_active
         thermo%fugacity = tmp_fugacity
         thermo%chemical_potential = tmp_chemical_potential
         nb%atom_in_residue = tmp_atom_in_residue
         nb%types_per_residue  = tmp_types_per_residue
-        res%types_2d = tmp_types_2d
-        res%names_2d = tmp_names_2d
+        res%site_types = tmp_types_2d
+        res%site_names = tmp_names_2d
 
         ! Deallocate temporary arrays
         deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &

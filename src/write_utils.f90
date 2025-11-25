@@ -212,7 +212,7 @@ contains
                 if (thermo%is_active(type_residue)) then
 
                     ! Construct the file name
-                    filename = trim(path%outputs) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
+                    filename = trim(path%outputs) // 'widom_' // trim(res%names(type_residue)) // '.dat'
 
                     ! Open file in append mode
                     open(unit=UNIT_WIDOM, file=filename, status=file_status, action='write', position='append')
@@ -261,7 +261,7 @@ contains
 
             if (thermo%is_active(resi)) then
                 ! Construct the filename for this residue
-                filename = trim(path%outputs) // 'number_' // trim(res%names_1d(resi)) // '.dat'
+                filename = trim(path%outputs) // 'number_' // trim(res%names(resi)) // '.dat'
 
                 ! Open file for append (create if not exists)
                 open(unit=UNIT_COUNT, file=filename, status=file_status, action='write', position='append')
