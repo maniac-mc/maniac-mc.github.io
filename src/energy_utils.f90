@@ -246,7 +246,7 @@ contains
         else
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r
-            energy = q1 * q2 * erfc(ewald%alpha * r) / r            ! In units of e^2/Å
+            energy = q1 * q2 * erfc(ewald%param%alpha * r) / r            ! In units of e^2/Å
         end if
 
     end function coulomb_energy
@@ -335,7 +335,7 @@ contains
             if (abs(charge_1) < error) cycle
 
             ! Add the self-energy contribution of this atom
-            self_energy_1 = self_energy_1 - ewald%alpha / SQRTPI * charge_1**2  ! In units of e^2/Å
+            self_energy_1 = self_energy_1 - ewald%param%alpha / SQRTPI * charge_1**2  ! In units of e^2/Å
 
         end do
 
@@ -405,7 +405,7 @@ contains
                         ! Skip calculations if one charge is too small
                         if ((abs(charge_1) < error) .or. (abs(charge_2) < error)) cycle
 
-                        e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%alpha * distance)) / distance ! e**2/Å
+                        e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%param%alpha * distance)) / distance ! e**2/Å
 
                     end do
                 end do

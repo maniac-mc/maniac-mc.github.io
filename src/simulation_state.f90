@@ -218,14 +218,14 @@ module simulation_state
         integer, dimension(:), allocatable :: atom              ! Number of atoms in the residue
         real(real64), dimension(:), allocatable :: mass         ! Array of mass of residue
         real(real64), dimension(:), allocatable :: lambda       ! De Broglie length
-        integer, dimension(:, :), allocatable :: site_types     ! Site types for each residue
-        integer, dimension(:, :), allocatable :: pattern_types  ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
-        integer, dimension(:), allocatable :: types             ! Number of atom types in the residue
-        integer, dimension(:), allocatable :: bonds             ! Number of bonds in the residue
-        integer, dimension(:), allocatable :: angles            ! Number of angles in the residue
-        integer, dimension(:), allocatable :: dihedrals         ! Number of dihedrals in the residue
-        integer, dimension(:), allocatable :: impropers         ! Number of impropers in the residue
-        character(len=10), dimension(:), allocatable :: names   ! Array of residue names
+        integer, dimension(:, :), allocatable :: site_types(:, :) ! Site types for each residue
+        integer, dimension(:, :), allocatable :: pattern_types(:, :) ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
+        integer, dimension(:), allocatable :: types(:)          ! Number of atom types in the residue
+        integer, allocatable :: bonds(:)                        ! Number of bonds in the residue
+        integer, allocatable :: angles(:)                       ! Number of angles in the residue
+        integer, allocatable :: dihedrals(:)                    ! Number of dihedrals in the residue
+        integer, allocatable :: impropers(:)                    ! Number of impropers in the residue
+        character(len=10), allocatable :: names(:)              ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: site_names ! Site names for each residue
     end type type_residue
     type(type_residue) :: res
@@ -253,28 +253,56 @@ module simulation_state
         real(real64) :: k_squared_mag               ! Cartesian squared magnitude (for W(k))
     end type kvector_type
 
-    ! For Ewald calculation
-    type type_ewald
-        integer :: num_kvectors                     ! Number of precomputed vectors
+    !---------------------------------------------------------------------------
+    ! Allocatable array for phase calculation
+    !---------------------------------------------------------------------------
+    type phase_ewald
+        complex(real64), allocatable :: factor(:,:,:,:,:)       ! Complex exponentials for reciprocal space
+        complex(real64), allocatable :: factor_old(:,:,:)       ! Old complex exponential terms
+        complex(real64), allocatable :: new(:)                  ! Temporary array for new configuration phases
+        complex(real64), allocatable :: old(:)                  ! Temporary array for old configuration phases
+    end type phase_ewald
+
+    !---------------------------------------------------------------------------
+    ! Input parameters for ewald calculations
+    !---------------------------------------------------------------------------
+    type ewald_parameters
+        integer :: nkvec                            ! Number of precomputed vectors
         integer :: kmax(3)                          ! Maximum index for reciprocal lattice vector x y z component
         real(real64) :: alpha                       ! Ewald summation alpha parameter (screening parameter)
-        real(real64) :: fourier_precision           ! Estimated precision required for reciprocal (Fourier) space summation
-        real(real64) :: screening_factor            ! Intermediate tolerance factor for real-space screening width calculation
-        real(real64), dimension(:), allocatable :: recip_constants ! Constants for reciprocal space summations
-        complex(real64), dimension(:, :, :, :, :), allocatable :: phase_factor   ! Complex exponentials for reciprocal space
-        complex(real64), dimension(:, :, :), allocatable :: phase_factor_old ! Old complex exponential terms
-        complex(real64), dimension(:), allocatable :: recip_amplitude ! Fourier coefficients of charge density or potential
-        complex(real64), dimension(:), allocatable :: recip_amplitude_old ! Old fourier coefficients of charge density or potential
-        real(real64), dimension(:), allocatable :: form_factor ! Factor to account for symmetry (k vs -k)
-        complex(real64), dimension(:, :), allocatable :: temp ! Temporary Fourier array
-        complex(real64), dimension(:), allocatable :: temp_1d ! Temporary Fourier array
-        complex(real64), dimension(:), allocatable :: phase_new  ! Temporary array for new configuration phases
-        complex(real64), dimension(:), allocatable :: phase_old  ! Temporary array for old configuration phases
-        real(real64), dimension(:), allocatable :: charges ! Temporary array for atom charges    
-        real(real64) :: tolerance                   ! Numerical accuracy for Ewald summation,
+        real(real64) :: tolerance                   ! Numerical accuracy for Ewald summation
+        real(real64) :: fprecision                  ! Estimated precision for reciprocal space summation
+        real(real64) :: screen                      ! Real-space screening factor
+    end type ewald_parameters
+
+    ! !---------------------------------------------------------------------------
+    ! ! Runtime arrays for Ewald calculations
+    ! !---------------------------------------------------------------------------
+    ! type ewald_runtime
+    !     real(real64), allocatable :: recip_constants(:)      ! Constants for reciprocal space summations
+    !     complex(real64), allocatable :: recip_amplitude(:)   ! Fourier coefficients of charge density or potential
+    !     complex(real64), allocatable :: recip_amplitude_old(:) ! Old Fourier coefficients
+    !     real(real64), allocatable :: form_factor(:)          ! Symmetry factor for k vs -k
+    !     complex(real64), allocatable :: fft2d(:, :)         ! 2D FFT temporary array
+    !     complex(real64), allocatable :: fft1d(:)            ! 1D FFT temporary array
+    !     real(real64), allocatable :: charges(:)             ! Temporary array for atom charges
+    ! end type ewald_runtime
+
+    !---------------------------------------------------------------------------
+    ! For Ewald calculation
+    !---------------------------------------------------------------------------
+    type type_ewald
+        real(real64), allocatable :: recip_constants(:) ! Constants for reciprocal space summations
+        complex(real64), allocatable :: recip_amplitude(:) ! Fourier coefficients of charge density or potential
+        complex(real64), allocatable :: recip_amplitude_old(:) ! Old fourier coefficients of charge density or potential
+        real(real64), allocatable :: form_factor(:) ! Factor to account for symmetry (k vs -k)
+        complex(real64), allocatable :: temp(:, :) ! Temporary Fourier array
+        complex(real64), allocatable :: temp_1d(:) ! Temporary Fourier array
+        real(real64), allocatable :: charges(:) ! Temporary array for atom charges    
+        type(ewald_parameters) :: param
+        type(phase_ewald) :: phase
         type(kvector_type), allocatable :: kvectors(:) ! Precomputed reciprocal vectors
     end type type_ewald
     type(type_ewald) :: ewald
-
  
 end module simulation_state

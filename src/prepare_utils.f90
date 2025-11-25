@@ -53,27 +53,27 @@ contains
         allocate(saved%offset(3, nmax%atoms_per_residue))
         allocate(saved%com(3))
 
-        ! Allocate real arrays for coefficients (dimension ewald%num_kvectors)
-        allocate(ewald%recip_constants(1:ewald%num_kvectors))
-        allocate(ewald%recip_amplitude(1:ewald%num_kvectors))
-        allocate(ewald%recip_amplitude_old(1:ewald%num_kvectors))
-        allocate(ewald%form_factor(ewald%num_kvectors)) ! Note, there is no need for such as large vector
+        ! Allocate real arrays for coefficients (dimension ewald%param%nkvec)
+        allocate(ewald%recip_constants(1:ewald%param%nkvec))
+        allocate(ewald%recip_amplitude(1:ewald%param%nkvec))
+        allocate(ewald%recip_amplitude_old(1:ewald%param%nkvec))
+        allocate(ewald%form_factor(ewald%param%nkvec)) ! Note, there is no need for such as large vector
 
         ! Allocate complex arrays for wave vector components
-        kmax_max = maxval(ewald%kmax)
-        allocate(ewald%phase_factor(3, res%number, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase_factor_old(3, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
+        kmax_max = maxval(ewald%param%kmax)
+        allocate(ewald%phase%factor(3, res%number, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max)) ! TOFIX, do not use NB_MAX_MOLECULE systematical ? 
+        allocate(ewald%phase%factor_old(3, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
 
         allocate(ewald%temp_1d(-kmax_max:kmax_max))
 
         ! Allocate temporary arrays once
         allocate(ewald%temp(3, -kmax_max:kmax_max))
-        allocate(ewald%phase_new(nmax%atoms_per_residue))
-        allocate(ewald%phase_old(nmax%atoms_per_residue))
+        allocate(ewald%phase%new(nmax%atoms_per_residue))
+        allocate(ewald%phase%old(nmax%atoms_per_residue))
         allocate(ewald%charges(nmax%atoms_per_residue))
 
         ! Allocate kvectors
-        allocate(ewald%kvectors(ewald%num_kvectors))
+        allocate(ewald%kvectors(ewald%param%nkvec))
 
         ! Allocate widom
         if (proba%widom > 0) then
@@ -130,17 +130,17 @@ contains
         real(real64) :: k_squared           ! Normalized squared magnitude of k-vector
 
         ! Compute maximum Fourier indices in X, Y, Z directions
-        ewald%kmax = nint(quarter + primary%cell%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
+        ewald%param%kmax = nint(quarter + primary%cell%metrics(1:3) * ewald%param%alpha * ewald%param%fprecision / PI)
 
         ! Count the total number of valid reciprocal vectors
         count = 0
-        do kx_idx = 0, ewald%kmax(1)
-            do ky_idx = -ewald%kmax(2), ewald%kmax(2)
-                do kz_idx = -ewald%kmax(3), ewald%kmax(3)
+        do kx_idx = 0, ewald%param%kmax(1)
+            do ky_idx = -ewald%param%kmax(2), ewald%param%kmax(2)
+                do kz_idx = -ewald%param%kmax(3), ewald%param%kmax(3)
 
                     if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
                 
-                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%kmax)
+                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%param%kmax)
                     if (check_valid_reciprocal_vector(k_squared)) then
                         count = count + 1
                     end if
@@ -149,7 +149,7 @@ contains
             end do
         end do
 
-        ewald%num_kvectors = count
+        ewald%param%nkvec = count
 
     end subroutine compute_fourier_indices
 
@@ -187,7 +187,7 @@ contains
     subroutine clamp_tolerance()
 
         ! Clamp accuracy tolerance to max 0.5
-        ewald%tolerance = min(abs(ewald%tolerance), half)
+        ewald%param%tolerance = min(abs(ewald%param%tolerance), half)
     
     end subroutine clamp_tolerance
 
@@ -198,15 +198,15 @@ contains
     subroutine compute_ewald_parameters()
     
         ! Intermediate tolerance factor for screening width
-        ewald%screening_factor = sqrt(abs(log(ewald%tolerance * mc_input%real_space_cutoff)))
+        ewald%param%screen = sqrt(abs(log(ewald%param%tolerance * mc_input%real_space_cutoff)))
 
         ! Compute Ewald damping parameter
-        ewald%alpha = sqrt(abs(log(ewald%tolerance * mc_input%real_space_cutoff * ewald%screening_factor))) / &
+        ewald%param%alpha = sqrt(abs(log(ewald%param%tolerance * mc_input%real_space_cutoff * ewald%param%screen))) / &
                     mc_input%real_space_cutoff
 
         ! Estimate needed Fourier-space precision
-        ewald%fourier_precision = sqrt(-log(ewald%tolerance * mc_input%real_space_cutoff * &
-                                (two * ewald%screening_factor * ewald%alpha)**2))
+        ewald%param%fprecision = sqrt(-log(ewald%param%tolerance * mc_input%real_space_cutoff * &
+                                (two * ewald%param%screen * ewald%param%alpha)**2))
 
     end subroutine compute_ewald_parameters
 

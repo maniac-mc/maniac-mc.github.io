@@ -7,6 +7,7 @@ module output_utils
 
     use simulation_state
     use helper_utils
+
     use, intrinsic :: iso_fortran_env, only: real64, output_unit
 
     implicit none
@@ -684,7 +685,7 @@ contains
 
         ! ===== ELECTROSTATIC =====
         call log_message("=== Electrostatic interactions")
-        write(msg, '("Ewald tolerance: ", F15.8)') ewald%tolerance
+        write(msg, '("Ewald tolerance: ", F15.8)') ewald%param%tolerance
         call log_message(msg)
         write(msg, '("Cutoff (Å): ", F10.2)') mc_input%real_space_cutoff
         call log_message(msg)
@@ -771,18 +772,18 @@ contains
 
         write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', mc_input%real_space_cutoff
         call log_message(formatted_msg)
-        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%tolerance
+        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%param%tolerance
         call log_message(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
+        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%param%screen
         call log_message(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%alpha
+        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%param%alpha
         call log_message(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%fourier_precision
+        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%param%fprecision
         call log_message(formatted_msg)
         write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
-            ewald%kmax(1), ', ', ewald%kmax(2), ', ', ewald%kmax(3)
+            ewald%param%kmax(1), ', ', ewald%param%kmax(2), ', ', ewald%param%kmax(3)
         call log_message(formatted_msg)
-        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%num_kvectors
+        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%param%nkvec
         call log_message(formatted_msg)
 
     end subroutine log_ewald_parameters
