@@ -46,8 +46,8 @@ contains
         call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
-        primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
+        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
 
         ! Save current Fourier terms (should be all zeros here)
         call save_single_mol_fourier_terms(residue_type, molecule_index)
@@ -98,14 +98,14 @@ contains
         if (status%reservoir_provided) then
 
             ! Replace molecule_index with the last molecule in the list to maintain continuity
-            last_molecule_index = reservoir%num_residues(residue_type)
+            last_molecule_index = reservoir%num%residues(residue_type)
             gas%com(:, residue_type, rand_mol_index) = &
                 gas%com(:, residue_type, last_molecule_index)
             gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type)) = &
                 gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
-            reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) - 1
-            reservoir%num_atoms = reservoir%num_atoms - nb%atom_in_residue(residue_type)
+            reservoir%num%residues(residue_type) = reservoir%num%residues(residue_type) - 1
+            reservoir%num%atoms = reservoir%num%atoms - nb%atom_in_residue(residue_type)
 
         end if
 

@@ -38,9 +38,9 @@ contains
 
         ! Determine the maximum atom type index for array allocation
         if (status%reservoir_provided) then
-            max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
+            max_atom_type = max(maxval(primary%atoms%types(:,:)), maxval(reservoir%atoms%types(:,:)) )
         else
-            max_atom_type = maxval(primary%atom_types(:,:))
+            max_atom_type = maxval(primary%atoms%types(:,:))
         end if
         max_pairs = max_atom_type * max_atom_type           ! Calculate maximum possible pairs for array sizing
 
@@ -82,8 +82,8 @@ contains
                 do k = 1, nb%atom_in_residue(i)
                     do j = 1, nb%type_residue
                         do l = 1, nb%atom_in_residue(j)
-                            type_i = primary%atom_types(i, k)
-                            type_j = primary%atom_types(j, l)
+                            type_i = primary%atoms%types(i, k)
+                            type_j = primary%atoms%types(j, l)
                             if ((type_i == val_int1) .AND. (type_j == val_int2)) then
                                 ! Record parameters
                                 coeff%sigma(i, j, k, l) = sigma
@@ -120,9 +120,9 @@ contains
 
         ! Determine the maximum atom type index for array allocation
         if (status%reservoir_provided) then
-            max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
+            max_atom_type = max(maxval(primary%atoms%types(:,:)), maxval(reservoir%atoms%types(:,:)) )
         else
-            max_atom_type = maxval(primary%atom_types(:,:))
+            max_atom_type = maxval(primary%atoms%types(:,:))
         end if
         allocate(warned(max_atom_type, max_atom_type))  ! Allocate warned array to track logged warnings for atom type pairs
         warned = .false.
@@ -136,8 +136,8 @@ contains
                         if ((abs(coeff%epsilon(i,j,k,l)) < error) .and. abs(coeff%sigma(i,j,k,l)) < error) then
 
                             ! Detect direct coefficients
-                            type_i = primary%atom_types(i, k)
-                            type_j = primary%atom_types(j, l)
+                            type_i = primary%atoms%types(i, k)
+                            type_j = primary%atoms%types(j, l)
 
                             ! Apply Lorentz-Berthelot rule
                             sigma = (coeff%sigma(i, i, k, k) + coeff%sigma(j, j, l, l)) / 2

@@ -36,7 +36,7 @@ contains
                 coord => get_coord(res_type)
             end if
 
-            do mol_index = 1, box%num_residues(res_type)
+            do mol_index = 1, box%num%residues(res_type)
 
                 ! Read molecule center of mass
                 com = coord%com(:, res_type, mol_index)
@@ -79,7 +79,7 @@ contains
             ! Check that system and reservoir atom masses are consistent
             do j = 1, nb%type_residue
                 do k = 1, nb%types_per_residue(j)
-                    if (abs(primary%atom_masses(j, k) - reservoir%atom_masses(j, k)) > error) then
+                    if (abs(primary%atoms%masses(j, k) - reservoir%atoms%masses(j, k)) > error) then
 
                         ! Generic header warning
                         call warn_user("Reservoir and system mass don't match.")
@@ -87,8 +87,8 @@ contains
                         ! Detailed mismatch info
                         write(msg, '(A,I3,A,I3,A,F10.5,A,F10.5)') &
                             "Mismatch at residue ", j, ", site ", k, &
-                            ": system mass = ", primary%atom_masses(j, k), &
-                            ", reservoir mass = ", reservoir%atom_masses(j, k)
+                            ": system mass = ", primary%atoms%masses(j, k), &
+                            ", reservoir mass = ", reservoir%atoms%masses(j, k)
                         call warn_user(trim(msg))
 
                         ! Extra guidance

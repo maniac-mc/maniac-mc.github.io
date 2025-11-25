@@ -51,13 +51,13 @@ contains
         if (residue_type_bis == -1) return
 
         ! Check that there is at least one molecule of the selected type to swap
-        if (primary%num_residues(residue_type_bis)==0) return ! #todo : Is this really necessary ?
+        if (primary%num%residues(residue_type_bis)==0) return ! #todo : Is this really necessary ?
 
         ! Count trial move
         counter%swaps(1) = counter%swaps(1) + 1
 
         ! Pick a molecule ID for the second type
-        molecule_index_bis = primary%num_residues(residue_type_bis) + 1
+        molecule_index_bis = primary%num%residues(residue_type_bis) + 1
         
         ! STEP 1 - Delete a molecule
 
@@ -66,20 +66,20 @@ contains
         call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
 
         ! Record the index of the last molecule of type "residue_type"
-        last_molecule_index = primary%num_residues(residue_type)
+        last_molecule_index = primary%num%residues(residue_type)
 
         ! Delete molecule
         call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         ! Update molecule and atom counts
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
-        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
+        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type)
 
         ! STEP 2 - Place a new molecule at the same location
 
         ! Update molecule and atom counts (second time)
-        primary%num_residues(residue_type_bis) = primary%num_residues(residue_type_bis) + 1
-        primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type_bis)
+        primary%num%residues(residue_type_bis) = primary%num%residues(residue_type_bis) + 1
+        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type_bis)
 
         ! Use the CoM of the deleted molecule
         guest%com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
@@ -119,11 +119,11 @@ contains
         real(real64), dimension(:, :) :: site_offset_old
 
         ! Restore previous residue/atom numbers
-        primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
+        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
 
-        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type_bis)
-        primary%num_residues(residue_type_bis) = primary%num_residues(residue_type_bis) - 1
+        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type_bis)
+        primary%num%residues(residue_type_bis) = primary%num%residues(residue_type_bis) - 1
 
         ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)

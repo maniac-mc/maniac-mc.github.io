@@ -90,7 +90,7 @@ contains
 
         ! Atom charges in this residue
         natoms = nb%atom_in_residue(residue_type)
-        ewald%charges(1:natoms) = primary%atom_charges(residue_type, 1:natoms)
+        ewald%charges(1:natoms) = primary%atoms%charges(residue_type, 1:natoms)
 
         ! Loop over all precomputed reciprocal lattice vectors
         do idx = 1, ewald%num_kvectors
@@ -180,7 +180,7 @@ contains
 
         ! Loop over all atoms in the molecule/residue
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)
-            charge_1 = primary%atom_charges(residue_type, atom_index_1)
+            charge_1 = primary%atoms%charges(residue_type, atom_index_1)
 
             ! Skip atoms with negligible charge
             if (abs(charge_1) < error) cycle
@@ -220,10 +220,10 @@ contains
 
         ! Loop over all unique atom pairs in the molecule
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)-1
-            charge_1 = primary%atom_charges(residue_type, atom_index_1)
+            charge_1 = primary%atoms%charges(residue_type, atom_index_1)
 
             do atom_index_2 = atom_index_1+1, nb%atom_in_residue(residue_type)
-                charge_2 = primary%atom_charges(residue_type, atom_index_2)
+                charge_2 = primary%atoms%charges(residue_type, atom_index_2)
 
                 ! Compute interatomic distance
                 distance = minimum_image_distance(primary, residue_type, molecule_index, atom_index_1, &
@@ -273,12 +273,12 @@ contains
         ! Loop over all residue types
         do residue_type = 1, nb%type_residue
             ! Loop over all molecules of this residue type
-            do molecule_index = 1, primary%num_residues(residue_type)
+            do molecule_index = 1, primary%num%residues(residue_type)
                 ! Loop over sites in molecule
                 do atom_index = 1, nb%atom_in_residue(residue_type)
 
                     ! Extract charge and phase
-                    charges = primary%atom_charges(residue_type, atom_index)
+                    charges = primary%atoms%charges(residue_type, atom_index)
                     phase = ewald%phase_factor(1, residue_type, molecule_index, atom_index, kx_idx) * &
                             ewald%phase_factor(2, residue_type, molecule_index, atom_index, ky_idx) * &
                             ewald%phase_factor(3, residue_type, molecule_index, atom_index, kz_idx)

@@ -185,7 +185,7 @@ contains
         do residue_type = 1, nb%type_residue
 
             ! Loop over all molecules of this residue type
-            do molecule_index = 1, primary%num_residues(residue_type)
+            do molecule_index = 1, primary%num%residues(residue_type)
 
                 ! Compute Fourier terms for a single molecule
                 call single_mol_fourier_terms(residue_type, molecule_index)

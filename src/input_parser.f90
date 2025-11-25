@@ -151,14 +151,14 @@ contains
         type(type_box), intent(inout) :: system
 
         ! Allocate basic atom properties
-        allocate(system%atom_charges(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_masses(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_names(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_types(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_ids(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%charges(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%masses(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%names(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%types(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%ids(nb%type_residue, nb%max_atom_in_any_residue))
 
         ! Allocate residue counters
-        allocate(system%num_residues(nb%type_residue))
+        allocate(system%num%residues(nb%type_residue))
 
     end subroutine allocate_atom_block
 

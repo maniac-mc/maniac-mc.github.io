@@ -45,8 +45,8 @@ contains
         call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
-        primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
+        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
 
         ! Save current Fourier terms (should be all zeros here)
         call save_single_mol_fourier_terms(residue_type, molecule_index)

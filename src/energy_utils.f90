@@ -56,7 +56,7 @@ contains
             if (thermo%is_active(residue_type_1)) then
 
                 ! Loop over all molecules of this residue type
-                do molecule_index_1 = 1, primary%num_residues(residue_type_1)
+                do molecule_index_1 = 1, primary%num%residues(residue_type_1)
 
                     ! Compute intra-residue Coulomb energy for this molecule
                     call compute_intra_residue_real_coulomb_energy_single_mol(residue_type_1, molecule_index_1, e_intra_coulomb)
@@ -90,7 +90,7 @@ contains
         ! Loop over all residue types
         do residue_type_1 = 1, nb%type_residue
             ! Loop over all molecule of type "residue_type_1"
-            do molecule_index_1 = 1, box%num_residues(residue_type_1)
+            do molecule_index_1 = 1, box%num%residues(residue_type_1)
 
                 ! Compute the energy for residue_1, molecule_1
                 call single_mol_pairwise_energy(box, residue_type_1, &
@@ -135,7 +135,7 @@ contains
             do residue_type_2 = 1, nb%type_residue
 
                 ! Loop over all molecule index 2
-                do molecule_index_2 = 1, box%num_residues(residue_type_2)
+                do molecule_index_2 = 1, box%num%residues(residue_type_2)
 
                     ! Remove intra molecular contribution
                     if ((molecule_index_1 == molecule_index_2) .and. &
@@ -152,8 +152,8 @@ contains
                         ! Read pair parameters
                         sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Angstrom
                         epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
-                        charge_1 = primary%atom_charges(residue_type_1, atom_index_1)                   ! In units of e
-                        charge_2 = primary%atom_charges(residue_type_2, atom_index_2)                   ! In units of e
+                        charge_1 = primary%atoms%charges(residue_type_1, atom_index_1)                   ! In units of e
+                        charge_2 = primary%atoms%charges(residue_type_2, atom_index_2)                   ! In units of e
 
                         ! Calculate the distance, accouting for periodic boundary conditions
                         distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
@@ -296,7 +296,7 @@ contains
             call single_mol_ewald_self(residue_type_1, e_ewald_self)
 
             ! Multiply by the number of molecules of this residue type
-            e_ewald_self = e_ewald_self * primary%num_residues(residue_type_1)
+            e_ewald_self = e_ewald_self * primary%num%residues(residue_type_1)
 
             ! Accumulate into total self-energy
             energy%ewald_self = energy%ewald_self + e_ewald_self    ! In kcal/mol
@@ -329,7 +329,7 @@ contains
         ! Loop over all atoms in the residue
         do atom_index_1 = 1, nb%atom_in_residue(residue_type)
 
-            charge_1 = primary%atom_charges(residue_type, atom_index_1)
+            charge_1 = primary%atoms%charges(residue_type, atom_index_1)
 
             ! Skip atoms with negligible charge
             if (abs(charge_1) < error) cycle
@@ -375,7 +375,7 @@ contains
             do residue_type_2 = 1, nb%type_residue
 
                 ! Loop over all molecule index 2
-                do molecule_index_2 = 1, box%num_residues(residue_type_2)
+                do molecule_index_2 = 1, box%num%residues(residue_type_2)
 
                     ! Remove intra molecular contribution
                     if ((molecule_index_1 == molecule_index_2) .and. &
@@ -399,8 +399,8 @@ contains
                         end if
 
                         ! Use Coulomb potential
-                        charge_1 = primary%atom_charges(residue_type_1, atom_index_1)
-                        charge_2 = primary%atom_charges(residue_type_2, atom_index_2)
+                        charge_1 = primary%atoms%charges(residue_type_1, atom_index_1)
+                        charge_2 = primary%atoms%charges(residue_type_2, atom_index_2)
 
                         ! Skip calculations if one charge is too small
                         if ((abs(charge_1) < error) .or. (abs(charge_2) < error)) cycle

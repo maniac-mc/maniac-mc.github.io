@@ -105,54 +105,54 @@ contains
             if (index(trimmed_line, "atoms") > 0 .and. .not. found_atoms) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_atoms = tmp_int
+                    box%num%atoms = tmp_int
                     found_atoms = .true.
                 end if
             else if (index(trimmed_line, "atom types") > 0 .and. .not. found_atom_types) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_atomtypes = tmp_int
+                    box%num%atomtypes = tmp_int
                     found_atom_types = .true.
                 end if
             else if (index(trimmed_line, "bonds") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_bonds = tmp_int
+                    box%num%bonds = tmp_int
                 end if
             else if (index(trimmed_line, "bond types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_bondtypes = tmp_int
+                    box%num%bondtypes = tmp_int
                 end if
             else if (index(trimmed_line, "angles") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_angles = tmp_int
+                    box%num%angles = tmp_int
                 end if
             else if (index(trimmed_line, "angle types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_angletypes = tmp_int
+                    box%num%angletypes = tmp_int
                 end if
             else if (index(trimmed_line, "dihedrals") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_dihedrals = tmp_int
+                    box%num%dihedrals = tmp_int
                 end if
             else if (index(trimmed_line, "dihedral types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_dihedraltypes = tmp_int
+                    box%num%dihedraltypes = tmp_int
                 end if
             else if (index(trimmed_line, "impropers") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_impropers = tmp_int
+                    box%num%impropers = tmp_int
                 end if
             else if (index(trimmed_line, "improper types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_impropertypes = tmp_int
+                    box%num%impropertypes = tmp_int
                 end if
             end if
         end do

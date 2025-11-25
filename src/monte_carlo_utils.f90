@@ -223,7 +223,7 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N = real(primary%num_residues(residue_type), real64)
+        N = real(primary%num%residues(residue_type), real64)
         Nplus1 = N + 1.0_real64
         deltaU = new%total - old%total                  ! kcal/mol
         mu = thermo%chemical_potential(residue_type)     ! kcal/mol
@@ -282,8 +282,8 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N_new = real(primary%num_residues(type_new), real64)
-        N_old = real(primary%num_residues(type_old), real64)
+        N_new = real(primary%num%residues(type_new), real64)
+        N_old = real(primary%num%residues(type_old), real64)
         Nplus1 = N_new + 1.0_real64
 
         ! Chemical potentials
@@ -537,7 +537,7 @@ contains
                 if (present(rand_mol_index)) then
                     ! Pick a random (and existing) molecule in the reservoir
                     call random_number(random_nmb)
-                    rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1
+                    rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1
 
                     ! Copy site offsets from the chosen molecule
                     guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
@@ -573,8 +573,8 @@ contains
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Restore previous residue/atom numbers
-        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
+        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
         call restore_single_mol_fourier(residue_type, molecule_index)
@@ -614,7 +614,7 @@ contains
                 ! Compute ideal gas chemical potential (kcal/mol)
                 ! μ_ideal = k_B * T * ln(ρ * Λ^3)
                 lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
-                N = primary%num_residues(type_residue)              ! Number of molecules
+                N = primary%num%residues(type_residue)              ! Number of molecules
                 volume = primary%cell%volume                             ! Box volume (A^3)
                 rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
                 mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)

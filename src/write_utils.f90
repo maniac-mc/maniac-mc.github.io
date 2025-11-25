@@ -69,7 +69,7 @@ contains
         write(UNIT_LMP, '(A)') "ITEM: TIMESTEP"
         write(UNIT_LMP, '(I10)') status%desired_block
         write(UNIT_LMP, '(A)') "ITEM: NUMBER OF ATOMS"
-        write(UNIT_LMP, '(I10)') box%num_atoms
+        write(UNIT_LMP, '(I10)') box%num%atoms
         write(UNIT_LMP, '(A)') "ITEM: BOX BOUNDS pp pp pp"
         write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%cell%matrix(1, 1)/2, box%cell%matrix(1, 1)/2
         write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%cell%matrix(2, 2)/2, box%cell%matrix(2, 2)/2
@@ -87,7 +87,7 @@ contains
                 coord => get_coord(res_type)
             end if
 
-            do mol_index = 1, box%num_residues(res_type)
+            do mol_index = 1, box%num%residues(res_type)
 
                 ! Extract CoM
                 com(:) = coord%com(:, res_type, mol_index)
@@ -100,7 +100,7 @@ contains
                 do atom_index = 1, nb%atom_in_residue(res_type)
 
                     atom_id = atom_id + 1
-                    atom_type = box%atom_types(res_type, atom_index)
+                    atom_type = box%atoms%types(res_type, atom_index)
 
                     pos(:) = com(:) + coord%offset(:, res_type, mol_index, atom_index)
                     
@@ -273,7 +273,7 @@ contains
                 end if
 
                 ! Write the block number and count for this residue
-                write(line,'(I10,1X,I10)') nb_block, primary%num_residues(resi)
+                write(line,'(I10,1X,I10)') nb_block, primary%num%residues(resi)
                 write(UNIT_COUNT,'(A)') trim(line)
 
                 close(UNIT_COUNT)
@@ -423,61 +423,61 @@ contains
         ! Update bond number count
         cpt_bond = 0
         do i = 1, nb%type_residue
-            do j = 1, box%num_residues(i)
+            do j = 1, box%num%residues(i)
                 do k = 1, nb%bonds_per_residue(i)
                     cpt_bond = cpt_bond + 1
                 end do
             end do
         end do
-        box%num_bonds = cpt_bond
+        box%num%bonds = cpt_bond
 
         ! Update angle number count
         cpt_angle = 0
         do i = 1, nb%type_residue
-            do j = 1, box%num_residues(i)
+            do j = 1, box%num%residues(i)
                 do k = 1, nb%angles_per_residue(i)
                     cpt_angle = cpt_angle + 1
                 end do
             end do
         end do
-        box%num_angles = cpt_angle
+        box%num%angles = cpt_angle
 
         ! Update dihedral number count
         cpt_dihedral = 0
         do i = 1, nb%type_residue
-            do j = 1, box%num_residues(i)
+            do j = 1, box%num%residues(i)
                 do k = 1, nb%dihedrals_per_residue(i)
                     cpt_dihedral = cpt_dihedral + 1
                 end do
             end do
         end do
-        box%num_dihedrals = cpt_dihedral
+        box%num%dihedrals = cpt_dihedral
 
         ! Update improper number count
         cpt_improper = 0
         do i = 1, nb%type_residue
-            do j = 1, box%num_residues(i)
+            do j = 1, box%num%residues(i)
                 do k = 1, nb%impropers_per_residue(i)
                     cpt_improper = cpt_improper + 1
                 end do
             end do
         end do
-        box%num_impropers = cpt_improper
+        box%num%impropers = cpt_improper
 
         ! Open file
         open(UNIT=unit_data, FILE=trim(path%outputs) // data_filename, STATUS='REPLACE', ACTION='write')
 
         write(unit_data, *) "! LAMMPS data file (atom_style full)"
-        write(unit_data, *) box%num_atoms, " atoms"
-        write(unit_data, *) box%num_atomtypes, " atom types"
-        write(unit_data, *) box%num_bonds, " bonds"
-        write(unit_data, *) box%num_bondtypes, " bond types"
-        write(unit_data, *) box%num_angles, " angles"
-        write(unit_data, *) box%num_angletypes, " angle types"
-        write(unit_data, *) box%num_dihedrals, " dihedrals"
-        write(unit_data, *) box%num_dihedraltypes, " dihedral types"
-        write(unit_data, *) box%num_impropers, " impropers"
-        write(unit_data, *) box%num_impropertypes, " improper types"
+        write(unit_data, *) box%num%atoms, " atoms"
+        write(unit_data, *) box%num%atomtypes, " atom types"
+        write(unit_data, *) box%num%bonds, " bonds"
+        write(unit_data, *) box%num%bondtypes, " bond types"
+        write(unit_data, *) box%num%angles, " angles"
+        write(unit_data, *) box%num%angletypes, " angle types"
+        write(unit_data, *) box%num%dihedrals, " dihedrals"
+        write(unit_data, *) box%num%dihedraltypes, " dihedral types"
+        write(unit_data, *) box%num%impropers, " impropers"
+        write(unit_data, *) box%num%impropertypes, " improper types"
         write(unit_data, *)
 
         ! X bounds
@@ -502,8 +502,8 @@ contains
         ! Masses section (assumes atomic mass array `atom_masses`)
         write(unit_data, *) "Masses"
         write(unit_data, *)
-        do atom_id = 1, primary%num_atomtypes
-            write(unit_data, '(I5, 1X, F12.6)') atom_id, box%site_masses_vector(atom_id)
+        do atom_id = 1, primary%num%atomtypes
+            write(unit_data, '(I5, 1X, F12.6)') atom_id, box%atoms%masses_vec(atom_id)
         end do
 
         write(unit_data, *)
@@ -522,13 +522,13 @@ contains
                 coord => get_coord(i)
             end if
 
-            do j = 1, box%num_residues(i)
+            do j = 1, box%num%residues(i)
                 mol_id = mol_id + 1
                 do k = 1, nb%atom_in_residue(i)
 
                     atom_id = atom_id + 1
-                    atom_type = box%atom_types(i,k)
-                    charge = box%atom_charges(i,k)
+                    atom_type = box%atoms%types(i,k)
+                    charge = box%atoms%charges(i,k)
 
                     do dim = 1, 3
                         pos(dim) = coord%com(dim, i, j) + coord%offset(dim, i, j, k)
@@ -546,7 +546,7 @@ contains
             end do
         end do
 
-        if (primary%num_bonds > 0 .or. reservoir%num_bonds > 0) then
+        if (primary%num%bonds > 0 .or. reservoir%num%bonds > 0) then
             ! Atoms section
             write(unit_data, *)
             write(unit_data, *) "Bonds"
@@ -554,7 +554,7 @@ contains
             cpt_bond = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
-                do j = 1, box%num_residues(i)
+                do j = 1, box%num%residues(i)
                     do k = 1, nb%bonds_per_residue(i)
                         write(unit_data, *) cpt_bond, res%bond_type_2d(i, k, 1), &
                             cpt_atom + res%bond_type_2d(i, k, 2), &
@@ -566,7 +566,7 @@ contains
             end do
         end if
 
-        if (primary%num_angles > 0 .or. reservoir%num_angles > 0) then
+        if (primary%num%angles > 0 .or. reservoir%num%angles > 0) then
             ! Atoms section
             write(unit_data, *)
             write(unit_data, *) "Angles"
@@ -574,7 +574,7 @@ contains
             cpt_angle = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
-                do j = 1, box%num_residues(i)
+                do j = 1, box%num%residues(i)
                     do k = 1, nb%angles_per_residue(i)
                         write(unit_data, *) cpt_angle, res%angle_type_2d(i, k, 1), &
                             cpt_atom + res%angle_type_2d(i, k, 2), &
@@ -587,7 +587,7 @@ contains
             end do
         end if
 
-        if (primary%num_dihedrals > 0 .or. reservoir%num_dihedrals > 0) then
+        if (primary%num%dihedrals > 0 .or. reservoir%num%dihedrals > 0) then
             ! Atoms section
             write(unit_data, *)
             write(unit_data, *) "Dihedrals"
@@ -595,7 +595,7 @@ contains
             cpt_dihedral = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
-                do j = 1, box%num_residues(i)
+                do j = 1, box%num%residues(i)
                     do k = 1, nb%dihedrals_per_residue(i)
                         write(unit_data, *) cpt_dihedral, res%dihedral_type_2d(i, k, 1), &
                             cpt_atom + res%dihedral_type_2d(i, k, 2), &
@@ -609,7 +609,7 @@ contains
             end do
         end if
 
-        if (primary%num_impropers > 0 .or. reservoir%num_impropers > 0) then
+        if (primary%num%impropers > 0 .or. reservoir%num%impropers > 0) then
             ! Atoms section
             write(unit_data, *)
             write(unit_data, *) "Impropers"
@@ -617,7 +617,7 @@ contains
             cpt_improper = 1
             cpt_atom = 0
             do i = 1, nb%type_residue
-                do j = 1, box%num_residues(i)
+                do j = 1, box%num%residues(i)
                     do k = 1, nb%impropers_per_residue(i)
                         write(unit_data, *) cpt_improper, res%improper_type_2d(i, k, 1), &
                             cpt_atom + res%improper_type_2d(i, k, 2), &

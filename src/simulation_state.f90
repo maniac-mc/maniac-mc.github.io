@@ -103,33 +103,43 @@ module simulation_state
     end type type_cell
 
     !---------------------------------------------------------------------------
+    ! Simulation number topology
+    !---------------------------------------------------------------------------
+    type type_topology
+        integer :: atoms                                ! Number of atoms
+        integer :: bonds                                ! Number of bonds
+        integer :: angles                               ! Number of angles
+        integer :: dihedrals                            ! Number of dihedrals
+        integer :: impropers                            ! Number of impropers
+        integer :: atomtypes                            ! Number of atom types
+        integer :: bondtypes                            ! Number of bond types
+        integer :: angletypes                           ! Number of angle types
+        integer :: dihedraltypes                        ! Number of dihedral types
+        integer :: impropertypes                        ! Number of improper types
+        integer, allocatable :: residues(:)             ! Number of residues of each type
+    end type type_topology
+
+    !---------------------------------------------------------------------------
+    ! Atom-specific data
+    !---------------------------------------------------------------------------
+    type type_atomdata
+        real(real64), allocatable :: masses_vec(:)      ! Mass vector for all atom types
+        real(real64), allocatable :: charges(:,:)       ! Partial charges on sites (system/reservoir)
+        real(real64), allocatable :: masses(:,:)        ! Masses of atoms (system/reservoir)
+        character(len=10), allocatable :: names(:,:)    ! Atom names for each residue (system/reservoir)
+        integer, allocatable :: types(:,:)              ! Atom types for each residue (system/reservoir)
+        integer, allocatable :: ids(:,:)                ! Atom ids for each residue (system/reservoir)
+    end type type_atomdata
+
+    !---------------------------------------------------------------------------
     ! Simulation box definition
     !---------------------------------------------------------------------------
     type type_box
-        ! Generic box geometry parameters
-        type(type_cell) :: cell
-        ! About box content
-        integer :: num_atoms                        ! Number of atoms in the box
-        integer :: num_atomtypes                    ! Number of atom types
-        integer :: num_bonds                        ! Number of bonds
-        integer :: num_bondtypes                    ! Number of bond types
-        integer :: num_angles                       ! Number of angles
-        integer :: num_angletypes                   ! Number of angle types
-        integer :: num_dihedrals                    ! Number of dihedrals
-        integer :: num_dihedraltypes                ! Number of dihedral types
-        integer :: num_impropers                    ! Number of impropers
-        integer :: num_impropertypes                ! Number of improper types
-        integer, allocatable :: num_residues(:)     ! Number of residue of each type
-        ! Atom information
-        real(real64), dimension(:), allocatable :: site_masses_vector ! Mass vector for all atom types in initial inputs
-        real(real64), dimension(:, :), allocatable :: atom_charges ! Partial charges on sites (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :), allocatable :: atom_masses ! Masses of atoms (1,:,:)=system, (2,:,:)=reservoir
-        character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
-        integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
-        integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
+        type(type_cell) :: cell                         ! Geometrical properties of the simulation cell
+        type(type_topology) :: num                      ! Number of atoms, bonds, angles, etc.
+        type(type_atomdata) :: atoms                    ! Atom-specific data (masses, charges, types, ids)
     end type type_box
-    type(type_box) :: primary, reservoir
-
+    type(type_box) :: primary, reservoir                ! Primary simulation box and optional reservoir box
 
 
 

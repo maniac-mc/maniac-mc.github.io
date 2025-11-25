@@ -37,7 +37,7 @@ contains
         integer :: last_molecule_index          ! Index of the last molecule in the primary box
 
         ! Return immediately if no molecules of type residue_type exist
-        if (primary%num_residues(residue_type)==0) return
+        if (primary%num%residues(residue_type)==0) return
 
         ! Count trial move
         counter%deletions(1) = counter%deletions(1) + 1
@@ -47,14 +47,14 @@ contains
         call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
 
         ! Record the index of the last molecule
-        last_molecule_index = primary%num_residues(residue_type)
+        last_molecule_index = primary%num%residues(residue_type)
 
         ! Delete molecule
         call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         ! Update molecule and atom counts
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
-        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
+        primary%num%atoms = primary%num%atoms - nb%atom_in_residue(residue_type)
 
         ! Calculate new energy
         call compute_new_energy(residue_type, molecule_index, is_deletion = .true.)
@@ -103,16 +103,16 @@ contains
             trial_pos = trial_pos - half
 
             ! Place the deleted molecule randomly in the reservoir
-            gas%com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
+            gas%com(:, residue_type, reservoir%num%residues(residue_type)+1) = &
                 trial_pos(1)*reservoir%cell%matrix(:, 1) + &
                 trial_pos(2)*reservoir%cell%matrix(:, 2) + &
                 trial_pos(3)*reservoir%cell%matrix(:, 3)
-            gas%offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
+            gas%offset(:, residue_type, reservoir%num%residues(residue_type)+1, &
                 1:nb%atom_in_residue(residue_type)) = &
                 gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
-            reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) + 1
-            reservoir%num_atoms = reservoir%num_atoms + nb%atom_in_residue(residue_type)
+            reservoir%num%residues(residue_type) = reservoir%num%residues(residue_type) + 1
+            reservoir%num%atoms = reservoir%num%atoms + nb%atom_in_residue(residue_type)
 
         end if
 
@@ -131,8 +131,8 @@ contains
         real(real64), dimension(:, :) :: site_offset_old ! For storing old molecule offset
 
         ! Restore previous residue/atom numbers
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
-        primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
+        primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type)
 
         ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)
