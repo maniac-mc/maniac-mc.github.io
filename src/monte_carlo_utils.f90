@@ -33,6 +33,7 @@ contains
         logical :: use_full_rotation              ! Actual value of full_rotation (defaults to .false.)
         real(real64) :: rotation_matrix(3,3)      ! 3x3 rotation matrix for the rotation
         real(real64) :: theta                     ! Rotation angle in radians
+        type(type_coordinate), pointer :: coord   ! Pointer for host or guest coordinate
 
         ! Handle optional argument: default = .false.
         use_full_rotation = .false.
@@ -51,15 +52,18 @@ contains
         ! Set rotation matrix based on axis
         rotation_matrix = return_rotation_matrix(rotation_axis, theta)
 
+        ! Return the correct pointer (host or guest)
+        coord => get_coord(res_type)
+
         ! Apply rotation to all atoms in the residue
-        primary%site_offset(:, res_type, mol_index, 1:n_atoms) = &
-            matmul(rotation_matrix, primary%site_offset(:, res_type, mol_index, 1:n_atoms))
+        coord%offset(:, res_type, mol_index, 1:n_atoms) = &
+            matmul(rotation_matrix, coord%offset(:, res_type, mol_index, 1:n_atoms))
 
     end subroutine apply_random_rotation
 
     !---------------------------------------------------------------------------
-    ! Returns a random rotation angle (radians); small-step if use_full_rotation=.false.,
-    ! full [0,2π] if .true.
+    ! Returns a random rotation angle (radians), 
+    ! small-step if use_full_rotation=.false., full [0,2π] if use_full_rotation =.true.
     !---------------------------------------------------------------------------
     function choose_rotation_angle(use_full_rotation) result(theta)
 
@@ -133,8 +137,13 @@ contains
     !----------------------------------------------------------------------
     function pick_random_residue_type(is_active) result(residue_type)
 
+        ! Input parameter
         integer, dimension(:), intent(in) :: is_active
+        
+        ! Output parameter
         integer :: residue_type
+
+        ! Local variables
         integer :: i, n_active
         integer, allocatable :: active_indices(:)
 
@@ -160,15 +169,19 @@ contains
         residue_type = active_indices(INT(rand_uniform() * n_active) + 1)
 
         deallocate(active_indices)
+
     end function pick_random_residue_type
 
     !----------------------------------------------------------------------
-    ! PickRandomMoleculeIndex: randomly select a molecule index within a given
+    ! Randomly select a molecule index within a given
     ! residue type. Returns 0 if there are no molecules of that type.
     !----------------------------------------------------------------------
-    function PickRandomMoleculeIndex(residue_count_for_type) result(molecule_index)
+    function pick_random_molecule_index(residue_count_for_type) result(molecule_index)
 
+        ! Input parameter
         integer, intent(in) :: residue_count_for_type
+        
+        ! Output parameter
         integer :: molecule_index
 
         if (residue_count_for_type == 0) then
@@ -187,14 +200,10 @@ contains
 
         end if
 
-    end function PickRandomMoleculeIndex
+    end function pick_random_molecule_index
 
     !----------------------------------------------------------------------
     ! Compute the Metropolis acceptance probability for a Monte Carlo move.
-    ! 
-    ! This routine evaluates the acceptance probability for creation,
-    ! deletion, translation, and rotation moves in a grand-canonical or
-    ! canonical Monte Carlo simulation.
     !----------------------------------------------------------------------
     function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
@@ -230,15 +239,6 @@ contains
                 prefactor = primary%volume / N / lambda**3 ! note: N must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
-                ! write (*,*) "creation"
-                ! write (*,*) "beta", beta
-                ! write (*,*) "lambda", lambda
-                ! write (*,*) "deltaU", deltaU
-                ! write (*,*) "mu", mu
-                ! write (*,*) "prefactor", prefactor
-                ! write (*,*) "probability", probability
-                ! write (*,*)
-
             case (TYPE_DELETION)
 
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
@@ -246,27 +246,11 @@ contains
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
                 prefactor = Nplus1 * lambda**3 / (primary%volume) ! note: Nplus1 must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
-            
-                ! write (*,*) "deletion"
-                ! write (*,*) "beta", beta
-                ! write (*,*) "lambda", lambda
-                ! write (*,*) "deltaU", deltaU
-                ! write (*,*) "mu", mu
-                ! write (*,*) "prefactor", prefactor
-                ! write (*,*) "probability", probability
-                ! write (*,*)
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
                 ! P_acc = min[1, exp(-β * ΔU)]
                 probability = min(1.0_real64, exp(-beta * deltaU))
-
-                ! write (*,*) "move"
-                ! write (*,*) "beta", beta
-                ! write (*,*) "deltaU", deltaU
-                ! write (*,*) "probability", probability
-                ! write (*,*)
-
 
             case default
                 call abort_run("Unknown move_type in compute_acceptance_probability!", 1)
@@ -314,9 +298,8 @@ contains
     end function swap_acceptance_probability
 
     !---------------------------------------------------------------------------
-    ! Purpose:
-    !   Compute the updated energy of a single molecule after a trial move
-    !   for use in the Monte Carlo acceptance test.
+    ! Compute the updated energy of a single molecule after a trial move
+    ! for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
     subroutine compute_new_energy(residue_type, molecule_index, is_creation, is_deletion)
 

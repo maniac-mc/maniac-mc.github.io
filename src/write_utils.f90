@@ -15,11 +15,14 @@ contains
     !------------------------------------------------------------------------------
     subroutine update_output_files(later_step)
 
+        ! Input coefficient
         logical, intent(in) :: later_step       ! Flag to distinguish first vs. later steps
 
         ! Write LAMMPS trajectory (main and reservoir)
-        call write_dump_lammpstrj(primary, "trajectory.lammpstrj", later_step)
-        if (status%reservoir_provided) call write_dump_lammpstrj(reservoir, "reservoir.lammpstrj", later_step)
+        call write_dump_lammpstrj(primary, "trajectory.lammpstrj", later_step, is_reservoir = .false.)
+        if (status%reservoir_provided) then
+            call write_dump_lammpstrj(reservoir, "reservoir.lammpstrj", later_step, is_reservoir = .true.)
+        end if
 
         ! Write energies and move counts to data file
         call write_dat_info()
@@ -32,21 +35,22 @@ contains
     !------------------------------------------------------------------------------
     ! Write trajectory in lammpstrj format (see https://docs.lammps.org for details)
     !------------------------------------------------------------------------------
-    subroutine write_dump_lammpstrj(box, lammpstrj_filename, append_mode)
+    subroutine write_dump_lammpstrj(box, lammpstrj_filename, append_mode, is_reservoir)
 
         ! Input parameters
         type(type_box), intent(inout) :: box                            ! Type for box
         character(len=*), intent(in), optional :: lammpstrj_filename    ! Output trajectory in lammpstrj format
-        logical, optional :: append_mode                                ! Flag to append to existing files
+        logical, intent(in), optional :: append_mode                    ! Flag to append to existing files
+        logical, intent(in) :: is_reservoir                             ! To indicate if reservoir
 
         ! Local variables
-        integer :: i, j, k                      ! Loop indices over residue types, residues, and atoms
-        integer :: atom_id, atom_type
+        integer :: res_type, mol_index, atom_index                      ! Loop indices over residue types, residues, and atoms
+        integer :: atom_id, atom_type                                   ! Atom type and id
         integer :: UNIT_LMP = 18
-        logical :: do_append                    ! Internal flag controlling append/overwrite
-        integer :: dim                          ! Integer for looping over dimensions
-        character(len=20) :: file_position      ! 'APPEND' or 'ASIS' for file positioning
-        real(real64), dimension(3) :: pos, com  ! Center of mass and atomic position vectors
+        logical :: do_append                                            ! Internal flag controlling append/overwrite
+        character(len=20) :: file_position                              ! 'APPEND' or 'ASIS' for file positioning
+        real(real64), dimension(3) :: pos, com                          ! Center of mass and atomic position vectors
+        type(type_coordinate), pointer :: coord                         ! Pointer for host or guest coordinate
 
         ! Determine whether to append or overwrite
         do_append = .false.
@@ -75,30 +79,33 @@ contains
         write(UNIT_LMP, '(A)') "ITEM: ATOMS id type x y z"
 
         atom_id = 0
-        do i = 1, nb%type_residue
-            do j = 1, box%num_residues(i)
+        do res_type = 1, nb%type_residue
+
+            if (is_reservoir) then
+                coord => gas
+            else
+                coord => get_coord(res_type)
+            end if
+
+            do mol_index = 1, box%num_residues(res_type)
 
                 ! Extract CoM
-                do dim = 1, 3
-                    com(dim) = box%mol_com(dim, i, j)
-                end do
+                com(:) = coord%com(:, res_type, mol_index)
 
                 ! Wrap CoM into box for active molecules
-                if (input%is_active(i) == 1) then
+                if (input%is_active(res_type) == 1) then
                     call wrap_into_box(com, box)
                 end if
 
-                do k = 1, nb%atom_in_residue(i)
+                do atom_index = 1, nb%atom_in_residue(res_type)
 
                     atom_id = atom_id + 1
-                    atom_type = box%atom_types(i, k)
+                    atom_type = box%atom_types(res_type, atom_index)
 
-                    do dim = 1, 3
-                        pos(dim) = com(dim) + box%site_offset(dim, i, j, k)
-                    end do
-
+                    pos(:) = com(:) + coord%offset(:, res_type, mol_index, atom_index)
+                    
                     ! Wrap position for inactive structure
-                    if (input%is_active(i) == 0) then
+                    if (input%is_active(res_type) == 0) then
                         call wrap_into_box(pos, box)
                     end if
 

@@ -44,7 +44,7 @@ contains
         do
             ! Pick a molecule type and instance
             residue_type    = pick_random_residue_type(input%is_active)
-            molecule_index  = PickRandomMoleculeIndex(primary%num_residues(residue_type))
+            molecule_index  = pick_random_molecule_index(primary%num_residues(residue_type))
 
             ! Perform Monte Carlo move
             random_draw = rand_uniform()

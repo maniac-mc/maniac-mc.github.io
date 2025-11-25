@@ -81,7 +81,7 @@ contains
         ! Generate random move of max size "translation_step/2"
         trial_pos = rand_symmetric(3) * input%translation_step
 
-        ! Return the correct pointer (host, guest, or gas)
+        ! Return the correct pointer (host or guest)
         coord => get_coord(res_type)
 
         ! Apply translation to previous COM position
