@@ -1411,9 +1411,9 @@ contains
             ! #tofix, should have been done before
             ! Store CoM position
             if (thermo%is_active(i)) then
-                resid_location(i) = TYPE_GUEST
+                nb%resid_location(i) = TYPE_GUEST
             else
-                resid_location(i) = TYPE_HOST
+                nb%resid_location(i) = TYPE_HOST
             end if
 
             if (is_reservoir) then
@@ -1475,7 +1475,6 @@ contains
                             original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
                     end if
 
-                    coord%residue_exists(i) = .true.
                     coord%com(:, i, l) = com(:)
                     do m = 1, nb%atom_in_residue(i)
                         coord%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com

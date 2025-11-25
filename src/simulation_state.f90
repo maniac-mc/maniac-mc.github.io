@@ -79,6 +79,16 @@ module simulation_state
     end type input_thermo_type
     type(input_thermo_type) :: thermo
 
+    !---------------------------------------------------------------------------
+    ! Coordinate for host, guest, and gas residue
+    !---------------------------------------------------------------------------
+    type type_coordinate
+        integer :: max_nb_atom
+        integer :: max_nb_molecule
+        real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
+        real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
+    end type type_coordinate
+    type(type_coordinate), target :: host, guest, gas
 
 
 
@@ -133,20 +143,6 @@ module simulation_state
     end type type_box
     type(type_box) :: primary, reservoir
 
-    !---------------------------------------------------------------------------
-    ! Separate coordinate for host, guest, and gas residue
-    !---------------------------------------------------------------------------
-    type type_coordinate
-        integer :: max_nb_atom
-        integer :: max_nb_molecule
-        logical, dimension(:), allocatable :: residue_exists            ! #tofix : remove?
-        real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
-        real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
-    end type type_coordinate
-    ! type(type_coordinate) :: host, guest, gas                           ! Host and gest from the main, gas from reservoir
-    type(type_coordinate), target :: host, guest, gas
-
-    integer, allocatable :: resid_location(:) ! size = nb%type_residue
 
     ! Simulation box definition
     type type_number
@@ -159,12 +155,12 @@ module simulation_state
         integer, dimension(:), allocatable :: angles_per_residue ! Number of angles in the residue
         integer, dimension(:), allocatable :: dihedrals_per_residue ! Number of dihedrals in the residue
         integer, dimension(:), allocatable :: impropers_per_residue ! Number of impropers in the residue
+        integer, allocatable :: resid_location(:) ! size = nb%type_residue
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
         integer :: max_atom_in_residue_active
         integer :: max_atom_in_residue_inactive
         integer :: max_active_residue
         integer :: max_inactive_residue
-        ! integer, allocatable :: residue_count(:)
     end type type_number
     type(type_number) :: nb
 
@@ -184,18 +180,18 @@ module simulation_state
 
     ! Residues information
     type type_residue
-        real(real64), dimension(:), allocatable :: mass ! de Broglie length
-        real(real64), dimension(:), allocatable :: lambda ! Array of mass of residue
+        real(real64), dimension(:), allocatable :: mass     ! de Broglie length
+        real(real64), dimension(:), allocatable :: lambda   ! Array of mass of residue
         real(real64), dimension(:), allocatable :: masses_1d ! Array of atoms masses
         character(len=10), dimension(:), allocatable :: names_1d ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: names_2d ! Site names for each residue
-        integer, dimension(:, :), allocatable :: types_2d ! Site types for each residue
+        integer, dimension(:, :), allocatable :: types_2d   ! Site types for each residue
         integer, dimension(:, :, :), allocatable :: bond_type_2d ! Site bonds for each residue
         integer, dimension(:, :, :), allocatable :: angle_type_2d ! Site angles for each residue
         integer, dimension(:, :, :), allocatable :: dihedral_type_2d ! Site dihedrals for each residue
         integer, dimension(:, :, :), allocatable :: improper_type_2d ! Site impropers for each residue
         real(real64), dimension(:, :), allocatable :: site_offset_old ! Local site X Y Z displacements from molecule center
-        real(real64), dimension(3) :: mol_com_old   ! For storing old molecule center-of-mass
+        real(real64), dimension(3) :: mol_com_old           ! For storing old molecule center-of-mass
     end type type_residue
     type(type_residue) :: res
 
@@ -203,12 +199,12 @@ module simulation_state
     ! Statistic accumulator
     !---------------------------------------------------------------------------
     type mc_stat_type
-        real(real64), dimension(:), allocatable :: weight ! Accumulated Boltzmann weight sum for chemical potential
-        real(real64), dimension(:), allocatable :: mu_ex ! Excess chemical potential
-        real(real64), dimension(:), allocatable :: mu_tot ! Total chemical potential
-        integer, dimension(:), allocatable :: sample ! Indices or count of Widom trial samples
+        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
+        real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
+        real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
+        real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
     end type mc_stat_type
-    type(type_widom) :: statistic
+    type(mc_stat_type) :: statistic
 
     !---------------------------------------------------------------------------
     ! Interaction arrays
@@ -220,7 +216,7 @@ module simulation_state
     type(type_coeff) :: coeff
 
     !---------------------------------------------------------------------------
-    ! Type to store precomputed reciprocal vectors
+    ! Type to store precomputed reciprocal vectors (used in ewald)
     !---------------------------------------------------------------------------
     type kvector_type
         integer :: kx

@@ -103,7 +103,7 @@ contains
         if (status%reservoir_provided) then
             call allocate_coordinate(gas, .false.)
         end if
-        allocate(resid_location(nb%type_residue))
+        allocate(nb%resid_location(nb%type_residue))
 
         call allocate_atom_block(primary)
         call allocate_atom_block(reservoir)
@@ -194,12 +194,10 @@ contains
         end if
 
         ! Allocate molecular coordinates
-        allocate(type%residue_exists(nb%type_residue))
         allocate(type%com(dim, nb%type_residue, max_molecule))
         allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
         type%max_nb_atom = max_atom
         type%max_nb_molecule = max_molecule
-        type%residue_exists = .false.
 
     end subroutine allocate_coordinate
 
