@@ -85,8 +85,8 @@ contains
             counter%widom(2) = counter%widom(2) + 1
         end if
 
-        widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + weight
-        widom_stat%sample(residue_type) = widom_stat%sample(residue_type) + 1
+        statistic%weight(residue_type) = statistic%weight(residue_type) + weight
+        statistic%sample(residue_type) = statistic%sample(residue_type) + 1
 
     end subroutine accumulate_widom_weight
 

@@ -76,12 +76,12 @@ contains
 
         ! Allocate widom
         if (proba%widom > 0) then
-            allocate(widom_stat%weight(nb%type_residue))
-            allocate(widom_stat%sample(nb%type_residue))
-            allocate(widom_stat%mu_ex(nb%type_residue))
-            allocate(widom_stat%mu_tot(nb%type_residue))
-            widom_stat%weight(:) = 0
-            widom_stat%sample(:) = 0
+            allocate(statistic%weight(nb%type_residue))
+            allocate(statistic%sample(nb%type_residue))
+            allocate(statistic%mu_ex(nb%type_residue))
+            allocate(statistic%mu_tot(nb%type_residue))
+            statistic%weight(:) = 0
+            statistic%sample(:) = 0
         end if
 
     end subroutine allocate_array
@@ -219,21 +219,21 @@ contains
         integer :: val_int                     ! Integer value read from input
 
         ! Compute inverse thermal energy β = 1/(k_B T)
-        beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
+        beta = 1/(KB_kcalmol*thermo%temperature) ! 1/(kB T) in 1/(kcal/mol)
 
         do val_int = 1, nb%type_residue
 
             if (.not. thermo%is_active(val_int)) cycle
 
-            if (input%fugacity(val_int) >= zero) then
-                input%chemical_potential(val_int) = log(input%fugacity(val_int)) / beta
+            if (thermo%fugacity(val_int) >= zero) then
+                thermo%chemical_potential(val_int) = log(thermo%fugacity(val_int)) / beta
             end if
 
             ! Compute thermal de Broglie wavelength λ for each active residue:
             ! λ = h / sqrt(2 π m k_B T)
             ! H_PLANCK in J s, mass in kg, KB in J/K, T in K
             mass = res%mass(val_int) * G_TO_KG / NA                                         ! Mass per residue (kg)
-            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * input%temperature)    ! Thermal de Broglie wavelength
+            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * thermo%temperature)    ! Thermal de Broglie wavelength
             
             ! Convert lambda to Å
             res%lambda(val_int) = res%lambda(val_int) * M_TO_A

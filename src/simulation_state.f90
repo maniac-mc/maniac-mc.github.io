@@ -92,10 +92,6 @@ module simulation_state
 
     ! Parameters provided in the input file
     type input_type
-        real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
-        real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
-        ! integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
-        real(real64) :: temperature                 ! Temperature in Kelvin
         real(real64) :: translation_step            ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
         real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
@@ -203,23 +199,29 @@ module simulation_state
     end type type_residue
     type(type_residue) :: res
 
-    ! Widom statistic
-    type type_widom
+    !---------------------------------------------------------------------------
+    ! Statistic accumulator
+    !---------------------------------------------------------------------------
+    type mc_stat_type
         real(real64), dimension(:), allocatable :: weight ! Accumulated Boltzmann weight sum for chemical potential
         real(real64), dimension(:), allocatable :: mu_ex ! Excess chemical potential
         real(real64), dimension(:), allocatable :: mu_tot ! Total chemical potential
         integer, dimension(:), allocatable :: sample ! Indices or count of Widom trial samples
-    end type type_widom
-    type(type_widom) :: widom_stat
+    end type mc_stat_type
+    type(type_widom) :: statistic
 
+    !---------------------------------------------------------------------------
     ! Interaction arrays
+    !---------------------------------------------------------------------------
     type type_coeff
         real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
         real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
     end type type_coeff
     type(type_coeff) :: coeff
 
+    !---------------------------------------------------------------------------
     ! Type to store precomputed reciprocal vectors
+    !---------------------------------------------------------------------------
     type kvector_type
         integer :: kx
         integer :: ky
@@ -241,13 +243,13 @@ module simulation_state
         complex(real64), dimension(:), allocatable :: recip_amplitude ! Fourier coefficients of charge density or potential
         complex(real64), dimension(:), allocatable :: recip_amplitude_old ! Old fourier coefficients of charge density or potential
         real(real64), dimension(:), allocatable :: form_factor ! Factor to account for symmetry (k vs -k)
-        type(kvector_type), allocatable :: kvectors(:) ! Precomputed reciprocal vectors
         complex(real64), dimension(:, :), allocatable :: temp ! Temporary Fourier array
         complex(real64), dimension(:), allocatable :: temp_1d ! Temporary Fourier array
         complex(real64), dimension(:), allocatable :: phase_new  ! Temporary array for new configuration phases
         complex(real64), dimension(:), allocatable :: phase_old  ! Temporary array for old configuration phases
         real(real64), dimension(:), allocatable :: charges ! Temporary array for atom charges    
         real(real64) :: tolerance                   ! Numerical accuracy for Ewald summation,
+        type(kvector_type), allocatable :: kvectors(:) ! Precomputed reciprocal vectors
     end type type_ewald
     type(type_ewald) :: ewald
 

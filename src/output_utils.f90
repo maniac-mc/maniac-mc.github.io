@@ -1,6 +1,4 @@
 !-----------------------------------------------------------------------------
-! module output_utils
-!
 ! This module handles all output-related operations for the Monte Carlo
 ! simulation.
 !-----------------------------------------------------------------------------
@@ -138,12 +136,12 @@ contains
 
         if (proba%widom > 0) then
             do type_residue = 1, nb%type_residue
-                if (widom_stat%sample(type_residue) > 0) then
-                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", widom_stat%sample(type_residue)
+                if (statistic%sample(type_residue) > 0) then
+                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", statistic%sample(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
-                    write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", widom_stat%mu_ex(type_residue)
+                    write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", statistic%mu_ex(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
-                    write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", widom_stat%mu_tot(type_residue)
+                    write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", statistic%mu_tot(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
                 end if
             end do
@@ -680,7 +678,7 @@ contains
         call log_message(msg)
         write(msg, '("Number of steps: ", I0)') status%desired_step
         call log_message(msg)
-        write(msg, '("Temperature (K): ", F10.2)') input%temperature
+        write(msg, '("Temperature (K): ", F10.2)') thermo%temperature
         call log_message(msg)
         call log_message("")
 
@@ -717,6 +715,7 @@ contains
         call log_message("")
 
         do i = 1, nb%type_residue
+
             write(msg, '("  Residue ", A)') trim(res%names_1d(i))
             call log_message(msg)
 
@@ -724,14 +723,14 @@ contains
             call log_message(msg)
 
             if (thermo%is_active(i)) then
-                if (input%fugacity(i) > 0) then
-                    write(msg, '("  Fugacity (atm): ", F10.2)') input%fugacity(i)
+                if (thermo%fugacity(i) > 0) then
+                    write(msg, '("  Fugacity (atm): ", F10.2)') thermo%fugacity(i)
                     call log_message(msg)
                 end if
             end if
 
             if (thermo%is_active(i)) then
-                write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') input%chemical_potential(i)
+                write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') thermo%chemical_potential(i)
                 call log_message(msg)
             end if
 
@@ -758,6 +757,7 @@ contains
             call log_message(msg)
 
             call log_message("")
+
         end do
 
     end subroutine print_input_summary

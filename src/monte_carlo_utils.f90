@@ -226,7 +226,7 @@ contains
         N = real(primary%num_residues(residue_type), real64)
         Nplus1 = N + 1.0_real64
         deltaU = new%total - old%total                  ! kcal/mol
-        mu = input%chemical_potential(residue_type)     ! kcal/mol
+        mu = thermo%chemical_potential(residue_type)     ! kcal/mol
 
         ! Compute factor based on move type
         select case (move_type)
@@ -287,8 +287,8 @@ contains
         Nplus1 = N_new + 1.0_real64
 
         ! Chemical potentials
-        mu_old = input%chemical_potential(type_old) ! kcal/mol
-        mu_new = input%chemical_potential(type_new) ! kcal/mol
+        mu_old = thermo%chemical_potential(type_old) ! kcal/mol
+        mu_new = thermo%chemical_potential(type_new) ! kcal/mol
         deltaU = new%total - old%total         ! kcal/mol
 
         ! Swap acceptance probability:
@@ -600,16 +600,16 @@ contains
 
         ! Loop over all residue types
         do type_residue = 1, nb%type_residue
-            if (widom_stat%sample(type_residue) > 0) then
+            if (statistic%sample(type_residue) > 0) then
 
                 ! Compute average Boltzmann factor from Widom sampling
                 ! <exp(-β ΔU)> = sum_weights / N_samples
-                avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
+                avg_weight = statistic%weight(type_residue) / real(statistic%sample(type_residue), kind=real64)
 
                 ! Compute excess chemical potential (kcal/mol)
                 ! μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
-                temperature = input%temperature
-                widom_stat%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
+                temperature = thermo%temperature
+                statistic%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
 
                 ! Compute ideal gas chemical potential (kcal/mol)
                 ! μ_ideal = k_B * T * ln(ρ * Λ^3)
@@ -619,7 +619,7 @@ contains
                 rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
                 mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)
 
-                widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
+                statistic%mu_tot(type_residue) = mu_ideal + statistic%mu_ex(type_residue)
 
             end if
         end do

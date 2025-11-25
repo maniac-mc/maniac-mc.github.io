@@ -126,8 +126,8 @@ contains
                             nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
 
         ! Allocate input arrays
-        allocate(input%fugacity(nb%type_residue))
-        allocate(input%chemical_potential(nb%type_residue))
+        allocate(thermo%fugacity(nb%type_residue))
+        allocate(thermo%chemical_potential(nb%type_residue))
         allocate(thermo%is_active(nb%type_residue))
 
         ! Allocate system bookkeeping arrays
@@ -257,9 +257,9 @@ contains
         nb%type_residue = 0
 
         ! Initialize all fugacities to -1.0 (indicating unset)
-        input%fugacity(:) = -one
+        thermo%fugacity(:) = -one
         ! Initialize all chemical_potential to 0.0 (indicating unset)
-        input%chemical_potential(:) = zero
+        thermo%chemical_potential(:) = zero
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -292,7 +292,7 @@ contains
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading temperature"
                 if (val_real <= zero) error stop "Invalid temperature: must be > 0"
-                input%temperature = val_real
+                thermo%temperature = val_real
                 has_temp = .true.
 
             case ("seed")
@@ -429,12 +429,12 @@ contains
                 ! Check if the line specifies the fugacity
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
-                    input%fugacity(nb%type_residue + 1) = val_real
+                    thermo%fugacity(nb%type_residue + 1) = val_real
 
                 ! Check if the line specifies the chemical potential
                 else if (trim(token) == 'chemical_potential') then
                     read(rest_line, *, iostat=ios) val_real
-                    input%chemical_potential(nb%type_residue + 1) = val_real
+                    thermo%chemical_potential(nb%type_residue + 1) = val_real
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
@@ -488,8 +488,8 @@ contains
 
             if (.not. thermo%is_active(val_int)) cycle
 
-            has_fugacity = (input%fugacity(val_int) >= zero)
-            has_chemical_potential = (input%chemical_potential(val_int) < zero)
+            has_fugacity = (thermo%fugacity(val_int) >= zero)
+            has_chemical_potential = (thermo%chemical_potential(val_int) < zero)
 
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential)) then
@@ -595,8 +595,8 @@ contains
             k = order(i)
             tmp_names_1d(i) = res%names_1d(k)
             tmp_is_active(i) = thermo%is_active(k)
-            tmp_fugacity(i) = input%fugacity(k)
-            tmp_chemical_potential(i) = input%chemical_potential(k)
+            tmp_fugacity(i) = thermo%fugacity(k)
+            tmp_chemical_potential(i) = thermo%chemical_potential(k)
             tmp_atom_in_residue(i) = nb%atom_in_residue(k)
             tmp_types_per_residue(i) = nb%types_per_residue(k)
             tmp_types_2d(i,:) = res%types_2d(k,:)
@@ -608,8 +608,8 @@ contains
         ! Copy temporary arrays back into original arrays
         res%names_1d = tmp_names_1d
         thermo%is_active = tmp_is_active
-        input%fugacity = tmp_fugacity
-        input%chemical_potential = tmp_chemical_potential
+        thermo%fugacity = tmp_fugacity
+        thermo%chemical_potential = tmp_chemical_potential
         nb%atom_in_residue = tmp_atom_in_residue
         nb%types_per_residue  = tmp_types_per_residue
         res%types_2d = tmp_types_2d
