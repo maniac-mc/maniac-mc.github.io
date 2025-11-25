@@ -37,24 +37,24 @@ contains
         integer :: last_molecule_index          ! Index of the last molecule in the primary box
 
         ! Return immediately if no molecules of type residue_type exist
-        if (primary%num_residues(residue_type)==0) return
+        if (primary%num%residues(residue_type)==0) return
 
         ! Count trial move
         counter%deletions(1) = counter%deletions(1) + 1
 
         ! Energy of the previous configuration
         call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
-        call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
+        call save_molecule_state(residue_type, molecule_index, com_old = saved%com, offset_old = saved%offset)
 
         ! Record the index of the last molecule
-        last_molecule_index = primary%num_residues(residue_type)
+        last_molecule_index = primary%num%residues(residue_type)
 
         ! Delete molecule
         call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         ! Update molecule and atom counts
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
-        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
+        primary%num%atoms = primary%num%atoms - res%atom(residue_type)
 
         ! Calculate new energy
         call compute_new_energy(residue_type, molecule_index, is_deletion = .true.)
@@ -66,7 +66,7 @@ contains
         if (rand_uniform() <= probability) then ! Accept move
             call accept_deletion_move(residue_type, last_molecule_index)
         else ! Reject move
-            call reject_deletion_move(residue_type, molecule_index, res%mol_com_old, res%site_offset_old)
+            call reject_deletion_move(residue_type, molecule_index, saved%com, saved%offset)
         end if
 
     end subroutine attempt_deletion_move
@@ -103,16 +103,16 @@ contains
             trial_pos = trial_pos - half
 
             ! Place the deleted molecule randomly in the reservoir
-            gas%com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
-                trial_pos(1)*reservoir%matrix(:, 1) + &
-                trial_pos(2)*reservoir%matrix(:, 2) + &
-                trial_pos(3)*reservoir%matrix(:, 3)
-            gas%offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
-                1:nb%atom_in_residue(residue_type)) = &
-                gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+            gas%com(:, residue_type, reservoir%num%residues(residue_type)+1) = &
+                trial_pos(1)*reservoir%cell%matrix(:, 1) + &
+                trial_pos(2)*reservoir%cell%matrix(:, 2) + &
+                trial_pos(3)*reservoir%cell%matrix(:, 3)
+            gas%offset(:, residue_type, reservoir%num%residues(residue_type)+1, &
+                1:res%atom(residue_type)) = &
+                gas%offset(:, residue_type, last_molecule_index, 1:res%atom(residue_type))
 
-            reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) + 1
-            reservoir%num_atoms = reservoir%num_atoms + nb%atom_in_residue(residue_type)
+            reservoir%num%residues(residue_type) = reservoir%num%residues(residue_type) + 1
+            reservoir%num%atoms = reservoir%num%atoms + res%atom(residue_type)
 
         end if
 
@@ -131,13 +131,13 @@ contains
         real(real64), dimension(:, :) :: site_offset_old ! For storing old molecule offset
 
         ! Restore previous residue/atom numbers
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) + 1
-        primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
+        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
 
         ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)
-        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            site_offset_old(:, 1:nb%atom_in_residue(residue_type))
+        guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+            site_offset_old(:, 1:res%atom(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)
         call restore_single_mol_fourier(residue_type, molecule_index)

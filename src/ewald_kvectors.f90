@@ -30,18 +30,18 @@ contains
         real(real64), dimension(3,3) :: kvec_matrix ! Columns are reciprocal lattice vectors b1, b2, b3
 
         ! Store reciprocal lattice vectors as columns of a 3x3 matrix
-        kvec_matrix = TWOPI * reshape(primary%reciprocal, shape(kvec_matrix))
+        kvec_matrix = TWOPI * reshape(primary%cell%reciprocal, shape(kvec_matrix))
 
         ! Fill the array with the actual k-vectors
         count = 0
-        do kx_idx = 0, ewald%kmax(1)
-            do ky_idx = -ewald%kmax(2), ewald%kmax(2)
-                do kz_idx = -ewald%kmax(3), ewald%kmax(3)
+        do kx_idx = 0, ewald%param%kmax(1)
+            do ky_idx = -ewald%param%kmax(2), ewald%param%kmax(2)
+                do kz_idx = -ewald%param%kmax(3), ewald%param%kmax(3)
 
                     if (kx_idx == 0 .and. ky_idx == 0 .and. kz_idx == 0) cycle
 
                     ! Compute normalized k^2 again
-                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%kmax)
+                    k_squared = normalized_K_squared(kx_idx, ky_idx, kz_idx, ewald%param%kmax)
 
                     ! Skip invalid k-vectors
                     if (.not. check_valid_reciprocal_vector(k_squared)) cycle
@@ -135,10 +135,10 @@ contains
         real(real64) :: alpha_squared   ! Precompute alpha^2 for efficiency (alpha = screening parameter)
 
         ! Calculate the square of the screening parameter
-        alpha_squared = ewald%alpha**2
+        alpha_squared = ewald%param%alpha**2
 
         ! Loop over all precomputed reciprocal lattice vectors
-        do idx = 1, ewald%num_kvectors
+        do idx = 1, ewald%param%nkvec
 
             ! Compute the reciprocal-space weighting factor for this k-vector
             k_squared_mag = ewald%kvectors(idx)%k_squared_mag

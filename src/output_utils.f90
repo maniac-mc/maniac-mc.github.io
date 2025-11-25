@@ -1,6 +1,4 @@
 !-----------------------------------------------------------------------------
-! module output_utils
-!
 ! This module handles all output-related operations for the Monte Carlo
 ! simulation.
 !-----------------------------------------------------------------------------
@@ -9,6 +7,7 @@ module output_utils
 
     use simulation_state
     use helper_utils
+
     use, intrinsic :: iso_fortran_env, only: real64, output_unit
 
     implicit none
@@ -137,13 +136,13 @@ contains
         end if
 
         if (proba%widom > 0) then
-            do type_residue = 1, nb%type_residue
-                if (widom_stat%sample(type_residue) > 0) then
-                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", widom_stat%sample(type_residue)
+            do type_residue = 1, res%number
+                if (statistic%sample(type_residue) > 0) then
+                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", statistic%sample(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
-                    write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", widom_stat%mu_ex(type_residue)
+                    write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", statistic%mu_ex(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
-                    write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", widom_stat%mu_tot(type_residue)
+                    write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", statistic%mu_tot(type_residue)
                     call BoxLine(trim(line), BOX_WIDTH)
                 end if
             end do
@@ -177,9 +176,9 @@ contains
         ! Active molecule summary
         ! -----------------------
         header_msg = "  Energy report | Active molecules: "
-        do nb_type_residue = 1, nb%type_residue
-            if (primary%num_residues(nb_type_residue) /= 0 .and. input%is_active(nb_type_residue) == 1) then
-                write(tmp,'(A,"=",I0)') trim(res%names_1d(nb_type_residue)), primary%num_residues(nb_type_residue)
+        do nb_type_residue = 1, res%number
+            if (thermo%is_active(nb_type_residue)) then
+                write(tmp,'(A,"=",I0)') trim(res%names(nb_type_residue)), primary%num%residues(nb_type_residue)
                 if (len_trim(header_msg) > 0) then
                     header_msg = trim(header_msg)//" "//trim(tmp)
                 else
@@ -190,10 +189,7 @@ contains
         call log_message(header_msg)
 
         ! Composite energies
-        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
-                        energy%ewald_self +  energy%intra_coulomb
-        e_coul = energy%coulomb +  energy%intra_coulomb
-        e_long = energy%recip_coulomb + energy%ewald_self
+        call compute_composite_energies(e_tot, e_coul, e_long)
 
         ! -----------------------
         ! Print header for energy and MC moves
@@ -239,7 +235,7 @@ contains
         ! -----------------------
         write(numeric_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4)') &
             status%block, e_tot, energy%non_coulomb, e_coul, e_long, &
-            input%translation_step, input%rotation_step_angle
+            mc_input%translation_step, mc_input%rotation_step_angle
 
         ! Append MC move string to the same line
         if (len_trim(move_msg) > 0) then
@@ -250,6 +246,22 @@ contains
         call log_message(numeric_msg)
 
     end subroutine PrintStatus
+
+    !----------------------------------------------------------------------
+    ! Computes composite energies from the energy components in 'energy'.
+    !----------------------------------------------------------------------
+    subroutine compute_composite_energies(e_tot, e_coul, e_long)
+
+        ! Output parameter
+        real(real64), intent(out) :: e_tot, e_coul, e_long
+
+        ! Compute composite energies
+        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
+                energy%ewald_self + energy%intra_coulomb
+        e_coul = energy%coulomb + energy%intra_coulomb
+        e_long = energy%recip_coulomb + energy%ewald_self
+
+    end subroutine compute_composite_energies
 
     !------------------------------------------------------------------------------
     ! Subroutine: final_report
@@ -262,11 +274,8 @@ contains
         real(real64) :: e_long         ! Long-range Coulombic energy (reciprocal + self)
         character(LEN=1024) :: formatted_msg   ! Formatted message for logging
 
-
         ! Compute combined components
-        e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + energy%ewald_self + energy%intra_coulomb ! In kcal/mol
-        e_coul = energy%coulomb + energy%intra_coulomb ! In kcal/mol
-        e_long = energy%recip_coulomb + energy%ewald_self ! In kcal/mol
+        call compute_composite_energies(e_tot, e_coul, e_long)
 
         ! Blank line before box
         call log_message("")
@@ -314,9 +323,9 @@ contains
         integer :: max_atom_type                                ! Maximum atom type index from atom_types_2d array
 
         if (status%reservoir_provided) then
-            max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
+            max_atom_type = max(maxval(primary%atoms%types(:,:)), maxval(reservoir%atoms%types(:,:)))
         else
-            max_atom_type = maxval(primary%atom_types(:,:))
+            max_atom_type = maxval(primary%atoms%types(:,:))
         end if
         allocate(printed(max_atom_type, max_atom_type))
         printed = .false.
@@ -329,18 +338,18 @@ contains
         call log_message(formatted_msg)                                     ! Log the input file name
 
         n_pairs = 0 ! Initialize the pair counter
-        do i = 1, nb%type_residue
-            do j = 1, nb%types_per_residue(i)
-                do k = 1, nb%type_residue
-                    do l = 1, nb%types_per_residue(k)
-                        type1 = res%types_2d(i, j) ! Get atom type for site j in residue i
-                        type2 = res%types_2d(k, l) ! Get atom type for site l in residue k
+        do i = 1, res%number
+            do j = 1, res%types(i)
+                do k = 1, res%number
+                    do l = 1, res%types(k)
+                        type1 = res%site_types(i, j) ! Get atom type for site j in residue i
+                        type2 = res%site_types(k, l) ! Get atom type for site l in residue k
                         found_pair = .false.        ! Reset found_pair flag (unused in logic)
                         if (type1 <= type2) then    ! Process pairs where type1 <= type2 to avoid duplicates
-                            do m = 1, nb%atom_in_residue(i)
-                                do n = 1, nb%atom_in_residue(k)
-                                    type_m = primary%atom_types(i, m) ! Get atom type for atom m in residue i
-                                    type_n = primary%atom_types(k, n) ! Get atom type for atom n in residue k
+                            do m = 1, res%atom(i)
+                                do n = 1, res%atom(k)
+                                    type_m = primary%atoms%types(i, m) ! Get atom type for atom m in residue i
+                                    type_n = primary%atoms%types(k, n) ! Get atom type for atom n in residue k
                                     it1 = min(type_m, type_n)    ! Get minimum atom type for pair
                                     it2 = max(type_m, type_n)    ! Get maximum atom type for pair
                                     if (it1 > 0 .and. it2 > 0) then
@@ -381,27 +390,27 @@ contains
         write(formatted_msg, '("Reading file ", A)') trim(data_file_name)
         call log_message(formatted_msg)
         call log_message("")
-        write(formatted_msg, '("Number of atoms: ", I0)') box%num_atoms
+        write(formatted_msg, '("Number of atoms: ", I0)') box%num%atoms
         call log_message(formatted_msg)
-        write(formatted_msg, '("Number of type of residues: ", I0)') nb%type_residue
+        write(formatted_msg, '("Number of type of residues: ", I0)') res%number
         call log_message(formatted_msg)
-        write(formatted_msg, '("Number of type of atoms: ", I0)') box%num_atomtypes
+        write(formatted_msg, '("Number of type of atoms: ", I0)') box%num%atomtypes
         call log_message(formatted_msg)
 
-        do i = 1, nb%type_residue
-            if ((box%num_residues(i) /= 0) .and. (input%is_active(i) == 1)) then
+        do i = 1, res%number
+            if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Active residue present in data file
-                active_molecule_count = active_molecule_count + box%num_residues(i)
+                active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Active residue ", A, " found in the data file: ", I0)') &
-                    trim(res%names_1d(i)), box%num_residues(i)
-            else if ((box%num_residues(i) /= 0) .and. (input%is_active(i) == 0)) then
+                    trim(res%names(i)), box%num%residues(i)
+            else if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Inactive residue present in data file
-                active_molecule_count = active_molecule_count + box%num_residues(i)
+                active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Inactive residue ", A, " found in the data file: ", I0)') &
-                    trim(res%names_1d(i)), box%num_residues(i)
-            else if ((box%num_residues(i) == 0) .and. (input%is_active(i) == 0) .and. (is_primary)) then
+                    trim(res%names(i)), box%num%residues(i)
+            else if ((box%num%residues(i) == 0) .and. (thermo%is_active(i)) .and. (is_primary)) then
                 ! Inactive residue defined in input but not present in data file
-                call abort_run("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
+                call abort_run("Inactive residue '" // trim(res%names(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
             end if
             call log_message(formatted_msg)
@@ -409,17 +418,17 @@ contains
 
         call log_message("")
         call log_message("Simulation box (rows):")
-        write(formatted_msg, '(3F12.6)') box%matrix(1,1), box%matrix(1,2), box%matrix(1,3)
+        write(formatted_msg, '(3F12.6)') box%cell%matrix(1,1), box%cell%matrix(1,2), box%cell%matrix(1,3)
         call log_message(formatted_msg)
-        write(formatted_msg, '(3F12.6)') box%matrix(2,1), box%matrix(2,2), box%matrix(2,3)
+        write(formatted_msg, '(3F12.6)') box%cell%matrix(2,1), box%cell%matrix(2,2), box%cell%matrix(2,3)
         call log_message(formatted_msg)
-        write(formatted_msg, '(3F12.6)') box%matrix(3,1), box%matrix(3,2), box%matrix(3,3)
+        write(formatted_msg, '(3F12.6)') box%cell%matrix(3,1), box%cell%matrix(3,2), box%cell%matrix(3,3)
         call log_message(formatted_msg)
 
         call log_message("")
         call log_message("Atoms masses (g/mol):")
-        do atom_id = 1, primary%num_atomtypes
-            write(formatted_msg, '(I5, 2X, F12.6)') atom_id, box%site_masses_vector(atom_id)
+        do atom_id = 1, primary%num%atomtypes
+            write(formatted_msg, '(I5, 2X, F12.6)') atom_id, box%atoms%masses_vec(atom_id)
             call log_message(formatted_msg)
         end do
 
@@ -435,30 +444,30 @@ contains
         integer :: i, j
         integer, parameter :: MAX_PRINT = 6
 
-        if ((box%num_bonds > 0) .or. (box%num_angles > 0)) then
+        if ((box%num%bonds > 0) .or. (box%num%angles > 0)) then
 
             call log_message("")
             call log_message("===== Connectivity summary =====")
 
             ! --- Bonds ---
             call log_message("")
-            do i = 1, nb%type_residue
-                if (box%num_residues(i) > 0) then
+            do i = 1, res%number
+                if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " bonds")') &
-                        trim(res%names_1d(i)), nb%bonds_per_residue(i)
+                        trim(res%names(i)), res%bonds(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT bonds
-                    do j = 1, min(nb%bonds_per_residue(i), MAX_PRINT)
+                    do j = 1, min(res%bonds(i), MAX_PRINT)
                         write(formatted_msg, '("   bond type ", I0, ": atoms [", I0, ",", I0, "]")') &
-                            res%bond_type_2d(i,j,1), res%bond_type_2d(i,j,2), res%bond_type_2d(i,j,3)
+                            connect%bonds(i,j,1), connect%bonds(i,j,2), connect%bonds(i,j,3)
                         call log_message(formatted_msg)
                     end do
 
                     ! If more bonds exist, indicate truncation
-                    if (nb%bonds_per_residue(i) > MAX_PRINT) then
+                    if (res%bonds(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more bonds not shown")') &
-                            nb%bonds_per_residue(i) - MAX_PRINT
+                            res%bonds(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
@@ -466,25 +475,25 @@ contains
 
             ! --- Angles ---
             call log_message("")
-            do i = 1, nb%type_residue
+            do i = 1, res%number
 
-                if (box%num_residues(i) > 0) then
+                if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " angles")') &
-                        trim(res%names_1d(i)), nb%angles_per_residue(i)
+                        trim(res%names(i)), res%angles(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT angles
-                    do j = 1, min(nb%angles_per_residue(i), MAX_PRINT)
+                    do j = 1, min(res%angles(i), MAX_PRINT)
                         write(formatted_msg, '("   angle type ", I0, ": atoms [", I0, ",", I0, ",", I0, "]")') &
-                            res%angle_type_2d(i,j,1), res%angle_type_2d(i,j,2), &
-                            res%angle_type_2d(i,j,3), res%angle_type_2d(i,j,4)
+                            connect%angles(i,j,1), connect%angles(i,j,2), &
+                            connect%angles(i,j,3), connect%angles(i,j,4)
                         call log_message(formatted_msg)
                     end do
 
                     ! If more angles exist, indicate truncation
-                    if (nb%angles_per_residue(i) > MAX_PRINT) then
+                    if (res%angles(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more angles not shown")') &
-                            nb%angles_per_residue(i) - MAX_PRINT
+                            res%angles(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
@@ -492,27 +501,27 @@ contains
 
             ! --- Dihedrals ---
             call log_message("")
-            do i = 1, nb%type_residue
+            do i = 1, res%number
 
-                if (box%num_residues(i) > 0) then
+                if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " dihedrals")') &
-                        trim(res%names_1d(i)), nb%dihedrals_per_residue(i)
+                        trim(res%names(i)), res%dihedrals(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT dihedrals
-                    do j = 1, min(nb%dihedrals_per_residue(i), MAX_PRINT)
+                    do j = 1, min(res%dihedrals(i), MAX_PRINT)
                         write(formatted_msg, &
                         '("   dihedral type ", I0, ": atoms [", I0, ",", I0, ",", I0, ",", I0, "]")') &
-                            res%dihedral_type_2d(i,j,1), res%dihedral_type_2d(i,j,2), &
-                            res%dihedral_type_2d(i,j,3), res%dihedral_type_2d(i,j,4), &
-                            res%dihedral_type_2d(i,j,5)
+                            connect%dihedrals(i,j,1), connect%dihedrals(i,j,2), &
+                            connect%dihedrals(i,j,3), connect%dihedrals(i,j,4), &
+                            connect%dihedrals(i,j,5)
                         call log_message(formatted_msg)
                     end do
 
                     ! If more dihedrals exist, indicate truncation
-                    if (nb%dihedrals_per_residue(i) > MAX_PRINT) then
+                    if (res%dihedrals(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more dihedrals not shown")') &
-                            nb%dihedrals_per_residue(i) - MAX_PRINT
+                            res%dihedrals(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
@@ -520,27 +529,27 @@ contains
 
             ! --- Impropers ---
             call log_message("")
-            do i = 1, nb%type_residue
+            do i = 1, res%number
 
-                if (box%num_residues(i) > 0) then
+                if (box%num%residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " impropers")') &
-                        trim(res%names_1d(i)), nb%impropers_per_residue(i)
+                        trim(res%names(i)), res%impropers(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT impropers
-                    do j = 1, min(nb%impropers_per_residue(i), MAX_PRINT)
+                    do j = 1, min(res%impropers(i), MAX_PRINT)
                         write(formatted_msg, &
                         '("   improper type ", I0, ": atoms [", I0, ",", I0, ",", I0, ",", I0, "]")') &
-                            res%improper_type_2d(i,j,1), res%improper_type_2d(i,j,2), &
-                            res%improper_type_2d(i,j,3), res%improper_type_2d(i,j,4), &
-                            res%improper_type_2d(i,j,5)
+                            connect%impropers(i,j,1), connect%impropers(i,j,2), &
+                            connect%impropers(i,j,3), connect%impropers(i,j,4), &
+                            connect%impropers(i,j,5)
                         call log_message(formatted_msg)
                     end do
 
                     ! If more impropers exist, indicate truncation
-                    if (nb%impropers_per_residue(i) > MAX_PRINT) then
+                    if (res%impropers(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more impropers not shown")') &
-                            nb%impropers_per_residue(i) - MAX_PRINT
+                            res%impropers(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
@@ -651,7 +660,7 @@ contains
     ! Logs a summary of the parsed input, including global simulation parameters,
     ! Monte Carlo settings, and detailed residue information.
     !-----------------------------------------------------------------------------
-    subroutine PrintInputSummary()
+    subroutine print_input_summary()
 
         ! Locals
         integer :: i, j
@@ -670,23 +679,23 @@ contains
         call log_message(msg)
         write(msg, '("Number of steps: ", I0)') status%desired_step
         call log_message(msg)
-        write(msg, '("Temperature (K): ", F10.2)') input%temperature
+        write(msg, '("Temperature (K): ", F10.2)') thermo%temperature
         call log_message(msg)
         call log_message("")
 
         ! ===== ELECTROSTATIC =====
         call log_message("=== Electrostatic interactions")
-        write(msg, '("Ewald tolerance: ", F15.8)') ewald%tolerance
+        write(msg, '("Ewald tolerance: ", F15.8)') ewald%param%tolerance
         call log_message(msg)
-        write(msg, '("Cutoff (Å): ", F10.2)') input%real_space_cutoff
+        write(msg, '("Cutoff (Å): ", F10.2)') mc_input%real_space_cutoff
         call log_message(msg)
         call log_message("")
 
         ! ===== MONTE CARLO =====
         call log_message("=== Monte carlo move")
-        write(msg, '("Translation step (Å): ", F10.2)') input%translation_step
+        write(msg, '("Translation step (Å): ", F10.2)') mc_input%translation_step
         call log_message(msg)
-        write(msg, '("Rotation step angle (radian): ", F10.2)') input%rotation_step_angle
+        write(msg, '("Rotation step angle (radian): ", F10.2)') mc_input%rotation_step_angle
         call log_message(msg)
 
         write(msg, '("Translation proba: ", F10.2)') proba%translation
@@ -702,54 +711,81 @@ contains
         ! ===== RESIDUES =====
         call log_message("=== Residue information")
         call log_message("")
-        write(msg, '("Number of type of residue found: ", I0)') nb%type_residue
+        write(msg, '("Number of type of residue found: ", I0)') res%number
         call log_message(msg)
         call log_message("")
 
-        do i = 1, nb%type_residue
-            write(msg, '("  Residue ", A)') trim(res%names_1d(i))
+        do i = 1, res%number
+
+            write(msg, '("  Residue ", A)') trim(res%names(i))
             call log_message(msg)
 
-            write(msg, '("  Is active: ", A)') merge("yes", "no ", input%is_active(i) == 1)
+            write(msg, '("  Is active: ", A)') merge("yes", "no ", thermo%is_active(i))
             call log_message(msg)
 
-            if (input%is_active(i) == 1) then
-                if (input%fugacity(i) > 0) then
-                    write(msg, '("  Fugacity (atm): ", F10.2)') input%fugacity(i)
+            if (thermo%is_active(i)) then
+                if (thermo%fugacity(i) > 0) then
+                    write(msg, '("  Fugacity (atm): ", F10.2)') thermo%fugacity(i)
                     call log_message(msg)
                 end if
             end if
 
-            if (input%is_active(i) == 1) then
-                write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') input%chemical_potential(i)
+            if (thermo%is_active(i)) then
+                write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') thermo%chemical_potential(i)
                 call log_message(msg)
             end if
 
-            write(msg, '("  Number of atoms in residue: ", I0)') nb%atom_in_residue(i)
+            write(msg, '("  Number of atoms in residue: ", I0)') res%atom(i)
             call log_message(msg)
 
-            write(msg, '("  Number of atom types in residue: ", I0)') nb%types_per_residue(i)
+            write(msg, '("  Number of atom types in residue: ", I0)') res%types(i)
             call log_message(msg)
 
             ! Types
             msg = "  Types: "
-            do j = 1, nb%types_per_residue(i)
-                write(temp, '(I0)') res%types_2d(i, j)
+            do j = 1, res%types(i)
+                write(temp, '(I0)') res%site_types(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
             call log_message(msg)
 
             ! Names
             msg = "  Names: "
-            do j = 1, nb%types_per_residue(i)
-                temp = res%names_2d(i, j)
+            do j = 1, res%types(i)
+                temp = res%site_names(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
             call log_message(msg)
 
             call log_message("")
+
         end do
 
-    end subroutine PrintInputSummary
+    end subroutine print_input_summary
+
+    !-----------------------------------------------------------
+    ! Print Ewald information
+    !-----------------------------------------------------------
+    subroutine log_ewald_parameters()
+
+        character(200) :: formatted_msg
+
+        write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', mc_input%real_space_cutoff
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%param%tolerance
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%param%screen
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%param%alpha
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%param%fprecision
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
+            ewald%param%kmax(1), ', ', ewald%param%kmax(2), ', ', ewald%param%kmax(3)
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%param%nkvec
+        call log_message(formatted_msg)
+
+    end subroutine log_ewald_parameters
 
 end module output_utils

@@ -79,31 +79,31 @@ contains
         end if
 
         ! === Step 2: Read header ===
-        call ReadLMPHeaderInfo(infile, box)
+        call read_lmp_header_info(infile, box)
 
         ! === Step 3: Allocate arrays ===
-        allocate(atom_ids_1d(box%num_atoms))
-        allocate(atom_original_1d(box%num_atoms))
-        allocate(atom_types_1d(box%num_atoms))
-        allocate(atom_charges_1d(box%num_atoms))
-        allocate(atom_xyz(3, box%num_atoms))
-        allocate(atom_names_1d(box%num_atoms))
-        allocate(bond_ids_1d(box%num_bonds))
-        allocate(bond_types_1d(box%num_bonds))
-        allocate(bond_atoms_1d(box%num_bonds,2))
-        allocate(angle_ids_1d(box%num_angles))
-        allocate(angle_types_1d(box%num_angles))
-        allocate(angle_atoms_1d(box%num_angles,3))
-        allocate(dihedral_ids_1d(box%num_dihedrals))
-        allocate(dihedral_types_1d(box%num_dihedrals))
-        allocate(dihedral_atoms_1d(box%num_dihedrals,4))
-        allocate(improper_ids_1d(box%num_impropers))
-        allocate(improper_types_1d(box%num_impropers))
-        allocate(improper_atoms_1d(box%num_impropers,4))
+        allocate(atom_ids_1d(box%num%atoms))
+        allocate(atom_original_1d(box%num%atoms))
+        allocate(atom_types_1d(box%num%atoms))
+        allocate(atom_charges_1d(box%num%atoms))
+        allocate(atom_xyz(3, box%num%atoms))
+        allocate(atom_names_1d(box%num%atoms))
+        allocate(bond_ids_1d(box%num%bonds))
+        allocate(bond_types_1d(box%num%bonds))
+        allocate(bond_atoms_1d(box%num%bonds,2))
+        allocate(angle_ids_1d(box%num%angles))
+        allocate(angle_types_1d(box%num%angles))
+        allocate(angle_atoms_1d(box%num%angles,3))
+        allocate(dihedral_ids_1d(box%num%dihedrals))
+        allocate(dihedral_types_1d(box%num%dihedrals))
+        allocate(dihedral_atoms_1d(box%num%dihedrals,4))
+        allocate(improper_ids_1d(box%num%impropers))
+        allocate(improper_types_1d(box%num%impropers))
+        allocate(improper_atoms_1d(box%num%impropers,4))
 
         ! === Step 4: Read box dimensions ===
         rewind(infile)
-        call ParseLAMMPSBox(infile, box)
+        call parse_lammps_box(infile, box)
 
         ! Detect box type and other informations
         call prepare_simulation_box(box)
@@ -202,8 +202,8 @@ contains
         ! Initialize
         mass_found = 0
 
-        allocate(box%site_masses_vector(box%num_atomtypes))
-        box%site_masses_vector = 0.0d0
+        allocate(box%atoms%masses_vec(box%num%atomtypes))
+        box%atoms%masses_vec = 0.0d0
 
         ! Rewind file to start (optional, remove if file pointer is already positioned)
         rewind(infile)
@@ -234,8 +234,8 @@ contains
                 if (len_trim(trimmed_line) > 0 .and. trimmed_line(1:1) /= '!') then
                 end if
 
-                ! Read num_atoms(SYSTEM) lines for masses
-                do i = 1, box%num_atoms
+                ! Read num%atoms(SYSTEM) lines for masses
+                do i = 1, box%num%atoms
                     read(infile, '(A)', IOSTAT=ios) line
                     if (ios /= 0) then
                         exit
@@ -253,20 +253,20 @@ contains
                         exit
                     end if
 
-                    if (tmp_int < 1 .or. tmp_int > box%num_atoms) then
+                    if (tmp_int < 1 .or. tmp_int > box%num%atoms) then
                         exit
                     end if
 
-                    box%site_masses_vector(tmp_int) = tmp_flt
+                    box%atoms%masses_vec(tmp_int) = tmp_flt
                     mass_found = mass_found + 1
                 end do
 
-                ! Map site masses into 2D mass array (assuming nb%type_residue and nb%types_per_residue are defined)
+                ! Map site masses into 2D mass array (assuming res%number and res%types are defined)
                 i = 1
-                do j = 1, nb%type_residue
-                    do k = 1, nb%types_per_residue(j)
-                        if ((i <= box%num_atoms) .and. (i <= box%num_atomtypes)) then
-                            box%atom_masses(j, k) = box%site_masses_vector(i)
+                do j = 1, res%number
+                    do k = 1, res%types(j)
+                        if ((i <= box%num%atoms) .and. (i <= box%num%atomtypes)) then
+                            box%atoms%masses(j, k) = box%atoms%masses_vec(i)
                             i = i + 1
                         else
                             exit
@@ -281,7 +281,7 @@ contains
         ! Trigger error if no masses found or mismatch with declared atom types
         if (mass_found == 0) then
             call abort_run("No masses found in data file", 12)
-        else if (mass_found /= box%num_atomtypes) then
+        else if (mass_found /= box%num%atomtypes) then
             call abort_run("Number of masses found in data file differs from declared atom types", 13)
         end if
 
@@ -301,12 +301,12 @@ contains
         integer :: i, j, k                            ! Loop indices for residues, types, and atoms
 
         ! Loop over all atoms
-        do k = 1, box%num_atoms
+        do k = 1, box%num%atoms
             atom_names_1d(k) = '' ! Initialize to empty string
-            do i = 1, nb%type_residue
-                do j = 1, nb%types_per_residue(i)
-                    if (res%types_2d(i, j) == atom_types_1d(k)) then
-                        atom_names_1d(k) = res%names_2d(i, j)
+            do i = 1, res%number
+                do j = 1, res%types(i)
+                    if (res%site_types(i, j) == atom_types_1d(k)) then
+                        atom_names_1d(k) = res%site_names(i, j)
                         exit  ! Exit inner loop once match is found
                     end if
                 end do
@@ -329,11 +329,11 @@ contains
         integer :: nb_bond
         character(len=100) :: formatted_msg
 
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             nb_bond = 0
 
             ! Loop directly over the bonds
-            do j = 1, box%num_bonds
+            do j = 1, box%num%bonds
 
                 ! Ids in bonds
                 id1 = bond_atoms_1d(j,1)
@@ -355,20 +355,20 @@ contains
                             " Please increase 'NB_MAX_BOND' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%bond_type_2d(i, nb_bond, 1) = bond_types_1d(j)
+                    connect%bonds(i, nb_bond, 1) = bond_types_1d(j)
 
                     if (l < k) then
-                        res%bond_type_2d(i, nb_bond, 2) = l
-                        res%bond_type_2d(i, nb_bond, 3) = k
+                        connect%bonds(i, nb_bond, 2) = l
+                        connect%bonds(i, nb_bond, 3) = k
                     else
-                        res%bond_type_2d(i, nb_bond, 2) = k
-                        res%bond_type_2d(i, nb_bond, 3) = l
+                        connect%bonds(i, nb_bond, 2) = k
+                        connect%bonds(i, nb_bond, 3) = l
                     end if
                 end if
 
             end do
 
-            nb%bonds_per_residue(i) = nb_bond
+            res%bonds(i) = nb_bond
 
         end do
 
@@ -383,11 +383,11 @@ contains
         integer :: nb_angle
         character(len=100) :: formatted_msg
 
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             nb_angle = 0
 
             ! Loop directly over the angles
-            do j = 1, box%num_angles
+            do j = 1, box%num%angles
                 id1 = angle_atoms_1d(j,1)
                 id2 = angle_atoms_1d(j,2)
                 id3 = angle_atoms_1d(j,3)
@@ -410,19 +410,19 @@ contains
                             " Please increase 'NB_MAX_ANGLE' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%angle_type_2d(i, nb_angle, 1) = angle_types_1d(j)
+                    connect%angles(i, nb_angle, 1) = angle_types_1d(j)
                     if (k < m) then
-                        res%angle_type_2d(i, nb_angle, 2) = k
-                        res%angle_type_2d(i, nb_angle, 3) = l
-                        res%angle_type_2d(i, nb_angle, 4) = m
+                        connect%angles(i, nb_angle, 2) = k
+                        connect%angles(i, nb_angle, 3) = l
+                        connect%angles(i, nb_angle, 4) = m
                     else
-                        res%angle_type_2d(i, nb_angle, 2) = m
-                        res%angle_type_2d(i, nb_angle, 3) = l
-                        res%angle_type_2d(i, nb_angle, 4) = k
+                        connect%angles(i, nb_angle, 2) = m
+                        connect%angles(i, nb_angle, 3) = l
+                        connect%angles(i, nb_angle, 4) = k
                     end if
                 end if
             end do
-            nb%angles_per_residue(i) = nb_angle
+            res%angles(i) = nb_angle
         end do
 
     end subroutine DetectAnglePerResidue
@@ -436,11 +436,11 @@ contains
         integer :: nb_dihedral
         character(len=100) :: formatted_msg
 
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             nb_dihedral = 0
 
             ! Loop directly over the dihedrals
-            do j = 1, box%num_dihedrals
+            do j = 1, box%num%dihedrals
                 id1 = dihedral_atoms_1d(j,1)
                 id2 = dihedral_atoms_1d(j,2)
                 id3 = dihedral_atoms_1d(j,3)
@@ -466,21 +466,21 @@ contains
                             " Please increase 'NB_MAX_DIHEDRAL' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%dihedral_type_2d(i, nb_dihedral, 1) = dihedral_types_1d(j)
+                    connect%dihedrals(i, nb_dihedral, 1) = dihedral_types_1d(j)
                     if (k < n) then
-                        res%dihedral_type_2d(i, nb_dihedral, 2) = k
-                        res%dihedral_type_2d(i, nb_dihedral, 3) = l
-                        res%dihedral_type_2d(i, nb_dihedral, 4) = m
-                        res%dihedral_type_2d(i, nb_dihedral, 5) = n
+                        connect%dihedrals(i, nb_dihedral, 2) = k
+                        connect%dihedrals(i, nb_dihedral, 3) = l
+                        connect%dihedrals(i, nb_dihedral, 4) = m
+                        connect%dihedrals(i, nb_dihedral, 5) = n
                     else
-                        res%dihedral_type_2d(i, nb_dihedral, 2) = n
-                        res%dihedral_type_2d(i, nb_dihedral, 3) = m
-                        res%dihedral_type_2d(i, nb_dihedral, 4) = l
-                        res%dihedral_type_2d(i, nb_dihedral, 5) = k
+                        connect%dihedrals(i, nb_dihedral, 2) = n
+                        connect%dihedrals(i, nb_dihedral, 3) = m
+                        connect%dihedrals(i, nb_dihedral, 4) = l
+                        connect%dihedrals(i, nb_dihedral, 5) = k
                     end if
                 end if
             end do
-            nb%dihedrals_per_residue(i) = nb_dihedral
+            res%dihedrals(i) = nb_dihedral
         end do
 
     end subroutine DetectDihedralPerResidue
@@ -494,11 +494,11 @@ contains
         integer :: nb_improper
         character(len=100) :: formatted_msg
 
-        do i = 1, nb%type_residue
+        do i = 1, res%number
             nb_improper = 0
 
             ! Loop directly over the impropers
-            do j = 1, box%num_impropers
+            do j = 1, box%num%impropers
                 id1 = improper_atoms_1d(j,1)
                 id2 = improper_atoms_1d(j,2)
                 id3 = improper_atoms_1d(j,3)
@@ -524,21 +524,21 @@ contains
                             " Please increase 'NB_MAX_IMPROPER' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%improper_type_2d(i, nb_improper, 1) = improper_types_1d(j)
+                    connect%impropers(i, nb_improper, 1) = improper_types_1d(j)
                     if (k < n) then
-                        res%improper_type_2d(i, nb_improper, 2) = k
-                        res%improper_type_2d(i, nb_improper, 3) = l
-                        res%improper_type_2d(i, nb_improper, 4) = m
-                        res%improper_type_2d(i, nb_improper, 5) = n
+                        connect%impropers(i, nb_improper, 2) = k
+                        connect%impropers(i, nb_improper, 3) = l
+                        connect%impropers(i, nb_improper, 4) = m
+                        connect%impropers(i, nb_improper, 5) = n
                     else
-                        res%improper_type_2d(i, nb_improper, 2) = n
-                        res%improper_type_2d(i, nb_improper, 3) = m
-                        res%improper_type_2d(i, nb_improper, 4) = l
-                        res%improper_type_2d(i, nb_improper, 5) = k
+                        connect%impropers(i, nb_improper, 2) = n
+                        connect%impropers(i, nb_improper, 3) = m
+                        connect%impropers(i, nb_improper, 4) = l
+                        connect%impropers(i, nb_improper, 5) = k
                     end if
                 end if
             end do
-            nb%impropers_per_residue(i) = nb_improper
+            res%impropers(i) = nb_improper
         end do
 
     end subroutine DetectImproperPerResidue
@@ -606,7 +606,7 @@ contains
         end if
 
         ! Loop over all atoms
-        do k = 1, box%num_atoms
+        do k = 1, box%num%atoms
             read(infile, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
@@ -632,9 +632,9 @@ contains
             end if
 
             ! Validate atom type
-            if (tmp3_int < 1 .or. tmp3_int > box%num_atomtypes) then
+            if (tmp3_int < 1 .or. tmp3_int > box%num%atomtypes) then
                 write(formatted_msg, '(A, I0, A, I0, A)') "Invalid atom type ", tmp3_int, &
-                                                        " (max allowed: ", box%num_atomtypes, &
+                                                        " (max allowed: ", box%num%atomtypes, &
                                                         ") in: " // trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_ATOM_TYPE)
             end if
@@ -659,9 +659,9 @@ contains
         end do
 
         ! Check if the number of atoms found matches the expected number
-        if (atom_found /= box%num_atoms) then
+        if (atom_found /= box%num%atoms) then
             write(formatted_msg, '(A, I0, A, I0, A)') "Found ", atom_found, &
-                                                    " atoms, expected ", box%num_atoms, &
+                                                    " atoms, expected ", box%num%atoms, &
                                                     " in: " // trim(data_file_name)
             call abort_run(trim(formatted_msg), ERROR_NO_ATOMS)
         end if
@@ -691,7 +691,7 @@ contains
         bond_found = 0
 
         ! If no bonds are expected, skip the whole routine
-        if (box%num_bonds == 0) then
+        if (box%num%bonds == 0) then
             call InfoMessage("No bonds expected in data file: " // trim(data_file_name))
             return
         end if
@@ -735,7 +735,7 @@ contains
         end if
 
         ! Loop over all bonds
-        do k = 1, box%num_bonds
+        do k = 1, box%num%bonds
             read(infile, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
@@ -788,7 +788,7 @@ contains
         angle_found = 0
 
         ! If no angles are expected, skip the whole routine
-        if (box%num_angles == 0) then
+        if (box%num%angles == 0) then
             write(formatted_msg, '(A, A)') "No angles expected in data file: ", trim(data_file_name)
             call InfoMessage(trim(formatted_msg))
             return
@@ -832,7 +832,7 @@ contains
         end if
 
         ! Loop over all angles
-        do k = 1, box%num_angles
+        do k = 1, box%num%angles
             read(infile, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
@@ -886,7 +886,7 @@ contains
         dihedral_found = 0
 
         ! If no dihedral are expected, skip the whole routine
-        if (box%num_dihedrals == 0) then
+        if (box%num%dihedrals == 0) then
             write(formatted_msg, '(A, A)') "No dihedrals expected in data file: ", trim(data_file_name)
             call InfoMessage(trim(formatted_msg))
             return
@@ -930,7 +930,7 @@ contains
         end if
 
         ! Loop over all dihedrals
-        do k = 1, box%num_dihedrals
+        do k = 1, box%num%dihedrals
             read(infile, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
@@ -988,7 +988,7 @@ contains
         improper_found = 0
 
         ! If no improper are expected, skip the whole routine
-        if (box%num_impropers == 0) then
+        if (box%num%impropers == 0) then
             write(formatted_msg, '(A, A)') "No impropers expected in data file: ", trim(data_file_name)
             call InfoMessage(trim(formatted_msg))
             return
@@ -1030,7 +1030,7 @@ contains
         end if
 
         ! Loop over all impropers
-        do k = 1, box%num_impropers
+        do k = 1, box%num%impropers
             read(infile, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
@@ -1086,13 +1086,13 @@ contains
         integer, allocatable :: tmp_atom_original_1d(:) ! Temporary original IDs array
 
         ! Allocate sorting index array
-        allocate(sort_index(box%num_atoms))
-        do i = 1, box%num_atoms
+        allocate(sort_index(box%num%atoms))
+        do i = 1, box%num%atoms
             sort_index(i) = i
         end do
 
         ! Insertion sort based on atom_original_1d
-        do i = 2, box%num_atoms
+        do i = 2, box%num%atoms
             temp_index = sort_index(i)
             tmp_orig = atom_original_1d(temp_index)
             j = i - 1
@@ -1110,14 +1110,14 @@ contains
         end do
 
         ! Allocate temporary arrays
-        allocate(tmp_atom_names_1d(box%num_atoms))
-        allocate(tmp_atom_charges_1d(box%num_atoms))
-        allocate(tmp_atom_xyz(3, box%num_atoms))
-        allocate(tmp_atom_types_1d(box%num_atoms))
-        allocate(tmp_atom_original_1d(box%num_atoms))
+        allocate(tmp_atom_names_1d(box%num%atoms))
+        allocate(tmp_atom_charges_1d(box%num%atoms))
+        allocate(tmp_atom_xyz(3, box%num%atoms))
+        allocate(tmp_atom_types_1d(box%num%atoms))
+        allocate(tmp_atom_original_1d(box%num%atoms))
 
         ! Apply sorted indices
-        do i = 1, box%num_atoms
+        do i = 1, box%num%atoms
             tmp_atom_names_1d(i)   = atom_names_1d(sort_index(i))
             tmp_atom_charges_1d(i) = atom_charges_1d(sort_index(i))
             tmp_atom_xyz(:, i) = atom_xyz(:, sort_index(i))
@@ -1126,7 +1126,7 @@ contains
         end do
 
         ! Update global arrays with sorted data
-        do i = 1, box%num_atoms
+        do i = 1, box%num%atoms
             atom_names_1d(i) = tmp_atom_names_1d(i)
             atom_charges_1d(i) = tmp_atom_charges_1d(i)
             atom_xyz(:, i) = tmp_atom_xyz(:, i)
@@ -1160,17 +1160,17 @@ contains
         integer, allocatable :: cpt_per_residue(:)            ! Counters for each residue type
 
         ! one counter per residue
-        allocate(cpt_per_residue(nb%type_residue))
+        allocate(cpt_per_residue(res%number))
         cpt_per_residue = 1
 
-        do idx = 1, box%num_atoms
+        do idx = 1, box%num%atoms
             found = .false.
             residue = -1
 
             ! find which residue this atom belongs to
-            do i = 1, nb%type_residue
-                do j = 1, nb%types_per_residue(i)
-                    if (res%types_2d(i,j) == tmp_atom_types_1d(idx)) then
+            do i = 1, res%number
+                do j = 1, res%types(i)
+                    if (res%site_types(i,j) == tmp_atom_types_1d(idx)) then
                         found = .true.
                         residue = i
                         exit  ! break from j-loop
@@ -1180,9 +1180,9 @@ contains
             end do
 
             if (found) then
-                nb%types_pattern(residue, cpt_per_residue(residue)) = tmp_atom_types_1d(idx)
+                res%pattern_types(residue, cpt_per_residue(residue)) = tmp_atom_types_1d(idx)
                 cpt_per_residue(residue) = cpt_per_residue(residue) + 1
-                if (cpt_per_residue(residue) > nb%atom_in_residue(residue)) then
+                if (cpt_per_residue(residue) > res%atom(residue)) then
                     cpt_per_residue(residue) = 1
                 end if
             end if
@@ -1230,42 +1230,42 @@ contains
         detected_nb_max_molecule = 0
 
         ! Initialize arrays inside box
-        box%atom_types = 0
-        box%atom_ids = 0
-        box%atom_names = ""
-        box%atom_charges = 0.0D0
+        box%atoms%types = 0
+        box%atoms%ids = 0
+        box%atoms%names = ""
+        box%atoms%charges = 0.0D0
 
         ! Loop over residue types
-        do i = 1, nb%type_residue
+        do i = 1, res%number
 
-            box%num_residues(i) = 0
+            box%num%residues(i) = 0
             k = 1
 
             ! Scan atoms until we reach the end of the box
             do
-                if (k > box%num_atoms) exit ! stop when no atoms left
+                if (k > box%num%atoms) exit ! stop when no atoms left
 
                 ! Reset atom counter for matching residue pattern
                 cpt = 1
 
                 ! If atom at position k matches the first atom of residue i
-                if (atom_types_1d(k) == nb%types_pattern(i, cpt)) then
+                if (atom_types_1d(k) == res%pattern_types(i, cpt)) then
 
                     ! Ensure there are enough atoms left to build a full residue
-                    if (k + nb%atom_in_residue(i) - 1 > box%num_atoms) then
+                    if (k + res%atom(i) - 1 > box%num%atoms) then
                         call abort_run("Not enough atoms left in box to complete residue type ")
                     end if
 
                     ! Copy all atoms belonging to this residue
-                    do j = 1, nb%atom_in_residue(i)
-                        box%atom_types(i, j) = atom_types_1d(k)
-                        box%atom_ids(i, j) = atom_original_1d(k)
-                        box%atom_names(i, j) = atom_names_1d(k)
-                        box%atom_charges(i, j) = atom_charges_1d(k)
+                    do j = 1, res%atom(i)
+                        box%atoms%types(i, j) = atom_types_1d(k)
+                        box%atoms%ids(i, j) = atom_original_1d(k)
+                        box%atoms%names(i, j) = atom_names_1d(k)
+                        box%atoms%charges(i, j) = atom_charges_1d(k)
 
                         ! Check atom order against residue pattern
-                        if (input%is_active(i) == 1) then
-                            if (atom_types_1d(k) /= nb%types_pattern(i, cpt)) then
+                        if (thermo%is_active(i)) then
+                            if (atom_types_1d(k) /= res%pattern_types(i, cpt)) then
                                 call abort_run("Issue with atom order in data file")
                             end if
                         end if
@@ -1277,7 +1277,7 @@ contains
                     end do
 
                     ! Increment residue counter for type i
-                    box%num_residues(i) = box%num_residues(i) + 1
+                    box%num%residues(i) = box%num%residues(i) + 1
 
                 else
                     k = k + 1
@@ -1285,7 +1285,7 @@ contains
             end do
 
             ! Track maximum number of molecules detected among all types
-            if (box%num_residues(i) > detected_nb_max_molecule) detected_nb_max_molecule = box%num_residues(i)
+            if (box%num%residues(i) > detected_nb_max_molecule) detected_nb_max_molecule = box%num%residues(i)
 
         end do
 
@@ -1316,20 +1316,20 @@ contains
         real(real64) :: dist                      ! Intramoleclar distance for sanity check
 
         ! Allocate temporary arrays for one molecule's atom positions
-        allocate(tmp_xyz(3, maxval(nb%atom_in_residue)))
+        allocate(tmp_xyz(3, maxval(res%atom)))
 
         k = 1  ! Global atom index
 
         ! Loop over all residue types
-        do i = 1, nb%type_residue
+        do i = 1, res%number
 
-            natoms = nb%atom_in_residue(i)      ! number of atoms per molecule of type i
-            nmolecules = box%num_residues(i)    ! number of molecules of this type
+            natoms = res%atom(i)      ! number of atoms per molecule of type i
+            nmolecules = box%num%residues(i)    ! number of molecules of this type
 
             ! Loop over each molecule of this residue type
             do j = 1, nmolecules
 
-                if (input%is_active(i) == 1) then ! ACTIVE molecule → repair coordinates
+                if (thermo%is_active(i)) then ! ACTIVE molecule → repair coordinates
 
                     k_temp = k ! Save starting index for this molecule
 
@@ -1397,23 +1397,19 @@ contains
         real(real64), allocatable :: tmp_atom_xyz(:,:)
 
         ! Allocate temporaries (size depends on max atoms per residue)
-        allocate(tmp_atom_masses_1d(box%num_atoms))
+        allocate(tmp_atom_masses_1d(box%num%atoms))
 
-        if (.not. allocated(res%masses_1d)) then
-            allocate(res%masses_1d(primary%num_atomtypes))
-        end if
-
-        allocate(tmp_atom_xyz(3, box%num_atoms))
+        allocate(tmp_atom_xyz(3, box%num%atoms))
 
         cpt = 1
-        do i = 1, nb%type_residue
+        do i = 1, res%number
 
             ! #tofix, should have been done before
             ! Store CoM position
-            if (input%is_active(i) == 1) then
-                resid_location(i) = TYPE_GUEST
+            if (thermo%is_active(i)) then
+                res%role(i) = TYPE_GUEST
             else
-                resid_location(i) = TYPE_HOST
+                res%role(i) = TYPE_HOST
             end if
 
             if (is_reservoir) then
@@ -1425,39 +1421,38 @@ contains
             nb_res = 0
 
             ! Build mass vector for the residue type i
-            do j = 1, nb%atom_in_residue(i)
-                do l = 1, nb%types_per_residue(i)
-                    if (res%types_2d(i, l) == primary%atom_types(i, j)) then
-                        res%masses_1d(primary%atom_types(i, j)) = primary%atom_masses(i, l)
-                        tmp_atom_masses_1d = primary%atom_masses(i, l)
+            do j = 1, res%atom(i)
+                do l = 1, res%types(i)
+                    if (res%site_types(i, l) == primary%atoms%types(i, j)) then
+                        tmp_atom_masses_1d = primary%atoms%masses(i, l)
                         cpt = cpt + 1
                     end if
                 end do
             end do
 
             ! Sanity check
-            if (any(tmp_atom_masses_1d(1:nb%atom_in_residue(i)) <= 0.0_real64)) then
+            if (any(tmp_atom_masses_1d(1:res%atom(i)) <= 0.0_real64)) then
                 call warn_user("Zero or negative atomic mass detected in residue type")
-            else if (sum(tmp_atom_masses_1d(1:nb%atom_in_residue(i))) < 1.0e-6_real64) then
+            else if (sum(tmp_atom_masses_1d(1:res%atom(i))) < 1.0e-6_real64) then
                 call warn_user("Total molecular mass nearly zero in residue")
             end if
 
             ! Loop over all atoms and group them into molecules
             k = 1
             l = 1
-            do while (k <= box%num_atoms)
-                if (atom_types_1d(k) == box%atom_types(i, 1)) then
+            do while (k <= box%num%atoms)
+                if (atom_types_1d(k) == box%atoms%types(i, 1)) then
 
                     nb_res = nb_res + 1
 
                     ! Extract atom coordinates for this molecule
-                    tmp_atom_xyz(:, 1:nb%atom_in_residue(i)) = atom_xyz(:, k:k+nb%atom_in_residue(i)-1)
-                    k = k + nb%atom_in_residue(i)
+                    tmp_atom_xyz(:, 1:res%atom(i)) = atom_xyz(:, k:k+res%atom(i)-1)
+                    k = k + res%atom(i)
 
                     ! Compute Center of Mass
-                    call compute_COM(tmp_atom_xyz, nb%atom_in_residue(i), tmp_atom_masses_1d, com)
+                    call compute_COM(tmp_atom_xyz, res%atom(i), tmp_atom_masses_1d, com)
 
-                    total_mass = compute_mass(nb%atom_in_residue(i), tmp_atom_masses_1d)
+                    total_mass = compute_mass(res%atom(i), tmp_atom_masses_1d)
                     res%mass(i) = total_mass 
 
                     ! Save original CoM before applying periodic boundary conditions
@@ -1468,16 +1463,15 @@ contains
 
                     ! Perform sanity checks
                     call check_finite_vector(com, "Invalid (NaN/Inf) CoM detected in residue")
-                    call check_inside_bounds(com, box%bounds(:,1), box%bounds(:,2), &
+                    call check_inside_bounds(com, box%cell%bounds(:,1), box%cell%bounds(:,2), &
                         "Molecule COM outside simulation box")
-                    if (input%is_active(i) == 1) then
-                        call check_com_distance(tmp_atom_xyz, nb%atom_in_residue(i), &
+                    if (thermo%is_active(i)) then
+                        call check_com_distance(tmp_atom_xyz, res%atom(i), &
                             original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
                     end if
 
-                    coord%residue_exists(i) = .true.
                     coord%com(:, i, l) = com(:)
-                    do m = 1, nb%atom_in_residue(i)
+                    do m = 1, res%atom(i)
                         coord%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                     end do
 
@@ -1495,18 +1489,18 @@ contains
     !---------------------------------------------------------------
     ! Check if a given atom ID belongs to a specific residue.
     !---------------------------------------------------------------
-    logical function isInResidue(box, res, atom_id)
+    logical function isInResidue(box, resid, atom_id)
 
-        integer, intent(in) :: res, atom_id
+        integer, intent(in) :: resid, atom_id
         type(type_box), intent(inout) :: box
 
         integer :: n
 
         isInResidue = .false.
 
-        do n = 1, nb%atom_in_residue(res)
+        do n = 1, res%atom(resid)
 
-            if (box%atom_ids(res, n) == atom_id) then
+            if (box%atoms%ids(resid, n) == atom_id) then
 
                 isInResidue = .true.
                 return
@@ -1519,16 +1513,16 @@ contains
     !---------------------------------------------------------------
     !Get the local index of an atom within a residue.
     !---------------------------------------------------------------
-    integer function atomIndexInResidue(box, res, atom_id)
+    integer function atomIndexInResidue(box, res_id, atom_id)
 
-        integer, intent(in) :: res, atom_id
+        integer, intent(in) :: res_id, atom_id
         type(type_box), intent(inout) :: box
 
         integer :: n
 
         atomIndexInResidue = -1
-        do n = 1, nb%atom_in_residue(res)
-            if (box%atom_ids(res, n) == atom_id) then
+        do n = 1, res%atom(res_id)
+            if (box%atoms%ids(res_id, n) == atom_id) then
 
                 atomIndexInResidue = n
                 return

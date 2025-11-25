@@ -50,13 +50,13 @@ contains
         energy%intra_coulomb = zero ! In kcal/mol
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type_1 = 1, res%number
             
             ! Skip inactive residues
-            if (input%is_active(residue_type_1) == 1) then
+            if (thermo%is_active(residue_type_1)) then
 
                 ! Loop over all molecules of this residue type
-                do molecule_index_1 = 1, primary%num_residues(residue_type_1)
+                do molecule_index_1 = 1, primary%num%residues(residue_type_1)
 
                     ! Compute intra-residue Coulomb energy for this molecule
                     call compute_intra_residue_real_coulomb_energy_single_mol(residue_type_1, molecule_index_1, e_intra_coulomb)
@@ -88,9 +88,9 @@ contains
         energy%coulomb = zero
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type_1 = 1, res%number
             ! Loop over all molecule of type "residue_type_1"
-            do molecule_index_1 = 1, box%num_residues(residue_type_1)
+            do molecule_index_1 = 1, box%num%residues(residue_type_1)
 
                 ! Compute the energy for residue_1, molecule_1
                 call single_mol_pairwise_energy(box, residue_type_1, &
@@ -129,13 +129,13 @@ contains
         e_coulomb = zero
 
         ! Loop over sites in molecule residue_type
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type_1)
+        do atom_index_1 = 1, res%atom(residue_type_1)
 
             ! Loop over all molecule types 2
-            do residue_type_2 = 1, nb%type_residue
+            do residue_type_2 = 1, res%number
 
                 ! Loop over all molecule index 2
-                do molecule_index_2 = 1, box%num_residues(residue_type_2)
+                do molecule_index_2 = 1, box%num%residues(residue_type_2)
 
                     ! Remove intra molecular contribution
                     if ((molecule_index_1 == molecule_index_2) .and. &
@@ -147,13 +147,13 @@ contains
                         (molecule_index_2 <= molecule_index_1))) cycle
 
                     ! Loop over all side of the selected molecule 2
-                    do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
+                    do atom_index_2 = 1, res%atom(residue_type_2)
 
                         ! Read pair parameters
                         sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Angstrom
                         epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
-                        charge_1 = primary%atom_charges(residue_type_1, atom_index_1)                   ! In units of e
-                        charge_2 = primary%atom_charges(residue_type_2, atom_index_2)                   ! In units of e
+                        charge_1 = primary%atoms%charges(residue_type_1, atom_index_1)                   ! In units of e
+                        charge_2 = primary%atoms%charges(residue_type_2, atom_index_2)                   ! In units of e
 
                         ! Calculate the distance, accouting for periodic boundary conditions
                         distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
@@ -190,7 +190,7 @@ contains
         real(real64) :: r12                     ! (sigma / r)^12 term of the LJ potential
         real(real64) :: energy                  ! Lennard-Jones energy contribution (kcal/mol)
 
-        if (r >= input%real_space_cutoff) then
+        if (r >= mc_input%real_space_cutoff) then
 
             ! Return 0 if distance larger than cutoff
             energy = zero                                           ! kcal/mol
@@ -200,8 +200,8 @@ contains
             if (use_table .and. r6_table%initialized .and. r12_table%initialized) then
 
                 ! Use tabulated r^6 and r^12 if available and requested
-                r6 = sigma**6 / LookupTabulated(r6_table, r)        ! No units
-                r12 = sigma**12 / LookupTabulated(r12_table, r)     ! No units
+                r6 = sigma**6 / lookup_tabulated(r6_table, r)        ! No units
+                r12 = sigma**12 / lookup_tabulated(r12_table, r)     ! No units
 
             else
 
@@ -242,11 +242,11 @@ contains
         ! Compute Coulomb energy (tabulated or direct)
         if (use_table .and. erfc_r_table%initialized) then
             ! energy = q1*q2 * f(r)  , f(r) is erfc(r) / r from lookup table
-            energy = q1 * q2 * LookupTabulated(erfc_r_table, r)     ! In units of e^2/Å
+            energy = q1 * q2 * lookup_tabulated(erfc_r_table, r)     ! In units of e^2/Å
         else
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r
-            energy = q1 * q2 * erfc(ewald%alpha * r) / r            ! In units of e^2/Å
+            energy = q1 * q2 * erfc(ewald%param%alpha * r) / r            ! In units of e^2/Å
         end if
 
     end function coulomb_energy
@@ -289,14 +289,14 @@ contains
         real(real64) :: e_ewald_self
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type_1 = 1, res%number
 
             ! Compute self-energy for a single molecule of this residue type
             e_ewald_self = zero
             call single_mol_ewald_self(residue_type_1, e_ewald_self)
 
             ! Multiply by the number of molecules of this residue type
-            e_ewald_self = e_ewald_self * primary%num_residues(residue_type_1)
+            e_ewald_self = e_ewald_self * primary%num%residues(residue_type_1)
 
             ! Accumulate into total self-energy
             energy%ewald_self = energy%ewald_self + e_ewald_self    ! In kcal/mol
@@ -327,15 +327,15 @@ contains
         self_energy_1 = zero
 
         ! Loop over all atoms in the residue
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type)
+        do atom_index_1 = 1, res%atom(residue_type)
 
-            charge_1 = primary%atom_charges(residue_type, atom_index_1)
+            charge_1 = primary%atoms%charges(residue_type, atom_index_1)
 
             ! Skip atoms with negligible charge
             if (abs(charge_1) < error) cycle
 
             ! Add the self-energy contribution of this atom
-            self_energy_1 = self_energy_1 - ewald%alpha / SQRTPI * charge_1**2  ! In units of e^2/Å
+            self_energy_1 = self_energy_1 - ewald%param%alpha / SQRTPI * charge_1**2  ! In units of e^2/Å
 
         end do
 
@@ -369,25 +369,25 @@ contains
         e_coulomb = zero
 
         ! Loop over sites in molecule residue_type
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type_1)
+        do atom_index_1 = 1, res%atom(residue_type_1)
 
             ! Loop over all molecule types 2
-            do residue_type_2 = 1, nb%type_residue
+            do residue_type_2 = 1, res%number
 
                 ! Loop over all molecule index 2
-                do molecule_index_2 = 1, box%num_residues(residue_type_2)
+                do molecule_index_2 = 1, box%num%residues(residue_type_2)
 
                     ! Remove intra molecular contribution
                     if ((molecule_index_1 == molecule_index_2) .and. &
                         (residue_type_1 == residue_type_2)) cycle
 
                     ! Loop over all side of the selected molecule 2
-                    do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
+                    do atom_index_2 = 1, res%atom(residue_type_2)
 
                         distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
                                    residue_type_2, molecule_index_2, atom_index_2)
 
-                        if (distance < input%real_space_cutoff) then
+                        if (distance < mc_input%real_space_cutoff) then
 
                             ! LJ potential
                             sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Å
@@ -399,13 +399,13 @@ contains
                         end if
 
                         ! Use Coulomb potential
-                        charge_1 = primary%atom_charges(residue_type_1, atom_index_1)
-                        charge_2 = primary%atom_charges(residue_type_2, atom_index_2)
+                        charge_1 = primary%atoms%charges(residue_type_1, atom_index_1)
+                        charge_2 = primary%atoms%charges(residue_type_2, atom_index_2)
 
                         ! Skip calculations if one charge is too small
                         if ((abs(charge_1) < error) .or. (abs(charge_2) < error)) cycle
 
-                        e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%alpha * distance)) / distance ! e**2/Å
+                        e_coulomb = e_coulomb + charge_1 * charge_2 * (erfc(ewald%param%alpha * distance)) / distance ! e**2/Å
 
                     end do
                 end do

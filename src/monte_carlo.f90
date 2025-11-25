@@ -43,8 +43,8 @@ contains
         !----------------------------------------------
         do
             ! Pick a molecule type and instance
-            residue_type    = pick_random_residue_type(input%is_active)
-            molecule_index  = pick_random_molecule_index(primary%num_residues(residue_type))
+            residue_type = pick_random_residue_type(thermo%is_active)
+            molecule_index = pick_random_molecule_index(primary%num%residues(residue_type))
 
             ! Perform Monte Carlo move
             random_draw = rand_uniform()
@@ -71,7 +71,7 @@ contains
                     if (rand_uniform() <= PROB_CREATE_DELETE) then
 
                         ! Attempt to create a molecule
-                        molecule_index = primary%num_residues(residue_type) + 1
+                        molecule_index = primary%num%residues(residue_type) + 1
                         call attempt_creation_move(residue_type, molecule_index)
 
                     else
@@ -83,7 +83,7 @@ contains
                 else
 
                     ! Widom trial
-                    molecule_index = primary%num_residues(residue_type) + 1
+                    molecule_index = primary%num%residues(residue_type) + 1
                     call widom_trial(residue_type, molecule_index)
 
                 end if

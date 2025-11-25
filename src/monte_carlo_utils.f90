@@ -40,7 +40,7 @@ contains
         if (present(full_rotation)) use_full_rotation = full_rotation
 
         ! Exit if single-atom residue (nothing to rotate)
-        n_atoms = nb%atom_in_residue(res_type)
+        n_atoms = res%atom(res_type)
         if (n_atoms == 1) return
 
         ! Choose rotation angle
@@ -76,12 +76,12 @@ contains
         if (.not. use_full_rotation) then
 
             ! For small-step mode, make sure rotation_step_angle is reasonable
-            if (input%rotation_step_angle <= zero .or. input%rotation_step_angle > TWOPI) then
+            if (mc_input%rotation_step_angle <= zero .or. mc_input%rotation_step_angle > TWOPI) then
                 call abort_run('Invalid rotation_step_angle in choose_rotation_angle')
             end if
 
             ! Use small rotation
-            theta = (rand_uniform() - half) * input%rotation_step_angle
+            theta = (rand_uniform() - half) * mc_input%rotation_step_angle
         else
             ! Use large rotation
             theta = rand_uniform() * TWOPI
@@ -99,7 +99,7 @@ contains
         real(real64) :: acc_trans, acc_rot
         real(real64), parameter :: gamma = 0.10d0  ! learning rate
 
-        if (.not. input%recalibrate_moves) return
+        if (.not. mc_input%recalibrate_moves) return
 
         ! Adjust translation step
         if (counter%translations(1) > MIN_TRIALS_FOR_RECALIBRATION) then
@@ -107,11 +107,11 @@ contains
             acc_trans = real(counter%translations(2), real64) / &
                 real(counter%translations(1), real64)
 
-            input%translation_step = input%translation_step * &
+            mc_input%translation_step = mc_input%translation_step * &
                                     exp(gamma * (acc_trans - TARGET_ACCEPTANCE))
 
-            input%translation_step = max(MIN_TRANSLATION_STEP, &
-                                    min(input%translation_step, MAX_TRANSLATION_STEP))
+            mc_input%translation_step = max(MIN_TRANSLATION_STEP, &
+                                    min(mc_input%translation_step, MAX_TRANSLATION_STEP))
 
         end if
 
@@ -121,11 +121,11 @@ contains
             acc_rot = real(counter%rotations(2),real64) / &
                     real(counter%rotations(1),real64)
 
-            input%rotation_step_angle = input%rotation_step_angle * &
+            mc_input%rotation_step_angle = mc_input%rotation_step_angle * &
                                         exp(gamma * (acc_rot - TARGET_ACCEPTANCE))
 
-            input%rotation_step_angle = max(MIN_ROTATION_ANGLE, &
-                                        min(input%rotation_step_angle, MAX_ROTATION_ANGLE))
+            mc_input%rotation_step_angle = max(MIN_ROTATION_ANGLE, &
+                                        min(mc_input%rotation_step_angle, MAX_ROTATION_ANGLE))
 
         end if
 
@@ -138,7 +138,7 @@ contains
     function pick_random_residue_type(is_active) result(residue_type)
 
         ! Input parameter
-        integer, dimension(:), intent(in) :: is_active
+        logical, dimension(:), intent(in) :: is_active
         
         ! Output parameter
         integer :: residue_type
@@ -148,7 +148,7 @@ contains
         integer, allocatable :: active_indices(:)
 
         ! Count active residues
-        n_active = count(is_active == 1)
+        n_active = count(is_active)
 
         if (n_active == 0) then ! No active residue to pick from
             residue_type = 0
@@ -159,7 +159,7 @@ contains
         allocate(active_indices(n_active))
         n_active = 0
         do i = 1, size(is_active)
-            if (is_active(i) == 1) then
+            if (is_active(i)) then
                 n_active = n_active + 1
                 active_indices(n_active) = i
             end if
@@ -223,10 +223,10 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N = real(primary%num_residues(residue_type), real64)
+        N = real(primary%num%residues(residue_type), real64)
         Nplus1 = N + 1.0_real64
         deltaU = new%total - old%total                  ! kcal/mol
-        mu = input%chemical_potential(residue_type)     ! kcal/mol
+        mu = thermo%chemical_potential(residue_type)     ! kcal/mol
 
         ! Compute factor based on move type
         select case (move_type)
@@ -236,7 +236,7 @@ contains
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = primary%volume / N / lambda**3 ! note: N must be used because the residue was already added
+                prefactor = primary%cell%volume / N / lambda**3 ! note: N must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
             case (TYPE_DELETION)
@@ -244,7 +244,7 @@ contains
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = Nplus1 * lambda**3 / (primary%volume) ! note: Nplus1 must be used because the residue was already removed
+                prefactor = Nplus1 * lambda**3 / (primary%cell%volume) ! note: Nplus1 must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
@@ -282,13 +282,13 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N_new = real(primary%num_residues(type_new), real64)
-        N_old = real(primary%num_residues(type_old), real64)
+        N_new = real(primary%num%residues(type_new), real64)
+        N_old = real(primary%num%residues(type_old), real64)
         Nplus1 = N_new + 1.0_real64
 
         ! Chemical potentials
-        mu_old = input%chemical_potential(type_old) ! kcal/mol
-        mu_new = input%chemical_potential(type_new) ! kcal/mol
+        mu_old = thermo%chemical_potential(type_old) ! kcal/mol
+        mu_new = thermo%chemical_potential(type_new) ! kcal/mol
         deltaU = new%total - old%total         ! kcal/mol
 
         ! Swap acceptance probability:
@@ -460,7 +460,7 @@ contains
 
         ! Save site offsets if requested (rotation)
         if (present(offset_old)) then
-            natoms = nb%atom_in_residue(res_type)
+            natoms = res%atom(res_type)
             offset_old(:, 1:natoms) = guest%offset(:, res_type, mol_index, 1:natoms)
         end if
 
@@ -488,7 +488,7 @@ contains
 
         ! Restore site offsets if present (rotation)
         if (present(site_offset_old)) then
-            natoms = nb%atom_in_residue(res_type)
+            natoms = res%atom(res_type)
             guest%offset(:, res_type, mol_index, 1:natoms) = &
                 site_offset_old(:, 1:natoms)
         end if
@@ -527,8 +527,8 @@ contains
         ! Generate a random position in the simulation box (if enabled)
         if (do_place_com) then
             call random_number(trial_pos) ! Random numbers in [0,1)
-            guest%com(:, residue_type, molecule_index) = primary%bounds(:,1) &
-                + matmul(primary%matrix, trial_pos)
+            guest%com(:, residue_type, molecule_index) = primary%cell%bounds(:,1) &
+                + matmul(primary%cell%matrix, trial_pos)
         end if
 
         ! Copy geometry from reservoir or rotate if no reservoir
@@ -537,11 +537,11 @@ contains
                 if (present(rand_mol_index)) then
                     ! Pick a random (and existing) molecule in the reservoir
                     call random_number(random_nmb)
-                    rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1
+                    rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1
 
                     ! Copy site offsets from the chosen molecule
-                    guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                        gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+                    guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                        gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type))
 
                 else
 
@@ -552,8 +552,8 @@ contains
         else
 
             ! Copy site offsets from the first molecule
-            guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                guest%offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
+            guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                guest%offset(:, residue_type, 1, 1:res%atom(residue_type))
 
             ! Rotate the new molecule randomly (using full 360° rotation)
             full_rotation = .true.
@@ -573,8 +573,8 @@ contains
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Restore previous residue/atom numbers
-        primary%num_atoms = primary%num_atoms - nb%atom_in_residue(residue_type)
-        primary%num_residues(residue_type) = primary%num_residues(residue_type) - 1
+        primary%num%atoms = primary%num%atoms - res%atom(residue_type)
+        primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
         call restore_single_mol_fourier(residue_type, molecule_index)
@@ -599,27 +599,27 @@ contains
         real(real64) :: rho         ! Number density (molecules/m^3)
 
         ! Loop over all residue types
-        do type_residue = 1, nb%type_residue
-            if (widom_stat%sample(type_residue) > 0) then
+        do type_residue = 1, res%number
+            if (statistic%sample(type_residue) > 0) then
 
                 ! Compute average Boltzmann factor from Widom sampling
                 ! <exp(-β ΔU)> = sum_weights / N_samples
-                avg_weight = widom_stat%weight(type_residue) / real(widom_stat%sample(type_residue), kind=real64)
+                avg_weight = statistic%weight(type_residue) / real(statistic%sample(type_residue), kind=real64)
 
                 ! Compute excess chemical potential (kcal/mol)
                 ! μ_ex = - k_B * T * ln(<exp(-β ΔU)>)
-                temperature = input%temperature
-                widom_stat%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
+                temperature = thermo%temperature
+                statistic%mu_ex(type_residue) = - KB_kcalmol * temperature * log(avg_weight) ! kcal/mol
 
                 ! Compute ideal gas chemical potential (kcal/mol)
                 ! μ_ideal = k_B * T * ln(ρ * Λ^3)
                 lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
-                N = primary%num_residues(type_residue)              ! Number of molecules
-                volume = primary%volume                             ! Box volume (A^3)
+                N = primary%num%residues(type_residue)              ! Number of molecules
+                volume = primary%cell%volume                             ! Box volume (A^3)
                 rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
                 mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)
 
-                widom_stat%mu_tot(type_residue) = mu_ideal + widom_stat%mu_ex(type_residue)
+                statistic%mu_tot(type_residue) = mu_ideal + statistic%mu_ex(type_residue)
 
             end if
         end do
@@ -639,8 +639,8 @@ contains
         ! Replace with the last molecule
         guest%com(:, residue_type, molecule_index) = &
             guest%com(:, residue_type, last_molecule_index)
-        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            guest%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+        guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+            guest%offset(:, residue_type, last_molecule_index, 1:res%atom(residue_type))
 
         ! Replace Fourier terms
         call replace_fourier_terms_single_mol(residue_type, molecule_index, last_molecule_index)

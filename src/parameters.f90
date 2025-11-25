@@ -23,8 +23,9 @@ module parameters
     real(real64), parameter :: PROB_CREATE_DELETE = 0.5d0    ! Probability for insertion/deletion
     integer, parameter :: MIN_TRIALS_FOR_RECALIBRATION = 500 ! Minimum trials before recalibrating step sizes
 
-    ! Parameters controlling the printed outputs
-    integer, parameter :: BOX_WIDTH = 78
+    ! Parameters controlling character length
+    integer, parameter :: BOX_WIDTH = 78                    ! Box in outputed log
+    integer, parameter :: LENPATH = 200                     ! Path and names length
 
     ! Parameters for unit conversion
     real(real64), parameter :: A_TO_M = 1.0d-10         ! Conversion factor: 1 Å → 1.0E-10 m
@@ -44,6 +45,10 @@ module parameters
     integer, parameter :: TYPE_DELETION = 2             ! Move type: molecule deletion
     integer, parameter :: TYPE_TRANSLATION = 3          ! Move type: molecular translation
     integer, parameter :: TYPE_ROTATION = 4             ! Move type: molecular rotation
+    
+    ! Define constants for box types
+    integer, parameter :: ORTHORHOMBIC = 1
+    integer, parameter :: TRICLINIC = 2
 
     ! In module parameters
     integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions

@@ -67,9 +67,7 @@ contains
     end function compute_mass
 
     ! Read header info (e.g., number of atoms, atom types) from LAMMPS data file
-    subroutine ReadLMPHeaderInfo(INFILE, box)
-
-        implicit none
+    subroutine read_lmp_header_info(INFILE, box)
 
         ! Input parameters
         integer, intent(in) :: INFILE
@@ -107,54 +105,54 @@ contains
             if (index(trimmed_line, "atoms") > 0 .and. .not. found_atoms) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_atoms = tmp_int
+                    box%num%atoms = tmp_int
                     found_atoms = .true.
                 end if
             else if (index(trimmed_line, "atom types") > 0 .and. .not. found_atom_types) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_atomtypes = tmp_int
+                    box%num%atomtypes = tmp_int
                     found_atom_types = .true.
                 end if
             else if (index(trimmed_line, "bonds") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_bonds = tmp_int
+                    box%num%bonds = tmp_int
                 end if
             else if (index(trimmed_line, "bond types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_bondtypes = tmp_int
+                    box%num%bondtypes = tmp_int
                 end if
             else if (index(trimmed_line, "angles") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_angles = tmp_int
+                    box%num%angles = tmp_int
                 end if
             else if (index(trimmed_line, "angle types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_angletypes = tmp_int
+                    box%num%angletypes = tmp_int
                 end if
             else if (index(trimmed_line, "dihedrals") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_dihedrals = tmp_int
+                    box%num%dihedrals = tmp_int
                 end if
             else if (index(trimmed_line, "dihedral types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_dihedraltypes = tmp_int
+                    box%num%dihedraltypes = tmp_int
                 end if
             else if (index(trimmed_line, "impropers") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_impropers = tmp_int
+                    box%num%impropers = tmp_int
                 end if
             else if (index(trimmed_line, "improper types") > 0) then
                 read(trimmed_line, *, IOSTAT=ios) tmp_int
                 if (ios == 0) then
-                    box%num_impropertypes = tmp_int
+                    box%num%impropertypes = tmp_int
                 end if
             end if
         end do
@@ -163,18 +161,14 @@ contains
         if (.not. found_atoms)      call warn_user("Number of atoms not found in header")
         if (.not. found_atom_types) call warn_user("Number of atom types not found in header")
 
-    end subroutine ReadLMPHeaderInfo
+    end subroutine read_lmp_header_info
 
     !-----------------------------------------------------------------------------
-    ! subroutine ParseLAMMPSBox(INFILE, box)
-    !
     ! Parses the simulation box geometry from a LAMMPS data file, extracting both
     ! orthogonal and triclinic box parameters.
     ! Calculate 3x3 box matrix in lower-triangular convention (MDAnalysis convention)
     !-----------------------------------------------------------------------------
-    subroutine ParseLAMMPSBox(INFILE, box)
-
-        implicit none
+    subroutine parse_lammps_box(INFILE, box)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -190,10 +184,10 @@ contains
         real(real64) :: zero = 0.0_real64
         integer :: ios
 
-        box%tilt(:) = zero
+        box%cell%tilt(:) = zero
 
         ! Initialize bounds to a tiny value to indicate "not set"
-        box%bounds(:,:) = 0.0_real64
+        box%cell%bounds(:,:) = 0.0_real64
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -203,8 +197,8 @@ contains
             read(line, *, IOSTAT=ios) tmp1, tmp2, keyword1, keyword2
             if (ios == 0) then
                 if (TRIM(keyword1)//' '//TRIM(keyword2) == 'xlo xhi') then
-                    box%bounds(1, 1) = tmp1
-                    box%bounds(1, 2) = tmp2
+                    box%cell%bounds(1, 1) = tmp1
+                    box%cell%bounds(1, 2) = tmp2
                 end if
             end if
 
@@ -212,8 +206,8 @@ contains
             read(line, *, IOSTAT=ios) tmp1, tmp2, keyword1, keyword2
             if (ios == 0) then
                 if (TRIM(keyword1)//' '//TRIM(keyword2) == 'ylo yhi') then
-                    box%bounds(2, 1) = tmp1
-                    box%bounds(2, 2) = tmp2
+                    box%cell%bounds(2, 1) = tmp1
+                    box%cell%bounds(2, 2) = tmp2
                 end if
             end if
 
@@ -221,50 +215,50 @@ contains
             read(line, *, IOSTAT=ios) tmp1, tmp2, keyword1, keyword2
             if (ios == 0) then
                 if (TRIM(keyword1)//' '//TRIM(keyword2) == 'zlo zhi') then
-                    box%bounds(3, 1) = tmp1
-                    box%bounds(3, 2) = tmp2
+                    box%cell%bounds(3, 1) = tmp1
+                    box%cell%bounds(3, 2) = tmp2
                 end if
             end if
 
             ! xy xz yz (triclinic tilt factors)
             read(line, *, IOSTAT=ios) tmp1, tmp2, tmp3, s1, s2, s3
             if (ios == 0 .and. TRIM(s1)//' '//TRIM(s2)//' '//TRIM(s3) == 'xy xz yz') then
-                box%tilt(1) = tmp1
-                box%tilt(2) = tmp2
-                box%tilt(3) = tmp3
+                box%cell%tilt(1) = tmp1
+                box%cell%tilt(2) = tmp2
+                box%cell%tilt(3) = tmp3
             end if
 
         end do
 
         ! Make sure that box size were provided
-        if (abs(box%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%bounds(1,2)) < 1.0e-11_real64) then
-            call abort_run("ParseLAMMPSBox: xlo xhi not found in input file!")
+        if (abs(box%cell%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%cell%bounds(1,2)) < 1.0e-11_real64) then
+            call abort_run("parse_lammps_box: xlo xhi not found in input file!")
         end if
 
-        if (abs(box%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%bounds(2,2)) < 1.0e-11_real64) then
-            call abort_run("ParseLAMMPSBox: ylo yhi not found in input file!")
+        if (abs(box%cell%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%cell%bounds(2,2)) < 1.0e-11_real64) then
+            call abort_run("parse_lammps_box: ylo yhi not found in input file!")
         end if
 
-        if (abs(box%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%bounds(3,2)) < 1.0e-11_real64) then
-            call abort_run("ParseLAMMPSBox: zlo zhi not found in input file!")
+        if (abs(box%cell%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%cell%bounds(3,2)) < 1.0e-11_real64) then
+            call abort_run("parse_lammps_box: zlo zhi not found in input file!")
         end if
 
         ! Box lengths
-        lx = box%bounds(1,2) - box%bounds(1,1)
-        ly = box%bounds(2,2) - box%bounds(2,1)
-        lz = box%bounds(3,2) - box%bounds(3,1)
+        lx = box%cell%bounds(1,2) - box%cell%bounds(1,1)
+        ly = box%cell%bounds(2,2) - box%cell%bounds(2,1)
+        lz = box%cell%bounds(3,2) - box%cell%bounds(3,1)
 
         ! Triclinic tilt
-        xy = box%tilt(1)
-        xz = box%tilt(2)
-        yz = box%tilt(3)
+        xy = box%cell%tilt(1)
+        xz = box%cell%tilt(2)
+        yz = box%cell%tilt(3)
 
         ! Assign row-major matrix following
-        box%matrix(1,:) = [lx, zero, zero]  ! row 1 (a vector)
-        box%matrix(2,:) = [xy, ly, zero]    ! row 2 (b vector)
-        box%matrix(3,:) = [xz, yz, lz]      ! row 3 (c vector)
+        box%cell%matrix(1,:) = [lx, zero, zero]  ! row 1 (a vector)
+        box%cell%matrix(2,:) = [xy, ly, zero]    ! row 2 (b vector)
+        box%cell%matrix(3,:) = [xz, yz, lz]      ! row 3 (c vector)
 
-    end subroutine ParseLAMMPSBox
+    end subroutine parse_lammps_box
 
     !-----------------------------------------------------------
     ! Ensures that bonded atoms in a molecule remain contiguous across
@@ -295,16 +289,16 @@ contains
             ! Raw displacement between the two atoms (may cross PBC boundary)
             delta_r_cart = curr_coords - ref_coords
 
-            if (box%type == 1 .or. box%type == 2) then
+            if (box%cell%shape == ORTHORHOMBIC) then
 
                 ! Cubic/orthorhombic: simple wrapping along box edges
                 do idim = 1, 3
-                    delta_r_cart(idim) = wrap_nearest(delta_r_cart(idim), box%matrix(idim, idim))
+                    delta_r_cart(idim) = wrap_nearest(delta_r_cart(idim), box%cell%matrix(idim, idim))
                 end do
 
-            else if (box%type == 3) then
+            else if (box%cell%shape == TRICLINIC) then
                 ! Triclinic: use fractional coords
-                delta_r_frac = matmul(box%reciprocal, delta_r_cart)
+                delta_r_frac = matmul(box%cell%reciprocal, delta_r_cart)
 
                 ! Wrap into [-0.5, 0.5)
                 do idim = 1, 3
@@ -312,9 +306,9 @@ contains
                 end do
 
                 ! Back to Cartesian
-                delta_r_cart = matmul(box%matrix, delta_r_frac)
+                delta_r_cart = matmul(box%cell%matrix, delta_r_frac)
             else
-                call abort_run("ERROR in repair_molecule: box%type is invalid.", 1)
+                call abort_run("ERROR in repair_molecule: box%cell%type is invalid.", 1)
             end if
 
             ! Update atom position

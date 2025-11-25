@@ -24,16 +24,16 @@ contains
         call ReadFullInputFile(path%input)
         
         ! Validate and rescale move probabilities
-        call ValidateAndRescaleMoveProbabilities()
+        call rescale_move_probabilities()
         
         ! Print summary to log
-        call PrintInputSummary()
+        call print_input_summary()
 
     end subroutine read_input_file
 
     !---------------------------------------------------------------------------
     ! Opens the full MANIAC input file, reads and parses its contents by calling
-    ! ParseInputFile, then closes the file.
+    ! parse_input_file, then closes the file.
     !---------------------------------------------------------------------------
     subroutine ReadFullInputFile(filename)
 
@@ -46,7 +46,7 @@ contains
 
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
             call check_IO_status(filename, ios)
-            call ParseInputFile(unit)
+            call parse_input_file(unit)
         close(unit)
 
     end subroutine ReadFullInputFile
@@ -56,7 +56,7 @@ contains
     ! If necessary, rescales all probabilities and warns the user.
     ! Aborts execution if probabilities are invalid.
     !---------------------------------------------------------------------------
-    subroutine ValidateAndRescaleMoveProbabilities()
+    subroutine rescale_move_probabilities()
 
         real(real64) :: proba_total         ! Sum of all move probabilities (translation, rotation, etc.)
         real(real64) :: scale_factor        ! Factor used to rescale probabilities so they sum to 1.0
@@ -79,14 +79,17 @@ contains
         end if
 
         ! Recompute total to validate
-        proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap + proba%widom
+        proba_total = proba%translation + &
+            proba%rotation + &
+            proba%insertion_deletion + &
+            proba%swap + &
+            proba%widom
 
         ! Abort if proba invalid
-        if (abs(proba_total - one) > error) then
+        if (abs(proba_total - one) > error) &
             call abort_run("Invalid move probabilities: must sum to 1.0", 1)
-        end if
 
-    end subroutine ValidateAndRescaleMoveProbabilities
+    end subroutine rescale_move_probabilities
 
     !-----------------------------------------------------------------------------
     ! Allocates all arrays for atoms, residues, molecules, and interaction parameters
@@ -94,47 +97,54 @@ contains
     !-----------------------------------------------------------------------------
     subroutine allocate_atom_arrays()
 
+        integer :: nb_type_res
+        integer :: max_type_per_res
+
+        nb_type_res = res%number
+        max_type_per_res = nmax%types_per_residue
+
+        ! Allocate per residue arrays
+        allocate(res%lambda(nb_type_res))
+        allocate(res%mass(nb_type_res))
+        allocate(res%names(nb_type_res))
+        allocate(res%atom(nb_type_res))
+        allocate(res%site_types(nb_type_res, max_type_per_res))
+        allocate(res%site_names(nb_type_res, max_type_per_res))
+
         ! Allocate atom arrays for primary and reservoir
         call allocate_coordinate(host, .true.)
         call allocate_coordinate(guest, .false.)
         if (status%reservoir_provided) then
             call allocate_coordinate(gas, .false.)
         end if
-        allocate(resid_location(nb%type_residue))
+        allocate(res%role(nb_type_res))
 
         call allocate_atom_block(primary)
         call allocate_atom_block(reservoir)
 
-        ! Allocate residue-level arrays
-        allocate(res%mass(nb%type_residue))
-        allocate(res%lambda(nb%type_residue))
-        allocate(res%types_2d(nb%type_residue, nb%max_type_per_residue))
-        allocate(res%names_2d(nb%type_residue, nb%max_type_per_residue))
-        allocate(res%names_1d(nb%type_residue))
-        allocate(res%bond_type_2d(nb%type_residue, NB_MAX_BOND, 3))
-        allocate(res%angle_type_2d(nb%type_residue, NB_MAX_ANGLE, 4))
-        allocate(res%dihedral_type_2d(nb%type_residue, NB_MAX_DIHEDRAL, 5))
-        allocate(res%improper_type_2d(nb%type_residue, NB_MAX_IMPROPER, 5))
+        allocate(connect%bonds(nb_type_res, NB_MAX_BOND, 3))
+        allocate(connect%angles(nb_type_res, NB_MAX_ANGLE, 4))
+        allocate(connect%dihedrals(nb_type_res, NB_MAX_DIHEDRAL, 5))
+        allocate(connect%impropers(nb_type_res, NB_MAX_IMPROPER, 5))
 
         ! Allocate interaction parameters
-        allocate(coeff%sigma(nb%type_residue, nb%type_residue, &
-                            nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
-        allocate(coeff%epsilon(nb%type_residue, nb%type_residue, &
-                            nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
+        allocate(coeff%sigma(nb_type_res, nb_type_res, &
+                            nmax%atoms_per_residue, nmax%atoms_per_residue))
+        allocate(coeff%epsilon(nb_type_res, nb_type_res, &
+                            nmax%atoms_per_residue, nmax%atoms_per_residue))
 
         ! Allocate input arrays
-        allocate(input%fugacity(nb%type_residue))
-        allocate(input%chemical_potential(nb%type_residue))
-        allocate(input%is_active(nb%type_residue))
+        allocate(thermo%fugacity(nb_type_res))
+        allocate(thermo%chemical_potential(nb_type_res))
+        allocate(thermo%is_active(nb_type_res))
 
         ! Allocate system bookkeeping arrays
-        allocate(nb%types_per_residue(nb%type_residue))
-        allocate(nb%atom_in_residue(nb%type_residue))
-        allocate(nb%bonds_per_residue(nb%type_residue))
-        allocate(nb%angles_per_residue(nb%type_residue))
-        allocate(nb%dihedrals_per_residue(nb%type_residue))
-        allocate(nb%impropers_per_residue(nb%type_residue))
-        allocate(nb%types_pattern(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(res%types(nb_type_res))
+        allocate(res%bonds(nb_type_res))
+        allocate(res%angles(nb_type_res))
+        allocate(res%dihedrals(nb_type_res))
+        allocate(res%impropers(nb_type_res))
+        allocate(res%pattern_types(nb_type_res, nmax%atoms_per_residue))
 
     end subroutine allocate_atom_arrays
 
@@ -148,14 +158,14 @@ contains
         type(type_box), intent(inout) :: system
 
         ! Allocate basic atom properties
-        allocate(system%atom_charges(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_masses(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_names(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_types(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atom_ids(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%charges(res%number, nmax%atoms_per_residue))
+        allocate(system%atoms%masses(res%number, nmax%atoms_per_residue))
+        allocate(system%atoms%names(res%number, nmax%atoms_per_residue))
+        allocate(system%atoms%types(res%number, nmax%atoms_per_residue))
+        allocate(system%atoms%ids(res%number, nmax%atoms_per_residue))
 
         ! Allocate residue counters
-        allocate(system%num_residues(nb%type_residue))
+        allocate(system%num%residues(res%number))
 
     end subroutine allocate_atom_block
 
@@ -176,14 +186,14 @@ contains
         ! Detect max number of atom
         if (is_host) then
             ! Host (i.., the inactive residue)
-            max_atom = nb%max_atom_in_residue_inactive
-            max_molecule = nb%max_inactive_residue
+            max_atom = nmax%atoms_inactive_residue
+            max_molecule = nmax%inactive_residues
         else
-            max_atom = nb%max_atom_in_residue_active
+            max_atom = nmax%atoms_active_residue
             if (status%reservoir_provided) then
                 ! In presence of a reservoir, the maximum number of molecule is
                 ! the sum of residue in box and reservoir
-                max_molecule = nb%max_active_residue
+                max_molecule = nmax%active_residues
             else
                 ! In absence of a reservoir, use NB_MAX_MOLECULE
                 max_molecule = NB_MAX_MOLECULE
@@ -191,12 +201,8 @@ contains
         end if
 
         ! Allocate molecular coordinates
-        allocate(type%residue_exists(nb%type_residue))
-        allocate(type%com(dim, nb%type_residue, max_molecule))
-        allocate(type%offset(dim, nb%type_residue, max_molecule, max_atom))
-        type%max_nb_atom = max_atom
-        type%max_nb_molecule = max_molecule
-        type%residue_exists = .false.
+        allocate(type%com(dim, res%number, max_molecule))
+        allocate(type%offset(dim, res%number, max_molecule, max_atom))
 
     end subroutine allocate_coordinate
 
@@ -204,7 +210,7 @@ contains
     ! Reads the MANIAC input file, parses global parameters and residue blocks,
     ! validates required values, and initializes simulation probabilities and states.
     !-----------------------------------------------------------------------------
-    subroutine ParseInputFile(INFILE)
+    subroutine parse_input_file(INFILE)
 
         ! Input parameter
         integer, intent(in) :: INFILE
@@ -251,12 +257,12 @@ contains
 
         ! Initialize state
         in_residue_block = .false.
-        nb%type_residue = 0
+        res%number = 0
 
         ! Initialize all fugacities to -1.0 (indicating unset)
-        input%fugacity(:) = -one
+        thermo%fugacity(:) = -one
         ! Initialize all chemical_potential to 0.0 (indicating unset)
-        input%chemical_potential(:) = zero
+        thermo%chemical_potential(:) = zero
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -289,47 +295,47 @@ contains
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading temperature"
                 if (val_real <= zero) error stop "Invalid temperature: must be > 0"
-                input%temperature = val_real
+                thermo%temperature = val_real
                 has_temp = .true.
 
             case ("seed")
                 read(rest_line, *, iostat=ios) val_int
                 if (ios /= 0) error stop "Error reading seed"
-                input%seed = val_int
+                mc_input%seed = val_int
                 has_seed = .true.
 
             case ("ewald_tolerance")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading ewald_tolerance"
                 if (val_real <= zero) error stop "Invalid ewald_tolerance: must be > 0"
-                ewald%tolerance = val_real
+                ewald%param%tolerance = val_real
                 has_tolerance = .true.
 
             case ("real_space_cutoff")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading real_space_cutoff"
                 if (val_real <= zero) error stop "Invalid real_space_cutoff: must be > 0"
-                input%real_space_cutoff = val_real
+                mc_input%real_space_cutoff = val_real
                 has_cutoff = .true.
 
             case ("translation_step")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading translation_step"
                 if (val_real <= zero) error stop "Invalid translation_step: must be > 0"
-                input%translation_step = val_real
+                mc_input%translation_step = val_real
                 has_translation_step = .true.
 
             case ("rotation_step_angle")
                 read(rest_line, *, iostat=ios) val_real
                 if (ios /= 0) error stop "Error reading rotation_step_angle"
                 if (val_real <= zero) error stop "Invalid rotation_step_angle: must be > 0"
-                input%rotation_step_angle = val_real
+                mc_input%rotation_step_angle = val_real
                 has_rotation_step = .true.
 
             case ("recalibrate_moves")
                 read(rest_line, *, iostat=ios) val_bool
                 if (ios /= 0) error stop "Error reading recalibrate_moves"
-                input%recalibrate_moves = val_bool
+                mc_input%recalibrate_moves = val_bool
                 has_recalibrate = .true.
 
             case ("translation_proba")
@@ -378,7 +384,7 @@ contains
 
             case ("end_residue")
                 in_residue_block = .false.
-                nb%type_residue = nb%type_residue + 1
+                res%number = res%number + 1
                 cycle
             end select
 
@@ -394,15 +400,15 @@ contains
                 if (trim(token) == "name") then
 
                     ! Store the residue name in the 1D array of residue names
-                    res%names_1d(nb%type_residue + 1) = trim(val_cha)
+                    res%names(res%number + 1) = trim(val_cha)
 
                 ! Store the activity state of the residue: active (1) or inactive (0)
                 else if (trim(token) == "state") then
                     select case (trim(val_cha))
                         case ("actif")
-                            input%is_active(nb%type_residue + 1) = 1
+                            thermo%is_active(res%number + 1) = .true.
                         case ("inactif")
-                            input%is_active(nb%type_residue + 1) = 0
+                            thermo%is_active(res%number + 1) = .false.
                         case default
                             call warn_user("Unknown state: " // trim(val_cha))
                             call abort_run("Unknown residue state")
@@ -426,17 +432,17 @@ contains
                 ! Check if the line specifies the fugacity
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
-                    input%fugacity(nb%type_residue + 1) = val_real
+                    thermo%fugacity(res%number + 1) = val_real
 
                 ! Check if the line specifies the chemical potential
                 else if (trim(token) == 'chemical_potential') then
                     read(rest_line, *, iostat=ios) val_real
-                    input%chemical_potential(nb%type_residue + 1) = val_real
+                    thermo%chemical_potential(res%number + 1) = val_real
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
                     read(rest_line, *, iostat=ios) val_int
-                    nb%atom_in_residue(nb%type_residue + 1) = val_int
+                    res%atom(res%number + 1) = val_int
                 end if
             end if
 
@@ -460,10 +466,10 @@ contains
                     read(rest_line(pos:), *, iostat=ios) val
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%types_2d(nb%type_residue + 1, n_ids) = val
+                    res%site_types(res%number + 1, n_ids) = val
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
-                nb%types_per_residue(nb%type_residue + 1) = n_ids
+                res%types(res%number + 1) = n_ids
 
             ! Parse the names of atom types for this residue
             else if (trim(token) == 'names') then
@@ -474,30 +480,30 @@ contains
                     read(rest_line(pos:), *, iostat=ios) val_str
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%names_2d(nb%type_residue + 1, n_ids) = val_str
+                    res%site_names(res%number + 1, n_ids) = val_str
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
             end if
         end do
 
         ! Validate fugacity for active residues
-        do val_int = 1, nb%type_residue
+        do val_int = 1, res%number
 
-            if (input%is_active(val_int) == 0) cycle
+            if (.not. thermo%is_active(val_int)) cycle
 
-            has_fugacity = (input%fugacity(val_int) >= zero)
-            has_chemical_potential = (input%chemical_potential(val_int) < zero)
+            has_fugacity = (thermo%fugacity(val_int) >= zero)
+            has_chemical_potential = (thermo%chemical_potential(val_int) < zero)
 
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential)) then
                 call abort_run("Neither fugacity nor chemical potential provided for active residue: " // &
-                            trim(res%names_1d(val_int)))
+                            trim(res%names(val_int)))
             end if
 
             ! Rule 2: cannot both be provided
             if (has_fugacity .and. has_chemical_potential) then
                 call abort_run("Both fugacity and chemical potential were specified for active residue: " // &
-                            trim(res%names_1d(val_int)))
+                            trim(res%names(val_int)))
             end if
 
         end do
@@ -512,7 +518,7 @@ contains
         if (.not. has_rotation_step)    error stop "Missing required parameter: rotation_step_angle"
 
         ! Non mandatoray parameters
-        if (.not. has_recalibrate) input%recalibrate_moves = .false.
+        if (.not. has_recalibrate) mc_input%recalibrate_moves = .false.
         ! === Ensure only enabled moves are counted ===
         if (.not. has_insertdel_proba) proba%insertion_deletion = zero
         if (.not. has_rotation_proba) proba%rotation = zero
@@ -537,24 +543,29 @@ contains
         end if
 
         ! Use provided seed, or generate a new one
-        if (.not. has_seed) call seed_rng(input%seed)
+        if (.not. has_seed) call seed_rng(mc_input%seed)
 
-        call SortResidues()
+        call sort_residues()
 
-    end subroutine ParseInputFile
+    end subroutine parse_input_file
 
-    subroutine SortResidues()
+    !---------------------------------------------------------------------------
+    ! This subroutine sorts all residue-related data structures in the simulatio
+    ! according to the minimum atom type ID of each residue.
+    !---------------------------------------------------------------------------
+    subroutine sort_residues()
 
         integer :: i, j, k, n
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
-        integer, allocatable :: tmp_is_active(:), tmp_atom_in_residue(:), tmp_types_per_residue(:)
+        integer, allocatable :: tmp_atom_in_residue(:), tmp_types_per_residue(:)
+        logical, allocatable :: tmp_is_active(:)
         real(real64), allocatable :: tmp_fugacity(:), tmp_chemical_potential(:)
         integer, allocatable :: tmp_types_2d(:,:)
         character(len=10), allocatable :: tmp_names_2d(:,:)
 
         ! Number of residues
-        n = nb%type_residue
+        n = res%number
 
         ! Allocate temporary arrays
         allocate(keys(n), order(n))
@@ -564,12 +575,12 @@ contains
         allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
         allocate(tmp_types_per_residue(n))
-        allocate(tmp_types_2d(size(res%types_2d,1), size(res%types_2d,2)))
-        allocate(tmp_names_2d(size(res%names_2d,1), size(res%names_2d,2)))
+        allocate(tmp_types_2d(size(res%site_types,1), size(res%site_types,2)))
+        allocate(tmp_names_2d(size(res%site_names,1), size(res%site_names,2)))
 
         ! Compute sorting key for each residue: minimum atom type ID
         do i = 1, n
-            keys(i) = minval(res%types_2d(i, 1:nb%types_per_residue(i)))
+            keys(i) = minval(res%site_types(i, 1:res%types(i)))
         end do
 
         ! Initialize the order array to [1,2,3,...,n]
@@ -589,32 +600,30 @@ contains
         ! Reorder all residue arrays based on the computed order
         do i = 1, n
             k = order(i)
-            tmp_names_1d(i)          = res%names_1d(k)
-            tmp_is_active(i)         = input%is_active(k)
-            tmp_fugacity(i)          = input%fugacity(k)
-            tmp_chemical_potential(i) = input%chemical_potential(k)
-            tmp_atom_in_residue(i)   = nb%atom_in_residue(k)
-            tmp_types_per_residue(i) = nb%types_per_residue(k)
-            tmp_types_2d(i,:)        = res%types_2d(k,:)
-            tmp_names_2d(i,:)        = res%names_2d(k,:)
-            ! tmp_types_2d(i, 1:nb%types_per_residue(k)) = res%types_2d(k, 1:nb%types_per_residue(k))
-            ! tmp_names_2d(i, 1:nb%types_per_residue(k)) = res%names_2d(k, 1:nb%types_per_residue(k))
+            tmp_names_1d(i) = res%names(k)
+            tmp_is_active(i) = thermo%is_active(k)
+            tmp_fugacity(i) = thermo%fugacity(k)
+            tmp_chemical_potential(i) = thermo%chemical_potential(k)
+            tmp_atom_in_residue(i) = res%atom(k)
+            tmp_types_per_residue(i) = res%types(k)
+            tmp_types_2d(i,:) = res%site_types(k,:)
+            tmp_names_2d(i,:) = res%site_names(k,:)
         end do
 
         ! Copy temporary arrays back into original arrays
-        res%names_1d          = tmp_names_1d
-        input%is_active       = tmp_is_active
-        input%fugacity        = tmp_fugacity
-        input%chemical_potential = tmp_chemical_potential
-        nb%atom_in_residue    = tmp_atom_in_residue
-        nb%types_per_residue  = tmp_types_per_residue
-        res%types_2d          = tmp_types_2d
-        res%names_2d          = tmp_names_2d
+        res%names = tmp_names_1d
+        thermo%is_active = tmp_is_active
+        thermo%fugacity = tmp_fugacity
+        thermo%chemical_potential = tmp_chemical_potential
+        res%atom = tmp_atom_in_residue
+        res%types  = tmp_types_per_residue
+        res%site_types = tmp_types_2d
+        res%site_names = tmp_names_2d
 
         ! Deallocate temporary arrays
         deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &
                 tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
-    end subroutine SortResidues
+    end subroutine sort_residues
 
 end module input_parser

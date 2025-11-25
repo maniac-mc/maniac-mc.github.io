@@ -28,7 +28,7 @@ contains
         logical :: warned_large_offset
         warned_large_offset = .false.
 
-        do res_type = 1, nb%type_residue
+        do res_type = 1, res%number
 
             if (is_reservoir) then
                 coord => gas
@@ -36,25 +36,25 @@ contains
                 coord => get_coord(res_type)
             end if
 
-            do mol_index = 1, box%num_residues(res_type)
+            do mol_index = 1, box%num%residues(res_type)
 
                 ! Read molecule center of mass
                 com = coord%com(:, res_type, mol_index)
 
                 ! Assert COM is inside the box
                 do dim = 1,3
-                    if (com(dim) < box%bounds(dim,1) .or. com(dim) > box%bounds(dim,2)) then
+                    if (com(dim) < box%cell%bounds(dim,1) .or. com(dim) > box%cell%bounds(dim,2)) then
                         call warn_user("Error: Molecule COM outside simulation box!")
                     end if
                 end do
 
                 ! Check atom offsets
-                do atom_index = 1, nb%atom_in_residue(res_type)
+                do atom_index = 1, res%atom(res_type)
                     
                     ! Read molecule offsets
                     offset = coord%offset(:, res_type, mol_index, atom_index)
                     
-                    if (any(abs(offset) > ten) .and. (input%is_active(res_type)) == 1) then
+                    if (any(abs(offset) > ten) .and. (thermo%is_active(res_type))) then
                         if (.not. warned_large_offset) then
                             call warn_user("One of the active molecules has an offset larger than 1 nanometer.")
                             warned_large_offset = .true.
@@ -77,9 +77,9 @@ contains
 
         if (status%reservoir_provided) then
             ! Check that system and reservoir atom masses are consistent
-            do j = 1, nb%type_residue
-                do k = 1, nb%types_per_residue(j)
-                    if (abs(primary%atom_masses(j, k) - reservoir%atom_masses(j, k)) > error) then
+            do j = 1, res%number
+                do k = 1, res%types(j)
+                    if (abs(primary%atoms%masses(j, k) - reservoir%atoms%masses(j, k)) > error) then
 
                         ! Generic header warning
                         call warn_user("Reservoir and system mass don't match.")
@@ -87,8 +87,8 @@ contains
                         ! Detailed mismatch info
                         write(msg, '(A,I3,A,I3,A,F10.5,A,F10.5)') &
                             "Mismatch at residue ", j, ", site ", k, &
-                            ": system mass = ", primary%atom_masses(j, k), &
-                            ", reservoir mass = ", reservoir%atom_masses(j, k)
+                            ": system mass = ", primary%atoms%masses(j, k), &
+                            ", reservoir mass = ", reservoir%atoms%masses(j, k)
                         call warn_user(trim(msg))
 
                         ! Extra guidance

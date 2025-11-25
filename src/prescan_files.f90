@@ -10,6 +10,20 @@ module prescan_files
 
     implicit none
 
+    !---------------------------------------------------------------------------
+    ! Information extracted during the prescan for each residue type.
+    ! Stores the list of atom types, the number of types, and the expected atom
+    ! count for that residue as defined in the Maniac input file.
+    !---------------------------------------------------------------------------
+    type residue
+        integer, allocatable :: types(:)    ! List of atom types belonging to this residue
+        integer :: nb_types                 ! Number of atom types in this residue
+        integer :: nb_atoms                 ! Total number of atoms in this residue
+        integer :: nb_res(2)                ! Total number of residue in primary and reservoir 
+        logical :: is_active                ! The residue is active
+    end type residue
+    type(residue), allocatable :: res_infos(:)
+
 contains
 
     !---------------------------------------------------------------------------
@@ -18,11 +32,10 @@ contains
     subroutine prescan_inputs()
 
         ! Pre-scan input files
-
-        call prescan_input_file(path%input)
-        call prescan_topology(path%topology, is_reservoir = .false.)
+        call prescan_input_file(path%input) ! Detect residue definitions and sizes
+        call prescan_topology(path%topology, is_reservoir = .false.) ! Count residues in primary topology
         if (status%reservoir_provided) then
-            call prescan_topology(path%reservoir, is_reservoir = .true.)
+            call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
         end if
 
     end subroutine prescan_inputs
@@ -37,15 +50,15 @@ contains
         character(len=*), intent(in) :: filename
 
         ! Local variables
-        integer :: unit                             ! Fortran unit number used to open the input file
-        integer :: ios                              ! I/O status returned by open/read operations
+        integer :: unit                         ! Fortran unit number used to open the input file
+        integer :: ios                          ! I/O status returned by open/read operations
 
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
 
-            call check_IO_status(filename, ios)
-            call predetect_number_info(unit)
-            call predetect_type(unit)
-        
+        call check_IO_status(filename, ios)     ! Verify file opened correctly
+        call predetect_number_info(unit)        ! Scan residue blocks for size limits
+        call predetect_type(unit)               ! Extract per-residue atom-type lists
+
         close(unit)
 
     end subroutine prescan_input_file
@@ -75,9 +88,9 @@ contains
         logical :: is_active_residue                  ! True if residue is active
 
         ! Initialize counters
-        nb%type_residue = 0
-        nb%max_type_per_residue = 0
-        nb%max_atom_in_any_residue = 0
+        res%number = 0
+        nmax%types_per_residue = 0
+        nmax%atoms_per_residue = 0
         in_residue_block = .false.
 
         ! Loop over lines in input file
@@ -94,7 +107,7 @@ contains
                 cycle
             case ('end_residue')
                 in_residue_block = .false.
-                nb%type_residue = nb%type_residue + 1
+                res%number = res%number + 1
 
                 cycle
             end select
@@ -128,8 +141,8 @@ contains
                 end do
 
                 ! Update global max
-                if (nb_type_per_residue > nb%max_type_per_residue) then
-                    nb%max_type_per_residue = nb_type_per_residue
+                if (nb_type_per_residue > nmax%types_per_residue) then
+                    nmax%types_per_residue = nb_type_per_residue
                 end if
             end if
 
@@ -155,18 +168,18 @@ contains
                 read(rest_line, *, iostat=ios) max_atom_in_residue
 
                 ! Update global maximum
-                if (max_atom_in_residue > nb%max_atom_in_any_residue) then
-                    nb%max_atom_in_any_residue = max_atom_in_residue
+                if (max_atom_in_residue > nmax%atoms_per_residue) then
+                    nmax%atoms_per_residue = max_atom_in_residue
                 end if
 
                 ! Update active / inactive maxima
                 if (is_active_residue) then
-                    if (max_atom_in_residue > nb%max_atom_in_residue_active) then
-                        nb%max_atom_in_residue_active = max_atom_in_residue
+                    if (max_atom_in_residue > nmax%atoms_active_residue) then
+                        nmax%atoms_active_residue = max_atom_in_residue
                     end if
                 else
-                    if (max_atom_in_residue > nb%max_atom_in_residue_inactive) then
-                        nb%max_atom_in_residue_inactive = max_atom_in_residue
+                    if (max_atom_in_residue > nmax%atoms_inactive_residue) then
+                        nmax%atoms_inactive_residue = max_atom_in_residue
                     end if
                 end if
             end if
@@ -175,7 +188,8 @@ contains
     end subroutine predetect_number_info
 
     !-----------------------------------------------------------------------------
-    ! Extract the atom-type list for each residue definition in the input file
+    ! Scans the residue definition blocks again to extract the explicit list of
+    ! atom types, activation state, and declared atom counts for each residue.
     !-----------------------------------------------------------------------------
     subroutine predetect_type(infile)
 
@@ -195,11 +209,10 @@ contains
         integer :: val                          ! Temporary value read from line
         logical :: in_residue_block             ! Flag: inside a residue block
 
-        ! Safety: allocate res_infos
         if (allocated(res_infos)) deallocate(res_infos)
-        allocate(res_infos(nb%type_residue))
+        allocate(res_infos(res%number))
 
-        do residue_id = 1, nb%type_residue
+        do residue_id = 1, res%number
             res_infos(residue_id)%nb_types = 0
             res_infos(residue_id)%nb_atoms = 0
             if (allocated(res_infos(residue_id)%types)) deallocate(res_infos(residue_id)%types)
@@ -290,6 +303,10 @@ contains
 
     end subroutine predetect_type
 
+    !-----------------------------------------------------------------------------
+    ! Parses the topology file to count how many atoms of each residue type
+    ! actually appear in the system.
+    !-----------------------------------------------------------------------------
     subroutine prescan_topology(filename, is_reservoir)
 
         ! Input parameters
@@ -312,7 +329,7 @@ contains
 
         ! Temporary dynamic table for residue atom count
         integer, allocatable :: residue_atom_count(:)
-        allocate(residue_atom_count(nb%type_residue))
+        allocate(residue_atom_count(res%number))
         residue_atom_count = 0
 
         ! ---------------------------------------------------------
@@ -348,7 +365,7 @@ contains
             ! ---------------------------------------------------------
             ! Classify this atom according to which residue type it belongs to
             ! ---------------------------------------------------------
-            do residue_id = 1, nb%type_residue
+            do residue_id = 1, res%number
                 do type_id = 1, res_infos(residue_id)%nb_types
                     if (atom_type == res_infos(residue_id)%types(type_id)) then
 
@@ -369,7 +386,7 @@ contains
         !----------------------------------------------------------
         ! Compute number of residues
         !----------------------------------------------------------
-        do residue_id = 1, nb%type_residue
+        do residue_id = 1, res%number
 
             res_infos(residue_id)%nb_res = 0
 
@@ -394,18 +411,18 @@ contains
         !----------------------------------------------------------
         ! Determine maximum active and inactive residues
         !----------------------------------------------------------
-        nb%max_active_residue = 0
-        nb%max_inactive_residue = 0
+        nmax%active_residues = 0
+        nmax%inactive_residues = 0
 
-        do residue_id = 1, nb%type_residue
+        do residue_id = 1, res%number
             nb_residue = res_infos(residue_id)%nb_res(1) + res_infos(residue_id)%nb_res(2)
             if (res_infos(residue_id)%is_active) then
-                if (nb_residue > nb%max_active_residue) then
-                    nb%max_active_residue = nb_residue
+                if (nb_residue > nmax%active_residues) then
+                    nmax%active_residues = nb_residue
                 end if
             else
-                if (nb_residue > nb%max_inactive_residue) then
-                    nb%max_inactive_residue = nb_residue
+                if (nb_residue > nmax%inactive_residues) then
+                    nmax%inactive_residues = nb_residue
                 end if
             end if
         end do

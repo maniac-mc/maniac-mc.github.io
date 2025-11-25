@@ -33,7 +33,7 @@ contains
         u_recipCoulomb = zero
 
         ! Loop over all precomputed reciprocal lattice vectors
-        do idx = 1, ewald%num_kvectors
+        do idx = 1, ewald%param%nkvec
 
             ! Use pre-computed form factor
             form_factor = ewald%form_factor(idx)
@@ -56,7 +56,7 @@ contains
         end do
 
         ! Convert accumulated energy to correct units (kcal/mol)
-        u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%volume ! In kcal/mol
+        u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
     end subroutine compute_reciprocal_energy
 
@@ -64,11 +64,11 @@ contains
     ! Computes the reciprocal-space Coulomb energy contribution from a
     ! single molecule or residue using the Ewald summation method.
     !--------------------------------------------------------------------
-    subroutine compute_recip_energy_single_mol(residue_type, molecule_index, u_recipCoulomb_new, is_creation, is_deletion)
+    subroutine compute_recip_energy_single_mol(res_type, mol_index, u_recipCoulomb_new, is_creation, is_deletion)
 
         ! Input arguments
-        integer, intent(in) :: residue_type    ! Index of the residue type
-        integer, intent(in) :: molecule_index  ! Index of the molecule in the system
+        integer, intent(in) :: res_type    ! Index of the residue type
+        integer, intent(in) :: mol_index  ! Index of the molecule in the system
         real(real64), intent(out) :: u_recipCoulomb_new  ! Output: reciprocal-space Coulomb energy
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
@@ -89,11 +89,11 @@ contains
         u_recipCoulomb_new = zero
 
         ! Atom charges in this residue
-        natoms = nb%atom_in_residue(residue_type)
-        ewald%charges(1:natoms) = primary%atom_charges(residue_type, 1:natoms)
+        natoms = res%atom(res_type)
+        ewald%charges(1:natoms) = primary%atoms%charges(res_type, 1:natoms)
 
         ! Loop over all precomputed reciprocal lattice vectors
-        do idx = 1, ewald%num_kvectors
+        do idx = 1, ewald%param%nkvec
 
             ! Use pre-computed form factor
             form_factor = ewald%form_factor(idx)
@@ -104,13 +104,13 @@ contains
             kz_idx = ewald%kvectors(idx)%kz
 
             ! Compute phase factors for the current residue
-            ewald%phase_new(1:natoms) = ewald%phase_factor(1, residue_type, molecule_index, 1:natoms, kx_idx) * &
-                ewald%phase_factor(2, residue_type, molecule_index, 1:natoms, ky_idx) * &
-                ewald%phase_factor(3, residue_type, molecule_index, 1:natoms, kz_idx)
+            ewald%phase%new(1:natoms) = ewald%phase%factor(1, res_type, mol_index, 1:natoms, kx_idx) * &
+                ewald%phase%factor(2, res_type, mol_index, 1:natoms, ky_idx) * &
+                ewald%phase%factor(3, res_type, mol_index, 1:natoms, kz_idx)
 
-            ewald%phase_old(1:natoms) = ewald%phase_factor_old(1, 1:natoms, kx_idx) * &
-                ewald%phase_factor_old(2, 1:natoms, ky_idx) * &
-                ewald%phase_factor_old(3, 1:natoms, kz_idx)
+            ewald%phase%old(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
+                ewald%phase%factor_old(2, 1:natoms, ky_idx) * &
+                ewald%phase%factor_old(3, 1:natoms, kz_idx)
 
             ! Update Fourier coefficient A(k)
             if (creation_flag) then
@@ -118,21 +118,21 @@ contains
                 ! Molecule creation
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) ]
                 ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) + &
-                    sum(ewald%charges(1:natoms) * ewald%phase_new(1:natoms))
+                    sum(ewald%charges(1:natoms) * ewald%phase%new(1:natoms))
             
             else if (deletion_flag) then
             
                 ! Molecule deletion
                 ! A(k) ← A(k) + Σ q_i [ - e^(i k·r_i,old) ]
                 ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) - &
-                    sum(ewald%charges(1:natoms) * ewald%phase_old(1:natoms))
+                    sum(ewald%charges(1:natoms) * ewald%phase%old(1:natoms))
             
             else
             
                 ! Standard move (translation, rotation)
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) - e^(i k·r_i,old) ]
                 ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) + &
-                    sum(ewald%charges(1:natoms) * (ewald%phase_new(1:natoms) - ewald%phase_old(1:natoms)))
+                    sum(ewald%charges(1:natoms) * (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
             
             end if
 
@@ -149,7 +149,7 @@ contains
         end do
 
         ! Convert accumulated energy to physical units:
-        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%volume ! In kcal/mol
+        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
     end subroutine compute_recip_energy_single_mol
 
@@ -165,10 +165,10 @@ contains
     ! where α is the Ewald screening parameter. The total self-energy
     ! for a molecule/residue is the sum over all atoms in that molecule.
     !--------------------------------------------------------------------
-    subroutine compute_ewald_self_interaction_single_mol(residue_type, self_energy)
+    subroutine compute_ewald_self_interaction_single_mol(res_type, self_energy)
 
         ! Input arguments
-        integer, intent(in) :: residue_type
+        integer, intent(in) :: res_type
         real(real64), intent(out) :: self_energy
 
         ! Local variables
@@ -179,14 +179,14 @@ contains
         self_energy = zero
 
         ! Loop over all atoms in the molecule/residue
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type)
-            charge_1 = primary%atom_charges(residue_type, atom_index_1)
+        do atom_index_1 = 1, res%atom(res_type)
+            charge_1 = primary%atoms%charges(res_type, atom_index_1)
 
             ! Skip atoms with negligible charge
             if (abs(charge_1) < error) cycle
 
             ! Add the individual atomic self-energy contribution
-            self_energy = self_energy - ewald%alpha / SQRTPI * charge_1**2
+            self_energy = self_energy - ewald%param%alpha / SQRTPI * charge_1**2
         end do
 
         self_energy = self_energy * EPS0_INV_real ! In kcal/mol
@@ -203,11 +203,11 @@ contains
     ! sometimes included to avoid double counting or to remove the singularity at r -> 0:
     !    E_intra = Σ_{i<j} q_i * q_j * (erfc(α * r_ij) - 1) / r_ij
     !------------------------------------------------------------------------------
-    subroutine compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, u_intraCoulomb)
+    subroutine compute_intra_residue_real_coulomb_energy_single_mol(res_type, mol_index, u_intraCoulomb)
 
         ! Input arguments
-        integer, intent(in) :: residue_type
-        integer, intent(in) :: molecule_index
+        integer, intent(in) :: res_type
+        integer, intent(in) :: mol_index
         real(real64), intent(out) :: u_intraCoulomb
 
         ! Local variables
@@ -219,20 +219,21 @@ contains
         u_intraCoulomb = 0
 
         ! Loop over all unique atom pairs in the molecule
-        do atom_index_1 = 1, nb%atom_in_residue(residue_type)-1
-            charge_1 = primary%atom_charges(residue_type, atom_index_1)
+        do atom_index_1 = 1, res%atom(res_type)-1
+            charge_1 = primary%atoms%charges(res_type, atom_index_1)
 
-            do atom_index_2 = atom_index_1+1, nb%atom_in_residue(residue_type)
-                charge_2 = primary%atom_charges(residue_type, atom_index_2)
+            do atom_index_2 = atom_index_1+1, res%atom(res_type)
+                charge_2 = primary%atoms%charges(res_type, atom_index_2)
 
                 ! Compute interatomic distance
-                distance = minimum_image_distance(primary, residue_type, molecule_index, atom_index_1, &
-                            residue_type, molecule_index, atom_index_2)
+                distance = minimum_image_distance(primary, res_type, mol_index, atom_index_1, &
+                            res_type, mol_index, atom_index_2)
 
                 ! Skip extremely small distances to avoid singularity
                 if (distance > error) then
                     ! Add the real-space intramolecular contribution (erfc(α * r) - 1) / r
-                    u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * (erfc(ewald%alpha * distance) - one) / distance
+                    u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * &
+                        (erfc(ewald%param%alpha * distance) - one) / distance
                 end if
 
             end do
@@ -261,31 +262,31 @@ contains
 
         ! Internal variables
         complex(real64) :: amplitude                        ! Accumulated structure factor amplitude A(k)
-        complex(real64) :: phase                            ! Phase factor product for a single atom
+        complex(real64) :: product                          ! Phase factor product for a single atom
         real(real64) :: charges                             ! Partial charge of the current atom
-        integer :: residue_type                             ! Index of the current residue type
-        integer :: molecule_index                           ! Index of the current molecule
+        integer :: res_type                                 ! Index of the current residue type
+        integer :: mol_index                                ! Index of the current molecule
         integer :: atom_index                               ! Index of the current atom
 
         ! Initialize amplitude to zero (complex)
         amplitude = (zero, zero)
 
         ! Loop over all residue types
-        do residue_type = 1, nb%type_residue
+        do res_type = 1, res%number
             ! Loop over all molecules of this residue type
-            do molecule_index = 1, primary%num_residues(residue_type)
+            do mol_index = 1, primary%num%residues(res_type)
                 ! Loop over sites in molecule
-                do atom_index = 1, nb%atom_in_residue(residue_type)
+                do atom_index = 1, res%atom(res_type)
 
-                    ! Extract charge and phase
-                    charges = primary%atom_charges(residue_type, atom_index)
-                    phase = ewald%phase_factor(1, residue_type, molecule_index, atom_index, kx_idx) * &
-                            ewald%phase_factor(2, residue_type, molecule_index, atom_index, ky_idx) * &
-                            ewald%phase_factor(3, residue_type, molecule_index, atom_index, kz_idx)
+                    ! Extract charge and phase product
+                    charges = primary%atoms%charges(res_type, atom_index)
+                    product = ewald%phase%factor(1, res_type, mol_index, atom_index, kx_idx) * &
+                            ewald%phase%factor(2, res_type, mol_index, atom_index, ky_idx) * &
+                            ewald%phase%factor(3, res_type, mol_index, atom_index, kz_idx)
 
                     ! Accumulate contribution from this atom:
                     ! charge * exp(i k · r) factor in x, y, z directions
-                    amplitude = amplitude + charges * phase
+                    amplitude = amplitude + charges * product
 
                 end do
             end do
