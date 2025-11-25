@@ -140,7 +140,13 @@ contains
         call detect_molecules(box)
         call repair_active_molecules(box)
         call transform_to_COM_frame(box)
-        call ValidateMoleculeGeometry(box)
+
+        ! #tofix : improve that by only using "is_reservoir" everywhere
+        if (is_primary) then
+            call validate_molecule_geometry(box, .false.)
+        else
+            call validate_molecule_geometry(box, .true.)
+        end if 
 
         ! === Step 7: Detect bond, angle, dihedral, improper per residue ===
         call DetectBondPerResidue(box)
@@ -1344,9 +1350,9 @@ contains
                             ! do to : do not hardcode these value
 
                             if (dist > 10.0_real64) then
-                                call WarnUser("Unusually large distance (> 1 nm) detected in active residue")
+                                call warn_user("Unusually large distance (> 1 nm) detected in active residue")
                             else if (dist < 1.0e-5_real64) then
-                                call WarnUser("Overlapping atoms detected in molecule")
+                                call warn_user("Overlapping atoms detected in molecule")
                             end if
 
                         end do
@@ -1415,9 +1421,9 @@ contains
 
             ! Sanity check
             if (any(tmp_atom_masses_1d(1:nb%atom_in_residue(i)) <= 0.0_real64)) then
-                call WarnUser("Zero or negative atomic mass detected in residue type")
+                call warn_user("Zero or negative atomic mass detected in residue type")
             else if (sum(tmp_atom_masses_1d(1:nb%atom_in_residue(i))) < 1.0e-6_real64) then
-                call WarnUser("Total molecular mass nearly zero in residue")
+                call warn_user("Total molecular mass nearly zero in residue")
             end if
 
             ! Loop over all atoms and group them into molecules

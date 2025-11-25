@@ -160,8 +160,8 @@ contains
         end do
 
         ! Check if we found the required values
-        if (.not. found_atoms)      call WarnUser("Number of atoms not found in header")
-        if (.not. found_atom_types) call WarnUser("Number of atom types not found in header")
+        if (.not. found_atoms)      call warn_user("Number of atoms not found in header")
+        if (.not. found_atom_types) call warn_user("Number of atom types not found in header")
 
     end subroutine ReadLMPHeaderInfo
 

@@ -186,7 +186,7 @@ contains
             reciprocal = one / box%determinant
         else
             ! Handle singular matrix case if needed, e.g. print error or return
-            call WarnUser("Determinant is zero or near zero, inverse not computed.")
+            call warn_user("Determinant is zero or near zero, inverse not computed.")
             return
         end if
 

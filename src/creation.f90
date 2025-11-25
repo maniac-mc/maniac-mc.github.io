@@ -99,9 +99,10 @@ contains
 
             ! Replace molecule_index with the last molecule in the list to maintain continuity
             last_molecule_index = reservoir%num_residues(residue_type)
-            reservoir%mol_com(:, residue_type, rand_mol_index) = reservoir%mol_com(:, residue_type, last_molecule_index)
-            reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type)) = &
-                reservoir%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+            gas%com(:, residue_type, rand_mol_index) = &
+                gas%com(:, residue_type, last_molecule_index)
+            gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type)) = &
+                gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
             reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) - 1
             reservoir%num_atoms = reservoir%num_atoms - nb%atom_in_residue(residue_type)

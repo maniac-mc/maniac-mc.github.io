@@ -581,7 +581,7 @@ contains
     !-----------------------------------------------------------------------------
     ! Print a standardized warning message without terminating
     !-----------------------------------------------------------------------------
-    subroutine WarnUser(warn_msg)
+    subroutine warn_user(warn_msg)
 
         character(len=*), intent(in) :: warn_msg   ! Warning description
 
@@ -594,7 +594,7 @@ contains
         ! Ensure message is flushed immediately
         call flush(output_unit)
 
-    end subroutine WarnUser
+    end subroutine warn_user
 
     !-----------------------------------------------------------------------------
     ! Print a standardized informational message

@@ -74,7 +74,7 @@ contains
             proba%swap = proba%swap * scale_factor
             proba%widom = proba%widom * scale_factor
         
-            call WarnUser("Move probabilities rescaled to sum to 1.0")
+            call warn_user("Move probabilities rescaled to sum to 1.0")
         
         end if
 
@@ -411,7 +411,7 @@ contains
                         case ("inactif")
                             input%is_active(nb%type_residue + 1) = 0
                         case default
-                            call WarnUser("Unknown state: " // trim(val_cha))
+                            call warn_user("Unknown state: " // trim(val_cha))
                             call abort_run("Unknown residue state")
                     end select
                 end if

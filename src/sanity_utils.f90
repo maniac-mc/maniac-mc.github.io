@@ -40,7 +40,7 @@ contains
 
         do dim = 1, size(pos)
             if (pos(dim) < lower(dim) .or. pos(dim) > upper(dim)) then
-                call WarnUser(message)
+                call warn_user(message)
             end if
         end do
 
@@ -77,7 +77,7 @@ contains
         end do
 
         if (min_dist > threshold) then
-            call WarnUser(message)
+            call warn_user(message)
         end if
 
     end subroutine check_com_distance

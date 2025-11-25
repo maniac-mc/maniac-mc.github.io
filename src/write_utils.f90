@@ -28,7 +28,7 @@ contains
         call write_dat_info()
 
         ! Write LAMMPS data file
-        call write_topology_data(primary)
+        call write_topology_data(primary, is_reservoir = .false.)
 
     end subroutine update_output_files
 
@@ -405,12 +405,11 @@ contains
     !------------------------------------------------------------------------------
     ! Write topology in LAMMPS data format (see https://docs.lammps.org for details)
     !------------------------------------------------------------------------------
-    subroutine write_topology_data(box)
-
-        implicit none
+    subroutine write_topology_data(box, is_reservoir)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
+        logical, intent(in) :: is_reservoir                             ! To indicate if reservoir
 
         ! Local variables
         integer :: i, j, k, atom_id, mol_id, atom_type
@@ -419,6 +418,7 @@ contains
         real(real64) :: charge
         real(real64), dimension(3) :: pos
         integer :: dim ! Integer for looping over dimensions
+        type(type_coordinate), pointer :: coord                         ! Pointer for host or guest coordinate
 
         ! Update bond number count
         cpt_bond = 0
@@ -515,6 +515,13 @@ contains
         atom_id = 0
         mol_id = 0
         do i = 1, nb%type_residue
+
+            if (is_reservoir) then
+                coord => gas
+            else
+                coord => get_coord(i)
+            end if
+
             do j = 1, box%num_residues(i)
                 mol_id = mol_id + 1
                 do k = 1, nb%atom_in_residue(i)
@@ -524,7 +531,7 @@ contains
                     charge = box%atom_charges(i,k)
 
                     do dim = 1, 3
-                        pos(dim) = box%mol_com(dim, i, j) + box%site_offset(dim, i, j, k)
+                        pos(dim) = coord%com(dim, i, j) + coord%offset(dim, i, j, k)
                     end do
 
                     ! Only wrap atom of inative species (i.e. leave active molecules continuous at the pbc)
