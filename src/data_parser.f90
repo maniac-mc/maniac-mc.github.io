@@ -355,14 +355,14 @@ contains
                             " Please increase 'NB_MAX_BOND' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%bond_type_2d(i, nb_bond, 1) = bond_types_1d(j)
+                    connect%bonds(i, nb_bond, 1) = bond_types_1d(j)
 
                     if (l < k) then
-                        res%bond_type_2d(i, nb_bond, 2) = l
-                        res%bond_type_2d(i, nb_bond, 3) = k
+                        connect%bonds(i, nb_bond, 2) = l
+                        connect%bonds(i, nb_bond, 3) = k
                     else
-                        res%bond_type_2d(i, nb_bond, 2) = k
-                        res%bond_type_2d(i, nb_bond, 3) = l
+                        connect%bonds(i, nb_bond, 2) = k
+                        connect%bonds(i, nb_bond, 3) = l
                     end if
                 end if
 
@@ -410,15 +410,15 @@ contains
                             " Please increase 'NB_MAX_ANGLE' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%angle_type_2d(i, nb_angle, 1) = angle_types_1d(j)
+                    connect%angles(i, nb_angle, 1) = angle_types_1d(j)
                     if (k < m) then
-                        res%angle_type_2d(i, nb_angle, 2) = k
-                        res%angle_type_2d(i, nb_angle, 3) = l
-                        res%angle_type_2d(i, nb_angle, 4) = m
+                        connect%angles(i, nb_angle, 2) = k
+                        connect%angles(i, nb_angle, 3) = l
+                        connect%angles(i, nb_angle, 4) = m
                     else
-                        res%angle_type_2d(i, nb_angle, 2) = m
-                        res%angle_type_2d(i, nb_angle, 3) = l
-                        res%angle_type_2d(i, nb_angle, 4) = k
+                        connect%angles(i, nb_angle, 2) = m
+                        connect%angles(i, nb_angle, 3) = l
+                        connect%angles(i, nb_angle, 4) = k
                     end if
                 end if
             end do
@@ -466,17 +466,17 @@ contains
                             " Please increase 'NB_MAX_DIHEDRAL' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%dihedral_type_2d(i, nb_dihedral, 1) = dihedral_types_1d(j)
+                    connect%dihedrals(i, nb_dihedral, 1) = dihedral_types_1d(j)
                     if (k < n) then
-                        res%dihedral_type_2d(i, nb_dihedral, 2) = k
-                        res%dihedral_type_2d(i, nb_dihedral, 3) = l
-                        res%dihedral_type_2d(i, nb_dihedral, 4) = m
-                        res%dihedral_type_2d(i, nb_dihedral, 5) = n
+                        connect%dihedrals(i, nb_dihedral, 2) = k
+                        connect%dihedrals(i, nb_dihedral, 3) = l
+                        connect%dihedrals(i, nb_dihedral, 4) = m
+                        connect%dihedrals(i, nb_dihedral, 5) = n
                     else
-                        res%dihedral_type_2d(i, nb_dihedral, 2) = n
-                        res%dihedral_type_2d(i, nb_dihedral, 3) = m
-                        res%dihedral_type_2d(i, nb_dihedral, 4) = l
-                        res%dihedral_type_2d(i, nb_dihedral, 5) = k
+                        connect%dihedrals(i, nb_dihedral, 2) = n
+                        connect%dihedrals(i, nb_dihedral, 3) = m
+                        connect%dihedrals(i, nb_dihedral, 4) = l
+                        connect%dihedrals(i, nb_dihedral, 5) = k
                     end if
                 end if
             end do
@@ -524,17 +524,17 @@ contains
                             " Please increase 'NB_MAX_IMPROPER' in src/parameters.f90 and recompile.", 11)
                     end if
 
-                    res%improper_type_2d(i, nb_improper, 1) = improper_types_1d(j)
+                    connect%impropers(i, nb_improper, 1) = improper_types_1d(j)
                     if (k < n) then
-                        res%improper_type_2d(i, nb_improper, 2) = k
-                        res%improper_type_2d(i, nb_improper, 3) = l
-                        res%improper_type_2d(i, nb_improper, 4) = m
-                        res%improper_type_2d(i, nb_improper, 5) = n
+                        connect%impropers(i, nb_improper, 2) = k
+                        connect%impropers(i, nb_improper, 3) = l
+                        connect%impropers(i, nb_improper, 4) = m
+                        connect%impropers(i, nb_improper, 5) = n
                     else
-                        res%improper_type_2d(i, nb_improper, 2) = n
-                        res%improper_type_2d(i, nb_improper, 3) = m
-                        res%improper_type_2d(i, nb_improper, 4) = l
-                        res%improper_type_2d(i, nb_improper, 5) = k
+                        connect%impropers(i, nb_improper, 2) = n
+                        connect%impropers(i, nb_improper, 3) = m
+                        connect%impropers(i, nb_improper, 4) = l
+                        connect%impropers(i, nb_improper, 5) = k
                     end if
                 end if
             end do

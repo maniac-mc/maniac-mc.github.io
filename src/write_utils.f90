@@ -556,9 +556,9 @@ contains
             do i = 1, nb%type_residue
                 do j = 1, box%num%residues(i)
                     do k = 1, nb%bonds_per_residue(i)
-                        write(unit_data, *) cpt_bond, res%bond_type_2d(i, k, 1), &
-                            cpt_atom + res%bond_type_2d(i, k, 2), &
-                            cpt_atom + res%bond_type_2d(i, k, 3)
+                        write(unit_data, *) cpt_bond, connect%bonds(i, k, 1), &
+                            cpt_atom + connect%bonds(i, k, 2), &
+                            cpt_atom + connect%bonds(i, k, 3)
                         cpt_bond = cpt_bond + 1
                     end do
                     cpt_atom = cpt_atom + nb%atom_in_residue(i)
@@ -576,10 +576,10 @@ contains
             do i = 1, nb%type_residue
                 do j = 1, box%num%residues(i)
                     do k = 1, nb%angles_per_residue(i)
-                        write(unit_data, *) cpt_angle, res%angle_type_2d(i, k, 1), &
-                            cpt_atom + res%angle_type_2d(i, k, 2), &
-                            cpt_atom + res%angle_type_2d(i, k, 3), &
-                            cpt_atom + res%angle_type_2d(i, k, 4)
+                        write(unit_data, *) cpt_angle, connect%angles(i, k, 1), &
+                            cpt_atom + connect%angles(i, k, 2), &
+                            cpt_atom + connect%angles(i, k, 3), &
+                            cpt_atom + connect%angles(i, k, 4)
                         cpt_angle = cpt_angle + 1
                     end do
                     cpt_atom = cpt_atom + nb%atom_in_residue(i)
@@ -597,11 +597,11 @@ contains
             do i = 1, nb%type_residue
                 do j = 1, box%num%residues(i)
                     do k = 1, nb%dihedrals_per_residue(i)
-                        write(unit_data, *) cpt_dihedral, res%dihedral_type_2d(i, k, 1), &
-                            cpt_atom + res%dihedral_type_2d(i, k, 2), &
-                            cpt_atom + res%dihedral_type_2d(i, k, 3), &
-                            cpt_atom + res%dihedral_type_2d(i, k, 4), &
-                            cpt_atom + res%dihedral_type_2d(i, k, 5)
+                        write(unit_data, *) cpt_dihedral, connect%dihedrals(i, k, 1), &
+                            cpt_atom + connect%dihedrals(i, k, 2), &
+                            cpt_atom + connect%dihedrals(i, k, 3), &
+                            cpt_atom + connect%dihedrals(i, k, 4), &
+                            cpt_atom + connect%dihedrals(i, k, 5)
                         cpt_dihedral= cpt_dihedral + 1
                     end do
                     cpt_atom = cpt_atom + nb%atom_in_residue(i)
@@ -619,11 +619,11 @@ contains
             do i = 1, nb%type_residue
                 do j = 1, box%num%residues(i)
                     do k = 1, nb%impropers_per_residue(i)
-                        write(unit_data, *) cpt_improper, res%improper_type_2d(i, k, 1), &
-                            cpt_atom + res%improper_type_2d(i, k, 2), &
-                            cpt_atom + res%improper_type_2d(i, k, 3), &
-                            cpt_atom + res%improper_type_2d(i, k, 4), &
-                            cpt_atom + res%improper_type_2d(i, k, 5)
+                        write(unit_data, *) cpt_improper, connect%impropers(i, k, 1), &
+                            cpt_atom + connect%impropers(i, k, 2), &
+                            cpt_atom + connect%impropers(i, k, 3), &
+                            cpt_atom + connect%impropers(i, k, 4), &
+                            cpt_atom + connect%impropers(i, k, 5)
                         cpt_improper= cpt_improper + 1
                     end do
                     cpt_atom = cpt_atom + nb%atom_in_residue(i)

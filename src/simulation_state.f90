@@ -198,17 +198,16 @@ module simulation_state
     type(tabulated) :: r6_table                     ! For precomputed r**6
     type(tabulated) :: r12_table                    ! For precomputed r**12
 
-
-
-
-
-
-
-
-
-
-
-
+    !---------------------------------------------------------------------------
+    ! Intramolecular connectivity of a residue
+    !---------------------------------------------------------------------------
+    type type_connections
+        integer, dimension(:, :, :), allocatable :: bonds       ! Site bonds for each residue
+        integer, dimension(:, :, :), allocatable :: angles      ! Site angles for each residue
+        integer, dimension(:, :, :), allocatable :: dihedrals   ! Site dihedrals for each residue
+        integer, dimension(:, :, :), allocatable :: impropers   ! Site impropers for each residue
+    end type type_connections
+    type(type_connections) :: connect                           ! Array of residue definitions and intramolecular connectivity
 
 
 
@@ -267,10 +266,6 @@ module simulation_state
         character(len=10), dimension(:), allocatable :: names_1d ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: names_2d ! Site names for each residue
         integer, dimension(:, :), allocatable :: types_2d   ! Site types for each residue
-        integer, dimension(:, :, :), allocatable :: bond_type_2d ! Site bonds for each residue
-        integer, dimension(:, :, :), allocatable :: angle_type_2d ! Site angles for each residue
-        integer, dimension(:, :, :), allocatable :: dihedral_type_2d ! Site dihedrals for each residue
-        integer, dimension(:, :, :), allocatable :: improper_type_2d ! Site impropers for each residue
     end type type_residue
     type(type_residue) :: res
 

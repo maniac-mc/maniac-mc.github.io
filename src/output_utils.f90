@@ -459,7 +459,7 @@ contains
                     ! Print up to MAX_PRINT bonds
                     do j = 1, min(nb%bonds_per_residue(i), MAX_PRINT)
                         write(formatted_msg, '("   bond type ", I0, ": atoms [", I0, ",", I0, "]")') &
-                            res%bond_type_2d(i,j,1), res%bond_type_2d(i,j,2), res%bond_type_2d(i,j,3)
+                            connect%bonds(i,j,1), connect%bonds(i,j,2), connect%bonds(i,j,3)
                         call log_message(formatted_msg)
                     end do
 
@@ -484,8 +484,8 @@ contains
                     ! Print up to MAX_PRINT angles
                     do j = 1, min(nb%angles_per_residue(i), MAX_PRINT)
                         write(formatted_msg, '("   angle type ", I0, ": atoms [", I0, ",", I0, ",", I0, "]")') &
-                            res%angle_type_2d(i,j,1), res%angle_type_2d(i,j,2), &
-                            res%angle_type_2d(i,j,3), res%angle_type_2d(i,j,4)
+                            connect%angles(i,j,1), connect%angles(i,j,2), &
+                            connect%angles(i,j,3), connect%angles(i,j,4)
                         call log_message(formatted_msg)
                     end do
 
@@ -511,9 +511,9 @@ contains
                     do j = 1, min(nb%dihedrals_per_residue(i), MAX_PRINT)
                         write(formatted_msg, &
                         '("   dihedral type ", I0, ": atoms [", I0, ",", I0, ",", I0, ",", I0, "]")') &
-                            res%dihedral_type_2d(i,j,1), res%dihedral_type_2d(i,j,2), &
-                            res%dihedral_type_2d(i,j,3), res%dihedral_type_2d(i,j,4), &
-                            res%dihedral_type_2d(i,j,5)
+                            connect%dihedrals(i,j,1), connect%dihedrals(i,j,2), &
+                            connect%dihedrals(i,j,3), connect%dihedrals(i,j,4), &
+                            connect%dihedrals(i,j,5)
                         call log_message(formatted_msg)
                     end do
 
@@ -539,9 +539,9 @@ contains
                     do j = 1, min(nb%impropers_per_residue(i), MAX_PRINT)
                         write(formatted_msg, &
                         '("   improper type ", I0, ": atoms [", I0, ",", I0, ",", I0, ",", I0, "]")') &
-                            res%improper_type_2d(i,j,1), res%improper_type_2d(i,j,2), &
-                            res%improper_type_2d(i,j,3), res%improper_type_2d(i,j,4), &
-                            res%improper_type_2d(i,j,5)
+                            connect%impropers(i,j,1), connect%impropers(i,j,2), &
+                            connect%impropers(i,j,3), connect%impropers(i,j,4), &
+                            connect%impropers(i,j,5)
                         call log_message(formatted_msg)
                     end do
 

@@ -114,10 +114,10 @@ contains
         allocate(res%types_2d(nb%type_residue, nmax%types_per_residue))
         allocate(res%names_2d(nb%type_residue, nmax%types_per_residue))
         allocate(res%names_1d(nb%type_residue))
-        allocate(res%bond_type_2d(nb%type_residue, NB_MAX_BOND, 3))
-        allocate(res%angle_type_2d(nb%type_residue, NB_MAX_ANGLE, 4))
-        allocate(res%dihedral_type_2d(nb%type_residue, NB_MAX_DIHEDRAL, 5))
-        allocate(res%improper_type_2d(nb%type_residue, NB_MAX_IMPROPER, 5))
+        allocate(connect%bonds(nb%type_residue, NB_MAX_BOND, 3))
+        allocate(connect%angles(nb%type_residue, NB_MAX_ANGLE, 4))
+        allocate(connect%dihedrals(nb%type_residue, NB_MAX_DIHEDRAL, 5))
+        allocate(connect%impropers(nb%type_residue, NB_MAX_IMPROPER, 5))
 
         ! Allocate interaction parameters
         allocate(coeff%sigma(nb%type_residue, nb%type_residue, &
