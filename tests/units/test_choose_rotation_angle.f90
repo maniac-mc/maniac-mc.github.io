@@ -1,4 +1,4 @@
-program test_ChooseRotationAngle
+program test_choose_rotation_angle
 
     use iso_fortran_env, only: real64
     use simulation_state
@@ -16,7 +16,7 @@ program test_ChooseRotationAngle
     !--------------------------------------------
     ! Test 1: small-step rotation
     !--------------------------------------------
-    theta = ChooseRotationAngle(.false.)
+    theta = choose_rotation_angle(.false.)
     if (theta < -input%rotation_step_angle - error .or. theta > input%rotation_step_angle + error) then
         print *, "FAILED: small-step rotation out of range."
         stop 1
@@ -25,10 +25,10 @@ program test_ChooseRotationAngle
     !--------------------------------------------
     ! Test 2: full rotation [0, 2π]
     !--------------------------------------------
-    theta = ChooseRotationAngle(.true.)
+    theta = choose_rotation_angle(.true.)
     if (theta < 0.0_real64 - error .or. theta > 2.0_real64*acos(-1.0_real64) + error) then
         print *, "FAILED: full rotation out of range."
         stop 1
     end if
 
-end program test_ChooseRotationAngle
+end program test_choose_rotation_angle
