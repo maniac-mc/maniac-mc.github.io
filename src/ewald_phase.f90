@@ -210,7 +210,7 @@ contains
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
         integer :: idim                         ! component index: 1=X, 2=Y, 3=Z
-        type(type_coordinate), pointer :: coord ! Pointer for host, guest, or gas
+        type(type_coordinate), pointer :: coord ! Pointer for host or guest coordinate
 
         ! Return the correct pointer (host, guest, or gas)
         coord => get_coord(res_type)
@@ -229,7 +229,6 @@ contains
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
-
             do idim = 1, 3
                 ewald%temp_1d(:) = ewald%temp(idim, :)
                 call compute_phase_factor(ewald%temp_1d(:), phase(idim), ewald%kmax(idim))

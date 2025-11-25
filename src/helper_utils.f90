@@ -24,19 +24,10 @@ contains
     end function repeat_char
 
     !========================================================
-    ! Function: RotationMatrix
-    !
     ! Returns a 3x3 rotation matrix for a given axis (X=1, Y=2, Z=3)
     ! and rotation angle theta (radians).
-    !
-    ! Inputs:
-    !   axis  - integer, rotation axis (1=X, 2=Y, 3=Z)
-    !   theta - real(real64), rotation angle in radians
-    !
-    ! Output:
-    !   rotation_matrix - real(real64) 3x3 rotation matrix
     !========================================================
-    function RotationMatrix(axis, theta) result(rotation_matrix)
+    function return_rotation_matrix(axis, theta) result(rotation_matrix)
 
         implicit none
 
@@ -81,13 +72,10 @@ contains
             
         end select
 
-    end function RotationMatrix
+    end function return_rotation_matrix
 
     !--------------------------------------------------------------------
-    ! present_or_false
-    !
     ! Utility function to safely handle optional logical arguments.
-    !
     ! If the optional argument `opt_flag` is present, its value is returned.
     ! If it is not present, the function returns `.false.` by default.
     !--------------------------------------------------------------------
@@ -104,18 +92,7 @@ contains
     end function present_or_false
 
     !--------------------------------------------------------------------
-    ! amplitude_squared
-    !
-    ! Purpose:
-    !   Computes the **squared modulus** (magnitude squared) of a complex number.
-    !
-    ! Description:
-    !   For a complex number z = x + i*y, the squared modulus is defined as:
-    !
-    !       |z|^2 = x^2 + y^2 = z * conjg(z)
-    !
-    !   This is commonly used in Fourier/Ewald calculations to compute
-    !   |A(k)|^2 for structure factor amplitudes.
+    ! Computes the **squared modulus** (magnitude squared) of a complex number.
     !--------------------------------------------------------------------
     pure function amplitude_squared(z) result(val)
 
@@ -154,19 +131,11 @@ contains
     end function compute_cross_product
 
     !--------------------------------------------------------------------
-    ! Function: vector_norm
-    !
     ! Computes the Euclidean (L2) norm of a 3-component real vector.
-    !
-    ! For a vector v = (v1, v2, v3), the norm is defined as:
-    !
-    !       |v| = sqrt( v1^2 + v2^2 + v3^2 )
-    !
-    ! This is used frequently in geometry, box operations, and
-    ! minimum-image distance calculations.
     !--------------------------------------------------------------------
     pure real(real64) function vector_norm(v)
 
+        ! Input argument
         real(real64), intent(in) :: v(3)
 
         vector_norm = sqrt(sum(v * v))
@@ -195,6 +164,11 @@ contains
 
     end subroutine add_col
 
+    !--------------------------------------------------------------------
+    ! Adds the first column title without leading space, padding it to
+    ! 12 characters (A12). This matches the formatting of numeric data
+    ! printed with (I12). Appends the padded field directly to the line.
+    !--------------------------------------------------------------------
     subroutine add_first_col(line, title)
 
         ! Input arguments
@@ -210,9 +184,18 @@ contains
 
     end subroutine add_first_col
 
+    !--------------------------------------------------------------------
+    ! Joins a directory path and a filename into a single full path.
+    ! Ensures exactly one '/' separator between them, regardless of
+    ! whether the input path already ends with '/'. Returns the result
+    ! in a fixed-length string.
+    !--------------------------------------------------------------------
     function join_path(path, filename) result(fullname)
 
+        ! Input parameter
         character(len=*), intent(in) :: path, filename
+        
+        ! Output parameter
         character(len=256) :: fullname
     
         if (path(len_trim(path):len_trim(path)) == '/') then
@@ -224,11 +207,14 @@ contains
     end function join_path
 
     !--------------------------------------------------------------------
-    ! Returns the coordinate pointer for a given residue type
+    ! Returns the coordinate pointer (host or guest) for a given residue type
     !--------------------------------------------------------------------
     function get_coord(res_type) result(coord)
 
+        ! Input parameter
         integer, intent(in) :: res_type
+
+        ! Output parameter
         type(type_coordinate), pointer :: coord
 
         select case (resid_location(res_type))
@@ -236,13 +222,10 @@ contains
                 coord => host
             case (TYPE_GUEST)
                 coord => guest
-            case (TYPE_GAS)
-                coord => gas
             case default
                 nullify(coord)
         end select
         
     end function get_coord
-
 
 end module helper_utils

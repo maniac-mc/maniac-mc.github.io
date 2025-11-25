@@ -181,7 +181,7 @@ contains
 
         ! Try to pick a different type
         do while (attempt < n_attempts)
-            new_type = PickRandomResidueType(input%is_active)
+            new_type = pick_random_residue_type(input%is_active)
 
             if (new_type /= current_type) then
                 return

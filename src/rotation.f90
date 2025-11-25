@@ -40,7 +40,7 @@ contains
         call compute_old_energy(residue_type, molecule_index)
 
         ! Rotate the molecule randomly
-        call ApplyRandomRotation(residue_type, molecule_index)
+        call apply_random_rotation(residue_type, molecule_index)
 
         ! Recompute energies
         call compute_new_energy(residue_type, molecule_index)

@@ -43,7 +43,7 @@ contains
         !----------------------------------------------
         do
             ! Pick a molecule type and instance
-            residue_type    = PickRandomResidueType(input%is_active)
+            residue_type    = pick_random_residue_type(input%is_active)
             molecule_index  = PickRandomMoleculeIndex(primary%num_residues(residue_type))
 
             ! Perform Monte Carlo move

@@ -15,17 +15,12 @@ module monte_carlo_utils
 
 contains
 
-    !========================================================
+    !---------------------------------------------------------------------------
     ! Rotates all atoms of a residue around a randomly chosen
     ! axis (X, Y, or Z) by a random angle. Angle can be a
     ! small perturbation or a full 0-2π rotation.
-    !
-    ! Inputs:
-    !   res_type - integer, index of the residue type
-    !   mol_index - integer, index of the molecule
-    !   full_rotation - optional logical, if .true. use full rotation
-    !========================================================
-    subroutine ApplyRandomRotation(res_type, mol_index, full_rotation)
+    !---------------------------------------------------------------------------
+    subroutine apply_random_rotation(res_type, mol_index, full_rotation)
 
         ! Input arguments
         integer, intent(in) :: res_type           ! Index of the residue type
@@ -48,22 +43,25 @@ contains
         if (n_atoms == 1) return
 
         ! Choose rotation angle
-        theta = ChooseRotationAngle(use_full_rotation)
+        theta = choose_rotation_angle(use_full_rotation)
 
         ! Choose random axis (1=X, 2=Y, 3=Z)
         rotation_axis = int(rand_uniform() * three) + 1 ! Random integer in range [1,3]
 
         ! Set rotation matrix based on axis
-        rotation_matrix = RotationMatrix(rotation_axis, theta)
+        rotation_matrix = return_rotation_matrix(rotation_axis, theta)
 
         ! Apply rotation to all atoms in the residue
         primary%site_offset(:, res_type, mol_index, 1:n_atoms) = &
             matmul(rotation_matrix, primary%site_offset(:, res_type, mol_index, 1:n_atoms))
 
-    end subroutine ApplyRandomRotation
+    end subroutine apply_random_rotation
 
-    ! Returns a random rotation angle (radians); small-step if use_full_rotation=.false., full [0,2π] if .true.
-    function ChooseRotationAngle(use_full_rotation) result(theta)
+    !---------------------------------------------------------------------------
+    ! Returns a random rotation angle (radians); small-step if use_full_rotation=.false.,
+    ! full [0,2π] if .true.
+    !---------------------------------------------------------------------------
+    function choose_rotation_angle(use_full_rotation) result(theta)
 
         ! Input variables
         logical, intent(in) :: use_full_rotation
@@ -75,7 +73,7 @@ contains
 
             ! For small-step mode, make sure rotation_step_angle is reasonable
             if (input%rotation_step_angle <= zero .or. input%rotation_step_angle > TWOPI) then
-                call abort_run('Invalid rotation_step_angle in ChooseRotationAngle')
+                call abort_run('Invalid rotation_step_angle in choose_rotation_angle')
             end if
 
             ! Use small rotation
@@ -85,7 +83,7 @@ contains
             theta = rand_uniform() * TWOPI
         end if
 
-    end function ChooseRotationAngle
+    end function choose_rotation_angle
 
     !----------------------------------------------------------------------
     ! Adjust the Monte Carlo translation and rotation step sizes using a
@@ -130,10 +128,10 @@ contains
     end subroutine adjust_move_step_sizes
 
     !----------------------------------------------------------------------
-    ! PickRandomResidueType: randomly selects an active residue type from the
+    ! Randomly selects an active residue type from the
     ! available types in [1, active_residue_count].
     !----------------------------------------------------------------------
-    function PickRandomResidueType(is_active) result(residue_type)
+    function pick_random_residue_type(is_active) result(residue_type)
 
         integer, dimension(:), intent(in) :: is_active
         integer :: residue_type
@@ -162,7 +160,7 @@ contains
         residue_type = active_indices(INT(rand_uniform() * n_active) + 1)
 
         deallocate(active_indices)
-    end function PickRandomResidueType
+    end function pick_random_residue_type
 
     !----------------------------------------------------------------------
     ! PickRandomMoleculeIndex: randomly select a molecule index within a given
@@ -576,7 +574,7 @@ contains
 
             ! Rotate the new molecule randomly (using full 360° rotation)
             full_rotation = .true.
-            call ApplyRandomRotation(residue_type, molecule_index, full_rotation)
+            call apply_random_rotation(residue_type, molecule_index, full_rotation)
 
         end if
 

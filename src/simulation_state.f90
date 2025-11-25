@@ -138,7 +138,7 @@ module simulation_state
     ! type(type_coordinate) :: host, guest, gas                           ! Host and gest from the main, gas from reservoir
     type(type_coordinate), target :: host, guest, gas
 
-    integer, allocatable :: resid_location(:)   ! size = nb%type_residue
+    integer, allocatable :: resid_location(:) ! size = nb%type_residue
 
     ! Simulation box definition
     type :: type_number
