@@ -33,7 +33,7 @@ module simulation_state
     !---------------------------------------------------------------------------
     ! Counters for Monte Carlo move (trial, success)
     !---------------------------------------------------------------------------
-    type :: counter_type
+    type counter_type
         integer :: creations(2) = 0                 ! Counter for creation moves
         integer :: deletions(2) = 0                 ! Counter for deletion moves
         integer :: translations(2) = 0              ! Counter for translational Monte Carlo moves
@@ -46,7 +46,7 @@ module simulation_state
     !---------------------------------------------------------------------------
     ! Desired Monte Carlo move probability
     !---------------------------------------------------------------------------
-    type :: proba_type
+    type proba_type
         real(real64) :: insertion_deletion          ! Probability of attempting an insertion or a deletion
         real(real64) :: translation                 ! Probability of attempting a translation move
         real(real64) :: rotation                    ! Probability of attempting a rotation move
@@ -58,7 +58,7 @@ module simulation_state
     !---------------------------------------------------------------------------
     ! Energy terms
     !---------------------------------------------------------------------------
-    type :: energy_type
+    type energy_type
         ! Main terms
         real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
         real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
@@ -77,7 +77,7 @@ module simulation_state
 
 
     ! Parameters provided in the input file
-    type :: input_type
+    type input_type
         real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
         real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
         integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
@@ -91,7 +91,7 @@ module simulation_state
     type(input_type) :: input
 
     ! Simulation box definition
-    type :: type_box
+    type type_box
         ! Generic box geometry parameters
         real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
         real(real64) :: matrix(3,3)                 ! Simulation box matrix
@@ -126,7 +126,7 @@ module simulation_state
     !---------------------------------------------------------------------------
     ! Separate coordinate for host, guest, and gas residue
     !---------------------------------------------------------------------------
-    type :: type_coordinate
+    type type_coordinate
         integer :: max_nb_atom
         integer :: max_nb_molecule
         logical, dimension(:), allocatable :: residue_exists            ! #tofix : remove?
@@ -139,7 +139,7 @@ module simulation_state
     integer, allocatable :: resid_location(:) ! size = nb%type_residue
 
     ! Simulation box definition
-    type :: type_number
+    type type_number
         integer :: type_residue                     ! Total number of residues
         integer :: max_atom_in_any_residue          ! Max number of atoms in the largest residue
         integer :: max_type_per_residue             ! Max number of type per residue
@@ -173,7 +173,7 @@ module simulation_state
     type(residue), allocatable :: res_infos(:)
 
     ! Residues information
-    type :: type_residue
+    type type_residue
         real(real64), dimension(:), allocatable :: mass ! de Broglie length
         real(real64), dimension(:), allocatable :: lambda ! Array of mass of residue
         real(real64), dimension(:), allocatable :: masses_1d ! Array of atoms masses
@@ -190,7 +190,7 @@ module simulation_state
     type(type_residue) :: res
 
     ! Widom statistic
-    type :: type_widom
+    type type_widom
         real(real64), dimension(:), allocatable :: weight ! Accumulated Boltzmann weight sum for chemical potential
         real(real64), dimension(:), allocatable :: mu_ex ! Excess chemical potential
         real(real64), dimension(:), allocatable :: mu_tot ! Total chemical potential
@@ -199,14 +199,14 @@ module simulation_state
     type(type_widom) :: widom_stat
 
     ! Interaction arrays
-    type :: type_coeff
+    type type_coeff
         real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
         real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
     end type type_coeff
     type(type_coeff) :: coeff
 
     ! Type to store precomputed reciprocal vectors
-    type :: kvector_type
+    type kvector_type
         integer :: kx
         integer :: ky
         integer :: kz
@@ -215,7 +215,7 @@ module simulation_state
     end type kvector_type
 
     ! For Ewald calculation
-    type :: type_ewald
+    type type_ewald
         integer :: num_kvectors                     ! Number of precomputed vectors
         integer :: kmax(3)                          ! Maximum index for reciprocal lattice vector x y z component
         real(real64) :: alpha                       ! Ewald summation alpha parameter (screening parameter)
@@ -237,13 +237,15 @@ module simulation_state
     end type type_ewald
     type(type_ewald) :: ewald
 
+    !---------------------------------------------------------------------------
     ! For tabulating potential
-    type :: tabulated
+    !---------------------------------------------------------------------------
+    type tabulated
         ! Table properties
         real(real64), allocatable :: x(:)           ! Grid points (r, k^2, etc.)
         real(real64), allocatable :: f(:)           ! Function values
         real(real64) :: dx                          ! Grid spacing
-        integer :: n                                ! Number of points
+        integer :: npoint                           ! Number of points
         logical :: initialized = .false.            ! Flag to indicate table is ready
     end type tabulated
     type(tabulated) :: erfc_r_table                 ! For precomputed erfc(r) / r

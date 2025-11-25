@@ -96,6 +96,7 @@ contains
         ! Input parameter
         logical, intent(in) :: do_log
 
+        ! Local variables
         character(200) :: msg           ! Buffer for logging
         real(real64) :: safe_cutoff     ! Adjusted real-space cutoff length to fit inside the simulation box safely
 
@@ -116,31 +117,6 @@ contains
         end if
 
     end subroutine adjust_real_space_cutoff
-
-    !-----------------------------------------------------------
-    ! Print Ewald information
-    !-----------------------------------------------------------
-    subroutine log_ewald_parameters()
-
-        character(200) :: formatted_msg
-
-        write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', input%real_space_cutoff
-        call log_message(formatted_msg)
-        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%tolerance
-        call log_message(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
-        call log_message(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%alpha
-        call log_message(formatted_msg)
-        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%fourier_precision
-        call log_message(formatted_msg)
-        write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
-            ewald%kmax(1), ', ', ewald%kmax(2), ', ', ewald%kmax(3)
-        call log_message(formatted_msg)
-        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%num_kvectors
-        call log_message(formatted_msg)
-
-    end subroutine log_ewald_parameters
 
     !--------------------------------------------------------------------
     ! Compute the maximum Fourier indices (kmax) in the X, Y, Z
@@ -243,7 +219,6 @@ contains
         integer :: val_int                     ! Integer value read from input
 
         ! Compute inverse thermal energy β = 1/(k_B T)
-        ! Units: KB_kcalmol in kcal/(mol·K), T in K
         beta = 1/(KB_kcalmol*input%temperature) ! 1/(kB T) in 1/(kcal/mol)
 
         do val_int = 1, nb%type_residue

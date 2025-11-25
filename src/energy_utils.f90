@@ -200,8 +200,8 @@ contains
             if (use_table .and. r6_table%initialized .and. r12_table%initialized) then
 
                 ! Use tabulated r^6 and r^12 if available and requested
-                r6 = sigma**6 / LookupTabulated(r6_table, r)        ! No units
-                r12 = sigma**12 / LookupTabulated(r12_table, r)     ! No units
+                r6 = sigma**6 / lookup_tabulated(r6_table, r)        ! No units
+                r12 = sigma**12 / lookup_tabulated(r12_table, r)     ! No units
 
             else
 
@@ -242,7 +242,7 @@ contains
         ! Compute Coulomb energy (tabulated or direct)
         if (use_table .and. erfc_r_table%initialized) then
             ! energy = q1*q2 * f(r)  , f(r) is erfc(r) / r from lookup table
-            energy = q1 * q2 * LookupTabulated(erfc_r_table, r)     ! In units of e^2/Å
+            energy = q1 * q2 * lookup_tabulated(erfc_r_table, r)     ! In units of e^2/Å
         else
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r

@@ -178,7 +178,7 @@ contains
         ! -----------------------
         header_msg = "  Energy report | Active molecules: "
         do nb_type_residue = 1, nb%type_residue
-            if (primary%num_residues(nb_type_residue) /= 0 .and. input%is_active(nb_type_residue) == 1) then
+            if (input%is_active(nb_type_residue) == 1) then
                 write(tmp,'(A,"=",I0)') trim(res%names_1d(nb_type_residue)), primary%num_residues(nb_type_residue)
                 if (len_trim(header_msg) > 0) then
                     header_msg = trim(header_msg)//" "//trim(tmp)
@@ -651,7 +651,7 @@ contains
     ! Logs a summary of the parsed input, including global simulation parameters,
     ! Monte Carlo settings, and detailed residue information.
     !-----------------------------------------------------------------------------
-    subroutine PrintInputSummary()
+    subroutine print_input_summary()
 
         ! Locals
         integer :: i, j
@@ -750,6 +750,31 @@ contains
             call log_message("")
         end do
 
-    end subroutine PrintInputSummary
+    end subroutine print_input_summary
+
+    !-----------------------------------------------------------
+    ! Print Ewald information
+    !-----------------------------------------------------------
+    subroutine log_ewald_parameters()
+
+        character(200) :: formatted_msg
+
+        write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', input%real_space_cutoff
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%tolerance
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%alpha
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%fourier_precision
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
+            ewald%kmax(1), ', ', ewald%kmax(2), ', ', ewald%kmax(3)
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%num_kvectors
+        call log_message(formatted_msg)
+
+    end subroutine log_ewald_parameters
 
 end module output_utils

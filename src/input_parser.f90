@@ -24,10 +24,10 @@ contains
         call ReadFullInputFile(path%input)
         
         ! Validate and rescale move probabilities
-        call ValidateAndRescaleMoveProbabilities()
+        call rescale_move_probabilities()
         
         ! Print summary to log
-        call PrintInputSummary()
+        call print_input_summary()
 
     end subroutine read_input_file
 
@@ -56,7 +56,7 @@ contains
     ! If necessary, rescales all probabilities and warns the user.
     ! Aborts execution if probabilities are invalid.
     !---------------------------------------------------------------------------
-    subroutine ValidateAndRescaleMoveProbabilities()
+    subroutine rescale_move_probabilities()
 
         real(real64) :: proba_total         ! Sum of all move probabilities (translation, rotation, etc.)
         real(real64) :: scale_factor        ! Factor used to rescale probabilities so they sum to 1.0
@@ -79,14 +79,17 @@ contains
         end if
 
         ! Recompute total to validate
-        proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap + proba%widom
+        proba_total = proba%translation + &
+            proba%rotation + &
+            proba%insertion_deletion + &
+            proba%swap + &
+            proba%widom
 
         ! Abort if proba invalid
-        if (abs(proba_total - one) > error) then
+        if (abs(proba_total - one) > error) &
             call abort_run("Invalid move probabilities: must sum to 1.0", 1)
-        end if
 
-    end subroutine ValidateAndRescaleMoveProbabilities
+    end subroutine rescale_move_probabilities
 
     !-----------------------------------------------------------------------------
     ! Allocates all arrays for atoms, residues, molecules, and interaction parameters
