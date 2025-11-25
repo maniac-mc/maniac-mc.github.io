@@ -53,7 +53,7 @@ contains
         do residue_type_1 = 1, nb%type_residue
             
             ! Skip inactive residues
-            if (input%is_active(residue_type_1) == 1) then
+            if (thermo%is_active(residue_type_1)) then
 
                 ! Loop over all molecules of this residue type
                 do molecule_index_1 = 1, primary%num_residues(residue_type_1)

@@ -79,7 +79,7 @@ contains
         end if
 
         ! === Step 2: Read header ===
-        call ReadLMPHeaderInfo(infile, box)
+        call read_lmp_header_info(infile, box)
 
         ! === Step 3: Allocate arrays ===
         allocate(atom_ids_1d(box%num_atoms))
@@ -103,7 +103,7 @@ contains
 
         ! === Step 4: Read box dimensions ===
         rewind(infile)
-        call ParseLAMMPSBox(infile, box)
+        call parse_lammps_box(infile, box)
 
         ! Detect box type and other informations
         call prepare_simulation_box(box)
@@ -1264,7 +1264,7 @@ contains
                         box%atom_charges(i, j) = atom_charges_1d(k)
 
                         ! Check atom order against residue pattern
-                        if (input%is_active(i) == 1) then
+                        if (thermo%is_active(i)) then
                             if (atom_types_1d(k) /= nb%types_pattern(i, cpt)) then
                                 call abort_run("Issue with atom order in data file")
                             end if
@@ -1329,7 +1329,7 @@ contains
             ! Loop over each molecule of this residue type
             do j = 1, nmolecules
 
-                if (input%is_active(i) == 1) then ! ACTIVE molecule → repair coordinates
+                if (thermo%is_active(i)) then ! ACTIVE molecule → repair coordinates
 
                     k_temp = k ! Save starting index for this molecule
 
@@ -1410,7 +1410,7 @@ contains
 
             ! #tofix, should have been done before
             ! Store CoM position
-            if (input%is_active(i) == 1) then
+            if (thermo%is_active(i)) then
                 resid_location(i) = TYPE_GUEST
             else
                 resid_location(i) = TYPE_HOST
@@ -1470,7 +1470,7 @@ contains
                     call check_finite_vector(com, "Invalid (NaN/Inf) CoM detected in residue")
                     call check_inside_bounds(com, box%bounds(:,1), box%bounds(:,2), &
                         "Molecule COM outside simulation box")
-                    if (input%is_active(i) == 1) then
+                    if (thermo%is_active(i)) then
                         call check_com_distance(tmp_atom_xyz, nb%atom_in_residue(i), &
                             original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
                     end if

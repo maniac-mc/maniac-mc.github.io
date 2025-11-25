@@ -54,7 +54,7 @@ contains
                     ! Read molecule offsets
                     offset = coord%offset(:, res_type, mol_index, atom_index)
                     
-                    if (any(abs(offset) > ten) .and. (input%is_active(res_type)) == 1) then
+                    if (any(abs(offset) > ten) .and. (thermo%is_active(res_type))) then
                         if (.not. warned_large_offset) then
                             call warn_user("One of the active molecules has an offset larger than 1 nanometer.")
                             warned_large_offset = .true.

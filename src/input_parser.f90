@@ -128,7 +128,7 @@ contains
         ! Allocate input arrays
         allocate(input%fugacity(nb%type_residue))
         allocate(input%chemical_potential(nb%type_residue))
-        allocate(input%is_active(nb%type_residue))
+        allocate(thermo%is_active(nb%type_residue))
 
         ! Allocate system bookkeeping arrays
         allocate(nb%types_per_residue(nb%type_residue))
@@ -403,9 +403,9 @@ contains
                 else if (trim(token) == "state") then
                     select case (trim(val_cha))
                         case ("actif")
-                            input%is_active(nb%type_residue + 1) = 1
+                            thermo%is_active(nb%type_residue + 1) = .true.
                         case ("inactif")
-                            input%is_active(nb%type_residue + 1) = 0
+                            thermo%is_active(nb%type_residue + 1) = .false.
                         case default
                             call warn_user("Unknown state: " // trim(val_cha))
                             call abort_run("Unknown residue state")
@@ -486,7 +486,7 @@ contains
         ! Validate fugacity for active residues
         do val_int = 1, nb%type_residue
 
-            if (input%is_active(val_int) == 0) cycle
+            if (.not. thermo%is_active(val_int)) cycle
 
             has_fugacity = (input%fugacity(val_int) >= zero)
             has_chemical_potential = (input%chemical_potential(val_int) < zero)
@@ -551,7 +551,8 @@ contains
         integer :: i, j, k, n
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
-        integer, allocatable :: tmp_is_active(:), tmp_atom_in_residue(:), tmp_types_per_residue(:)
+        integer, allocatable :: tmp_atom_in_residue(:), tmp_types_per_residue(:)
+        logical, allocatable :: tmp_is_active(:)
         real(real64), allocatable :: tmp_fugacity(:), tmp_chemical_potential(:)
         integer, allocatable :: tmp_types_2d(:,:)
         character(len=10), allocatable :: tmp_names_2d(:,:)
@@ -592,27 +593,27 @@ contains
         ! Reorder all residue arrays based on the computed order
         do i = 1, n
             k = order(i)
-            tmp_names_1d(i)          = res%names_1d(k)
-            tmp_is_active(i)         = input%is_active(k)
-            tmp_fugacity(i)          = input%fugacity(k)
+            tmp_names_1d(i) = res%names_1d(k)
+            tmp_is_active(i) = thermo%is_active(k)
+            tmp_fugacity(i) = input%fugacity(k)
             tmp_chemical_potential(i) = input%chemical_potential(k)
-            tmp_atom_in_residue(i)   = nb%atom_in_residue(k)
+            tmp_atom_in_residue(i) = nb%atom_in_residue(k)
             tmp_types_per_residue(i) = nb%types_per_residue(k)
-            tmp_types_2d(i,:)        = res%types_2d(k,:)
-            tmp_names_2d(i,:)        = res%names_2d(k,:)
+            tmp_types_2d(i,:) = res%types_2d(k,:)
+            tmp_names_2d(i,:) = res%names_2d(k,:)
             ! tmp_types_2d(i, 1:nb%types_per_residue(k)) = res%types_2d(k, 1:nb%types_per_residue(k))
             ! tmp_names_2d(i, 1:nb%types_per_residue(k)) = res%names_2d(k, 1:nb%types_per_residue(k))
         end do
 
         ! Copy temporary arrays back into original arrays
-        res%names_1d          = tmp_names_1d
-        input%is_active       = tmp_is_active
-        input%fugacity        = tmp_fugacity
+        res%names_1d = tmp_names_1d
+        thermo%is_active = tmp_is_active
+        input%fugacity = tmp_fugacity
         input%chemical_potential = tmp_chemical_potential
-        nb%atom_in_residue    = tmp_atom_in_residue
+        nb%atom_in_residue = tmp_atom_in_residue
         nb%types_per_residue  = tmp_types_per_residue
-        res%types_2d          = tmp_types_2d
-        res%names_2d          = tmp_names_2d
+        res%types_2d = tmp_types_2d
+        res%names_2d = tmp_names_2d
 
         ! Deallocate temporary arrays
         deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &

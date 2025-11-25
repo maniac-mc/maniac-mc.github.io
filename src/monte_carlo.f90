@@ -43,8 +43,8 @@ contains
         !----------------------------------------------
         do
             ! Pick a molecule type and instance
-            residue_type    = pick_random_residue_type(input%is_active)
-            molecule_index  = pick_random_molecule_index(primary%num_residues(residue_type))
+            residue_type = pick_random_residue_type(thermo%is_active)
+            molecule_index = pick_random_molecule_index(primary%num_residues(residue_type))
 
             ! Perform Monte Carlo move
             random_draw = rand_uniform()

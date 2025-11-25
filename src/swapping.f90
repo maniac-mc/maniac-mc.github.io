@@ -157,7 +157,7 @@ contains
     !---------------------------------------------------------------------------
     ! Attempts to select a residue type different from 'current_type'. The
     ! selection is made among the residue types marked as active in 
-    ! input%is_active. A maximum number of attempts is performed to avoid 
+    ! thermo%is_active. A maximum number of attempts is performed to avoid 
     ! infinite loops.
     !---------------------------------------------------------------------------
     function pick_different_residue_type(current_type, max_attempts) result(new_type)
@@ -181,7 +181,7 @@ contains
 
         ! Try to pick a different type
         do while (attempt < n_attempts)
-            new_type = pick_random_residue_type(input%is_active)
+            new_type = pick_random_residue_type(thermo%is_active)
 
             if (new_type /= current_type) then
                 return

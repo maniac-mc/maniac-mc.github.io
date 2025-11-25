@@ -178,7 +178,7 @@ contains
         ! -----------------------
         header_msg = "  Energy report | Active molecules: "
         do nb_type_residue = 1, nb%type_residue
-            if (input%is_active(nb_type_residue) == 1) then
+            if (thermo%is_active(nb_type_residue)) then
                 write(tmp,'(A,"=",I0)') trim(res%names_1d(nb_type_residue)), primary%num_residues(nb_type_residue)
                 if (len_trim(header_msg) > 0) then
                     header_msg = trim(header_msg)//" "//trim(tmp)
@@ -399,17 +399,17 @@ contains
         call log_message(formatted_msg)
 
         do i = 1, nb%type_residue
-            if ((box%num_residues(i) /= 0) .and. (input%is_active(i) == 1)) then
+            if ((box%num_residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Active residue present in data file
                 active_molecule_count = active_molecule_count + box%num_residues(i)
                 write(formatted_msg, '("Active residue ", A, " found in the data file: ", I0)') &
                     trim(res%names_1d(i)), box%num_residues(i)
-            else if ((box%num_residues(i) /= 0) .and. (input%is_active(i) == 0)) then
+            else if ((box%num_residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Inactive residue present in data file
                 active_molecule_count = active_molecule_count + box%num_residues(i)
                 write(formatted_msg, '("Inactive residue ", A, " found in the data file: ", I0)') &
                     trim(res%names_1d(i)), box%num_residues(i)
-            else if ((box%num_residues(i) == 0) .and. (input%is_active(i) == 0) .and. (is_primary)) then
+            else if ((box%num_residues(i) == 0) .and. (thermo%is_active(i)) .and. (is_primary)) then
                 ! Inactive residue defined in input but not present in data file
                 call abort_run("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
@@ -720,17 +720,17 @@ contains
             write(msg, '("  Residue ", A)') trim(res%names_1d(i))
             call log_message(msg)
 
-            write(msg, '("  Is active: ", A)') merge("yes", "no ", input%is_active(i) == 1)
+            write(msg, '("  Is active: ", A)') merge("yes", "no ", thermo%is_active(i))
             call log_message(msg)
 
-            if (input%is_active(i) == 1) then
+            if (thermo%is_active(i)) then
                 if (input%fugacity(i) > 0) then
                     write(msg, '("  Fugacity (atm): ", F10.2)') input%fugacity(i)
                     call log_message(msg)
                 end if
             end if
 
-            if (input%is_active(i) == 1) then
+            if (thermo%is_active(i)) then
                 write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') input%chemical_potential(i)
                 call log_message(msg)
             end if

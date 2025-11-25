@@ -67,9 +67,7 @@ contains
     end function compute_mass
 
     ! Read header info (e.g., number of atoms, atom types) from LAMMPS data file
-    subroutine ReadLMPHeaderInfo(INFILE, box)
-
-        implicit none
+    subroutine read_lmp_header_info(INFILE, box)
 
         ! Input parameters
         integer, intent(in) :: INFILE
@@ -163,18 +161,14 @@ contains
         if (.not. found_atoms)      call warn_user("Number of atoms not found in header")
         if (.not. found_atom_types) call warn_user("Number of atom types not found in header")
 
-    end subroutine ReadLMPHeaderInfo
+    end subroutine read_lmp_header_info
 
     !-----------------------------------------------------------------------------
-    ! subroutine ParseLAMMPSBox(INFILE, box)
-    !
     ! Parses the simulation box geometry from a LAMMPS data file, extracting both
     ! orthogonal and triclinic box parameters.
     ! Calculate 3x3 box matrix in lower-triangular convention (MDAnalysis convention)
     !-----------------------------------------------------------------------------
-    subroutine ParseLAMMPSBox(INFILE, box)
-
-        implicit none
+    subroutine parse_lammps_box(INFILE, box)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
@@ -238,15 +232,15 @@ contains
 
         ! Make sure that box size were provided
         if (abs(box%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%bounds(1,2)) < 1.0e-11_real64) then
-            call abort_run("ParseLAMMPSBox: xlo xhi not found in input file!")
+            call abort_run("parse_lammps_box: xlo xhi not found in input file!")
         end if
 
         if (abs(box%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%bounds(2,2)) < 1.0e-11_real64) then
-            call abort_run("ParseLAMMPSBox: ylo yhi not found in input file!")
+            call abort_run("parse_lammps_box: ylo yhi not found in input file!")
         end if
 
         if (abs(box%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%bounds(3,2)) < 1.0e-11_real64) then
-            call abort_run("ParseLAMMPSBox: zlo zhi not found in input file!")
+            call abort_run("parse_lammps_box: zlo zhi not found in input file!")
         end if
 
         ! Box lengths
@@ -264,7 +258,7 @@ contains
         box%matrix(2,:) = [xy, ly, zero]    ! row 2 (b vector)
         box%matrix(3,:) = [xz, yz, lz]      ! row 3 (c vector)
 
-    end subroutine ParseLAMMPSBox
+    end subroutine parse_lammps_box
 
     !-----------------------------------------------------------
     ! Ensures that bonded atoms in a molecule remain contiguous across

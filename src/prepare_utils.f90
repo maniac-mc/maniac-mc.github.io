@@ -223,7 +223,7 @@ contains
 
         do val_int = 1, nb%type_residue
 
-            if (input%is_active(val_int) == 0) cycle
+            if (.not. thermo%is_active(val_int)) cycle
 
             if (input%fugacity(val_int) >= zero) then
                 input%chemical_potential(val_int) = log(input%fugacity(val_int)) / beta

@@ -138,7 +138,7 @@ contains
     function pick_random_residue_type(is_active) result(residue_type)
 
         ! Input parameter
-        integer, dimension(:), intent(in) :: is_active
+        logical, dimension(:), intent(in) :: is_active
         
         ! Output parameter
         integer :: residue_type
@@ -148,7 +148,7 @@ contains
         integer, allocatable :: active_indices(:)
 
         ! Count active residues
-        n_active = count(is_active == 1)
+        n_active = count(is_active)
 
         if (n_active == 0) then ! No active residue to pick from
             residue_type = 0
@@ -159,7 +159,7 @@ contains
         allocate(active_indices(n_active))
         n_active = 0
         do i = 1, size(is_active)
-            if (is_active(i) == 1) then
+            if (is_active(i)) then
                 n_active = n_active + 1
                 active_indices(n_active) = i
             end if

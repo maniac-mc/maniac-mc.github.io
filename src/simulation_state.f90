@@ -10,23 +10,23 @@ module simulation_state
     ! Path and file names
     !---------------------------------------------------------------------------
     type path_type
-        character(len=200) :: outputs               ! Folder for saving outputs
-        character(len=200) :: input                 ! Main input file
-        character(len=200) :: topology              ! Topology/data file
-        character(len=200) :: parameters            ! Parameters include file
-        character(len=200) :: reservoir             ! Optional reservoir file
+        character(len=LENPATH) :: outputs               ! Folder for saving outputs
+        character(len=LENPATH) :: input                 ! Main input file
+        character(len=LENPATH) :: topology              ! Topology/data file
+        character(len=LENPATH) :: parameters            ! Parameters include file
+        character(len=LENPATH) :: reservoir             ! Optional reservoir file
     end type path_type
     type(path_type) :: path
 
     !---------------------------------------------------------------------------
-    ! Generic status information
+    ! Generic simulation status information
     !---------------------------------------------------------------------------
     type status_type
+        logical :: reservoir_provided               ! Is reservoir provided by the user
         integer :: desired_block                    ! Desired Monte Carlo block number
         integer :: desired_step                     ! Desired Monte Carlo step
         integer :: block                            ! Monte Carlo block number
         integer :: step                             ! Monte Carlo step within the block
-        logical :: reservoir_provided               ! Is reservoir provided by the user
     end type status_type
     type(status_type) :: status
 
@@ -34,12 +34,12 @@ module simulation_state
     ! Counters for Monte Carlo move (trial, success)
     !---------------------------------------------------------------------------
     type counter_type
-        integer :: creations(2) = 0                 ! Counter for creation moves
-        integer :: deletions(2) = 0                 ! Counter for deletion moves
-        integer :: translations(2) = 0              ! Counter for translational Monte Carlo moves
-        integer :: rotations(2) = 0                 ! Counter for rotational Monte Carlo moves
-        integer :: swaps(2) = 0                     ! Counter for swap moves
-        integer :: widom(2) = 0                     ! Counter for widom moves
+        integer :: translations(2) = 0              ! Translational Monte Carlo moves
+        integer :: rotations(2) = 0                 ! Rotational Monte Carlo moves
+        integer :: creations(2) = 0                 ! Creation moves
+        integer :: deletions(2) = 0                 ! Deletion moves
+        integer :: swaps(2) = 0                     ! Swap moves
+        integer :: widom(2) = 0                     ! Widom moves
     end type counter_type
     type(counter_type) :: counter
 
@@ -59,26 +59,42 @@ module simulation_state
     ! Energy terms
     !---------------------------------------------------------------------------
     type energy_type
-        ! Main terms
         real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
         real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
         real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
         real(real64) :: ewald_self                  ! Ewald self-interaction energy
-        real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy (alternative)
+        real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy
         real(real64) :: total                       ! Total energies
-        ! Additional terms
-        real(real64) :: self_interaction            ! Site-site short-range energy
-        real(real64) :: ke_reciprocal               ! Reciprocal-space (k-space) energy
-        real(real64) :: total_coulomb               ! Total Coulomb energy
-        real(real64) :: total_non_coulomb           ! Total non-Coulomb energy
     end type energy_type
     type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
+
+    !---------------------------------------------------------------------------
+    ! Thermodynamic input parameters
+    !---------------------------------------------------------------------------
+    type input_thermo_type
+        real(real64) :: temperature                     ! System temperature (K)
+        real(real64), allocatable :: fugacity(:)        ! Species fugacity for GCMC reservoir (dimensionless)
+        real(real64), allocatable :: chemical_potential(:) ! Species chemical potential of reservoir (kcal/mol)
+        logical, allocatable :: is_active(:)            ! Activity flag: 1 = species active, 0 = inactive
+    end type input_thermo_type
+    type(input_thermo_type) :: thermo
+
+
+
+
+
+
+
+
+
+
+
 
     ! Parameters provided in the input file
     type input_type
         real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
         real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
-        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
+        ! integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         real(real64) :: temperature                 ! Temperature in Kelvin
         real(real64) :: translation_step            ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves

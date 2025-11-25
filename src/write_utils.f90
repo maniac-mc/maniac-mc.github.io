@@ -93,7 +93,7 @@ contains
                 com(:) = coord%com(:, res_type, mol_index)
 
                 ! Wrap CoM into box for active molecules
-                if (input%is_active(res_type) == 1) then
+                if (thermo%is_active(res_type)) then
                     call wrap_into_box(com, box)
                 end if
 
@@ -105,7 +105,7 @@ contains
                     pos(:) = com(:) + coord%offset(:, res_type, mol_index, atom_index)
                     
                     ! Wrap position for inactive structure
-                    if (input%is_active(res_type) == 0) then
+                    if (.not. thermo%is_active(res_type)) then
                         call wrap_into_box(pos, box)
                     end if
 
@@ -209,7 +209,7 @@ contains
             ! Loop over residue types
             do type_residue = 1, nb%type_residue
 
-                if (input%is_active(type_residue) > 0) then
+                if (thermo%is_active(type_residue)) then
 
                     ! Construct the file name
                     filename = trim(path%outputs) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
@@ -259,7 +259,7 @@ contains
         ! Loop over residues
         do resi = 1, nb%type_residue
 
-            if (input%is_active(resi) == 1) then
+            if (thermo%is_active(resi)) then
                 ! Construct the filename for this residue
                 filename = trim(path%outputs) // 'number_' // trim(res%names_1d(resi)) // '.dat'
 
@@ -535,7 +535,7 @@ contains
                     end do
 
                     ! Only wrap atom of inative species (i.e. leave active molecules continuous at the pbc)
-                    if (input%is_active(i) == 0) then
+                    if (.not. thermo%is_active(i)) then
                         call wrap_into_box(pos, box)
                     end if
 
