@@ -3,8 +3,8 @@ program MANIAC
     use montecarlo_module
     use parameters_parser
     use output_management
-    use tabulated_utils
     use prepare_utils
+    use prescan_files
     use energy_utils
     use input_parser
     use data_parser
@@ -17,19 +17,19 @@ program MANIAC
     call setup_output_files()           ! Open log file and create output directory
 
     ! Step 2 : Read input files
+    call prescan_inputs()               ! Prescan input files to anticipate allocating size
     call read_input_file()              ! Read the main MANIAC input file
-    call ReadSystemData()               ! Read topology/data file
-    call ReadParameters()               ! Read simulation parameters (Lennard-Jones, etc.)
+    call read_system_data()             ! Read topology/data file
+    call read_parameters()               ! Read simulation parameters (Lennard-Jones, etc.)
 
     ! Step 3 : Simulation preparation
-    call prepare_simulation_parameters()  ! Set up MC parameters, initial checks
-    call PrecomputeTable()              ! Precompute tables for faster calculation
-    call compute_system_energy(primary)   ! Compute initial total energy
+    call setup_simulation_parameters()  ! Set up MC parameters, initial checks
+    call compute_system_energy(primary)   ! Compute initial total energy for the main box
 
     ! Step 4 :Monte Carlo simulation
-    call MonteCarloLoop()               ! Main MC loop
+    call monte_carlo_loop()               ! Main MC loop
 
     ! Step 5 :Final reporting and cleanup
-    call FinalReport()                  ! Print energy and statistics
+    call final_report()                  ! Print energy and statistics
 
 end program MANIAC

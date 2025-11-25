@@ -20,89 +20,100 @@ module montecarlo_module
 contains
 
     !------------------------------------------------------------------------------
-    ! subroutine MonteCarloLoop
-    !
     ! Performs the main Monte Carlo simulation loop, executing a series of molecular
     ! moves and exchanges over multiple blocks and steps.
     !------------------------------------------------------------------------------
-    subroutine MonteCarloLoop()
+    subroutine monte_carlo_loop()
 
         implicit none
 
-        ! 1. Local Variables
+        ! Local Variables
         real(real64) :: random_draw     ! Random number used for move selection
         integer :: residue_type         ! Index of molecule to be moved
         integer :: molecule_index       ! Index of molecule copy
 
-        ! 2. Initialization
+        ! Initialization
         call LogStartMC()               ! Log starting message
         call update_output_files(.false.)       ! Write initial topology
+        status%block = 1 ! Initialize Monte Carlo counters
+        status%step  = 1 ! Initialize Monte Carlo counters
 
-        ! 3. Main Monte Carlo Loop
-        do current_block = 1, input%nb_block        ! Loop over blocks
-            do current_step = 1, input%nb_step      ! Loop over steps within each block
+        !----------------------------------------------
+        ! Main Monte Carlo Loop
+        !----------------------------------------------
+        do
+            ! Pick a molecule type and instance
+            residue_type    = pick_random_residue_type(input%is_active)
+            molecule_index  = pick_random_molecule_index(primary%num_residues(residue_type))
 
-                ! Pick a molecule type and instance
-                residue_type = PickRandomResidueType(input%is_active)
-                molecule_index = PickRandomMoleculeIndex(primary%num_residues(residue_type))
+            ! Perform Monte Carlo move
+            random_draw = rand_uniform()
 
-                ! Perform Monte Carlo move
-                random_draw = rand_uniform()
+            if (random_draw <= proba%translation) then
 
-                if (random_draw <= proba%translation) then
+                ! Case 1: Small translation move
+                call attempt_translation_move(residue_type, molecule_index)
 
-                    ! Case 1: Small translation move
-                    call attempt_translation_move(residue_type, molecule_index)
+            else if (random_draw <= proba%rotation + proba%translation) then
 
-                else if (random_draw <= proba%rotation+proba%translation) then
+                ! Case 2: Rotation move
+                call attempt_rotation_move(residue_type, molecule_index)
 
-                    ! Case 2: Rotation move
-                    call Rotation(residue_type, molecule_index)
+            else if (random_draw <= proba%rotation + proba%translation + proba%swap) then
 
-                else if (random_draw <= proba%rotation+proba%translation+proba%swap) then
+                ! Case 3: Swap move
+                call attempt_swap_move(residue_type, molecule_index)
 
-                    ! Case 3: Swap move
-                    call attempt_swap_move(residue_type, molecule_index)
+            else
 
-                else ! Insertion/deletion move or widom
+                ! Insertion/deletion move or Widom
+                if (proba%insertion_deletion > 0) then
+                    if (rand_uniform() <= PROB_CREATE_DELETE) then
 
-                    ! Insertion or deletion (GCMC)
-                    if (proba%insertion_deletion > 0) then
-
-                        ! Case ': Insertion or deletion move
-                        if (rand_uniform() <= PROB_CREATE_DELETE) then
-
-                            ! Attempt to create a molecule of species residue_type
-                            molecule_index = primary%num_residues(residue_type) + 1
-                            call attempt_creation_move(residue_type, molecule_index)
-
-                        else
-
-                            ! Attempt to delete a randomly chosen molecule of species residue_type
-                            call attempt_deletion_move(residue_type, molecule_index)
-
-                        end if
-
-                    else ! Widom
-
+                        ! Attempt to create a molecule
                         molecule_index = primary%num_residues(residue_type) + 1
-                        call widom_trial(residue_type, molecule_index)
+                        call attempt_creation_move(residue_type, molecule_index)
+
+                    else
+
+                        ! Attempt to delete a molecule
+                        call attempt_deletion_move(residue_type, molecule_index)
 
                     end if
+                else
+
+                    ! Widom trial
+                    molecule_index = primary%num_residues(residue_type) + 1
+                    call widom_trial(residue_type, molecule_index)
 
                 end if
-
-             end do
+            end if
 
             !----------------------------------------------
-            ! Adjust Monte Carlo step sizes & output status
+            ! Adjust Monte Carlo step counters
             !----------------------------------------------
-            call AdjustMoveStepSizes()          ! Adjust the Monte Carlo move step sizes based on recent acceptance ratios
-            call PrintStatus()                  ! Print the current status of the simulation to the log, data, and trajectory files
-            call update_output_files(.true.)
+            status%step = status%step + 1
+
+            ! Finished all steps in the current block?
+            if (status%step > status%desired_step) then
+
+                status%step  = 1                  ! reset step
+                status%block = status%block + 1   ! move to next block
+
+                !----------------------------------------------
+                ! Adjust step sizes & output status at the end of the block
+                !----------------------------------------------
+                call adjust_move_step_sizes()        ! Adjust MC step sizes
+                call PrintStatus()                ! Print current simulation status
+                call update_output_files(.true.)  ! Update output files
+
+            end if
+
+            ! Finished all blocks?
+            if (status%block > status%desired_block) exit
 
         end do
 
-    end subroutine MonteCarloLoop
+    end subroutine monte_carlo_loop
 
 end module montecarlo_module

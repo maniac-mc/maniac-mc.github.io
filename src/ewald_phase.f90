@@ -178,17 +178,17 @@ contains
     subroutine compute_all_fourier_terms()
 
         ! Local variables
-        integer :: residue_type_1
-        integer :: molecule_index_1
+        integer :: residue_type
+        integer :: molecule_index
 
         ! Loop over all residue types
-        do residue_type_1 = 1, nb%type_residue
+        do residue_type = 1, nb%type_residue
 
             ! Loop over all molecules of this residue type
-            do molecule_index_1 = 1, primary%num_residues(residue_type_1)
+            do molecule_index = 1, primary%num_residues(residue_type)
 
                 ! Compute Fourier terms for a single molecule
-                call single_mol_fourier_terms(residue_type_1, molecule_index_1)
+                call single_mol_fourier_terms(residue_type, molecule_index)
 
             end do
         end do
@@ -209,12 +209,17 @@ contains
         integer :: atom_index_1                 ! Atom index
         real(real64), dimension(3) :: atom      ! Atom coordinates in real space
         real(real64), dimension(3) :: phase     ! Phase factors for Fourier terms
-        integer :: idim  ! component index: 1=X, 2=Y, 3=Z
+        integer :: idim                         ! component index: 1=X, 2=Y, 3=Z
+        type(type_coordinate), pointer :: coord ! Pointer for host or guest coordinate
+
+        ! Return the correct pointer (host, guest, or gas)
+        coord => get_coord(res_type)
 
         do atom_index_1 = 1, nb%atom_in_residue(res_type)
 
-            atom = primary%mol_com(:, res_type, mol_index) + &
-                primary%site_offset(:, res_type, mol_index, atom_index_1)
+            ! Atom coordinate
+            atom = coord%com(:, res_type, mol_index) + &
+                coord%offset(:, res_type, mol_index, atom_index_1)
 
             ! Compute the phase vector components as the dot product of the atom position
             ! with each reciprocal lattice vector (columns of reciprocal_box), scaled by 2π.
@@ -224,7 +229,6 @@ contains
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
-
             do idim = 1, 3
                 ewald%temp_1d(:) = ewald%temp(idim, :)
                 call compute_phase_factor(ewald%temp_1d(:), phase(idim), ewald%kmax(idim))

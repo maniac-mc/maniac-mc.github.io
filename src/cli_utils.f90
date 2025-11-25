@@ -31,11 +31,11 @@ contains
     !-----------------------------------------------------------------
     subroutine set_default_CLI_values()
 
-        maniac_file = ''
-        data_file = ''
-        inc_file = ''
-        res_file = ''
-        output_path = 'outputs/'
+        path%input = ''
+        path%topology = ''
+        path%parameters = ''
+        path%reservoir = ''
+        path%outputs = 'outputs/'
 
     end subroutine set_default_CLI_values
 
@@ -63,51 +63,53 @@ contains
 
             case ('-i')
                 if (seen_maniac_file) then
-                    call AbortRun("Duplicate option: -i", 1)
+                    call abort_run("Duplicate option: -i", 1)
                 end if
-                call expect_value(i, nargs, "-i", maniac_file)
+                call expect_value(i, nargs, "-i", path%input)
                 seen_maniac_file = .true.
                 cycle
 
             case ('-d')
                 if (seen_data_file) then
-                    call AbortRun("Duplicate option: -d", 1)
+                    call abort_run("Duplicate option: -d", 1)
                 end if
-                call expect_value(i, nargs, "-d", data_file)
+                call expect_value(i, nargs, "-d", path%topology)
                 seen_data_file = .true.
                 cycle
 
             case ('-p')
                 if (seen_inc_file) then
-                    call AbortRun("Duplicate option: -p", 1)
+                    call abort_run("Duplicate option: -p", 1)
                 end if
-                call expect_value(i, nargs, "-p", inc_file)
+                call expect_value(i, nargs, "-p", path%parameters)
                 seen_inc_file = .true.
                 cycle
 
             case ('-r')
                 if (seen_res_file) then
-                    call AbortRun("Duplicate option: -r", 1)
+                    call abort_run("Duplicate option: -r", 1)
                 end if
-                call expect_value(i, nargs, "-r", res_file)
+                call expect_value(i, nargs, "-r", path%reservoir)
                 seen_res_file = .true.
                 cycle
 
             case ('-o')
                 if (seen_output_path) then
-                    call AbortRun("Duplicate option: -o", 1)
+                    call abort_run("Duplicate option: -o", 1)
                 end if
-                call expect_value(i, nargs, "-o", output_path)
+                call expect_value(i, nargs, "-o", path%outputs)
                 seen_output_path = .true.
                 cycle
                 
             case default ! If argument starts with '-', it's an unknown flag
                 if (arg(1:1) == '-') then
-                    call AbortRun("Unknown option: "//trim(arg), 1)
+                    call abort_run("Unknown option: "//trim(arg), 1)
                 end if
 
             end select
         end do
+
+        if (seen_res_file) status%reservoir_provided = .true.
 
     end subroutine read_command_line_args
 
@@ -116,24 +118,24 @@ contains
     !-----------------------------------------------------------------
     subroutine validate_CLI_arguments()
 
-        if (trim(maniac_file) == '' .or. trim(data_file) == '' .or. trim(inc_file) == '') then
-            call AbortRun("Missing mandatory input arguments: -i, -d, -p required.", 1)
+        if (trim(path%input) == '' .or. trim(path%topology) == '' .or. trim(path%parameters) == '') then
+            call abort_run("Missing mandatory input arguments: -i, -d, -p required.", 1)
         end if
 
-        if (.not. file_exists(maniac_file)) then
-            call AbortRun("Input file not found: "//trim(maniac_file), 1)
+        if (.not. file_exists(path%input)) then
+            call abort_run("Input file not found: "//trim(path%input), 1)
         end if
         
-        if (.not. file_exists(data_file)) then
-            call AbortRun("Data file not found: "//trim(data_file), 1)
+        if (.not. file_exists(path%topology)) then
+            call abort_run("Data file not found: "//trim(path%topology), 1)
         end if 
 
-        if (.not. file_exists(inc_file)) then
-            call AbortRun("Parameter file not found: "//trim(inc_file), 1)
+        if (.not. file_exists(path%parameters)) then
+            call abort_run("Parameter file not found: "//trim(path%parameters), 1)
         end if
 
-        if (trim(res_file) /= '' .and. .not. file_exists(res_file)) then
-            call AbortRun("Reservoir file not found: "//trim(res_file), 1)
+        if (trim(path%reservoir) /= '' .and. .not. file_exists(path%reservoir)) then
+            call abort_run("Reservoir file not found: "//trim(path%reservoir), 1)
         end if
 
     end subroutine validate_CLI_arguments
@@ -143,10 +145,10 @@ contains
     !-----------------------------------------------------------------
     subroutine normalize_output_path()
 
-        if (len_trim(output_path) > 0) then
+        if (len_trim(path%outputs) > 0) then
 
-            if (output_path(len_trim(output_path):len_trim(output_path)) /= '/') then
-                output_path = trim(output_path) // '/'
+            if (path%outputs(len_trim(path%outputs):len_trim(path%outputs)) /= '/') then
+                path%outputs = trim(path%outputs) // '/'
             end if
 
         end if
@@ -183,7 +185,7 @@ contains
 
         ! Ensure value exists after the flag
         if (idx >= nargs) then
-            call AbortRun("Missing value after option "//trim(flag), 1)
+            call abort_run("Missing value after option "//trim(flag), 1)
         end if
 
         ! Read next argument
@@ -191,12 +193,12 @@ contains
 
         ! Check empty value (e.g. "-i  ")
         if (len_trim(tmp) == 0) then
-            call AbortRun("Empty value after option "//trim(flag), 1)
+            call abort_run("Empty value after option "//trim(flag), 1)
         end if
 
         ! Check empty value (e.g. "-i  ")
         if (len_trim(tmp) == 0) then
-            call AbortRun("Empty value after option "//trim(flag), 1)
+            call abort_run("Empty value after option "//trim(flag), 1)
         end if
 
         value_out = trim(tmp)

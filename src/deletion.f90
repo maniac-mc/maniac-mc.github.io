@@ -39,8 +39,8 @@ contains
         ! Return immediately if no molecules of type residue_type exist
         if (primary%num_residues(residue_type)==0) return
 
-        ! Count trial move (success + fail)
-        counter%trial_deletions = counter%trial_deletions + 1
+        ! Count trial move
+        counter%deletions(1) = counter%deletions(1) + 1
 
         ! Energy of the previous configuration
         call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
@@ -96,20 +96,20 @@ contains
         counter%deletions = counter%deletions + 1
 
         ! Add the molecule to the reservoir
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
 
             ! Generate three random numbers in [0,1) and shift to [-0.5,0.5)
             call random_number(trial_pos)
             trial_pos = trial_pos - half
 
             ! Place the deleted molecule randomly in the reservoir
-            reservoir%mol_com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
+            gas%com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
                 trial_pos(1)*reservoir%matrix(:, 1) + &
                 trial_pos(2)*reservoir%matrix(:, 2) + &
                 trial_pos(3)*reservoir%matrix(:, 3)
-            reservoir%site_offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
+            gas%offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
                 1:nb%atom_in_residue(residue_type)) = &
-                primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+                gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
             reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) + 1
             reservoir%num_atoms = reservoir%num_atoms + nb%atom_in_residue(residue_type)
@@ -135,8 +135,8 @@ contains
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type)
 
         ! Restore previous positions and orientation
-        primary%mol_com(:, residue_type, molecule_index) = mol_com_old(:)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+        guest%com(:, residue_type, molecule_index) = mol_com_old(:)
+        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
             site_offset_old(:, 1:nb%atom_in_residue(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)

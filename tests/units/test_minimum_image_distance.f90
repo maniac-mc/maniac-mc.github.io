@@ -19,13 +19,18 @@ program test_minimum_image_distance
     nres = 2
     natoms = 1
 
-    allocate(box%mol_com(3, nres, nmaxmol))
-    allocate(box%site_offset(3, nres, nmaxmol, natoms))
+    ! Allocate resid_location
+    if (allocated(resid_location)) deallocate(resid_location)
+    allocate(resid_location(nres))
+    resid_location = TYPE_GUEST
 
-    box%mol_com(:,1,1) = [-4.0_real64, -4.0_real64, -4.0_real64]
-    box%site_offset(:,1,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
-    box%mol_com(:,2,1) = [4.0_real64, 4.0_real64, 4.0_real64]
-    box%site_offset(:,2,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
+    allocate(guest%com(3, nres, nmaxmol))
+    allocate(guest%offset(3, nres, nmaxmol, natoms))
+
+    guest%com(:,1,1) = [-4.0_real64, -4.0_real64, -4.0_real64]
+    guest%offset(:,1,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
+    guest%com(:,2,1) = [4.0_real64, 4.0_real64, 4.0_real64]
+    guest%offset(:,2,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
 
     !------------------------------------------------------
     ! 1) Cubic box
@@ -87,5 +92,9 @@ program test_minimum_image_distance
     !     print *, "Expected distance = ", expected
     !     stop 1
     ! end if
+
+    if (allocated(resid_location)) deallocate(resid_location)
+    if (allocated(nb%atom_in_residue)) deallocate(nb%atom_in_residue)
+    if (allocated(guest%offset)) deallocate(guest%offset)
 
 end program test_minimum_image_distance

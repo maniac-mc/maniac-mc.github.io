@@ -15,38 +15,42 @@ contains
     !------------------------------------------------------------------------------
     subroutine update_output_files(later_step)
 
+        ! Input coefficient
         logical, intent(in) :: later_step       ! Flag to distinguish first vs. later steps
 
         ! Write LAMMPS trajectory (main and reservoir)
-        call write_dump_lammpstrj(primary, "trajectory.lammpstrj", later_step)
-        if (has_reservoir) call write_dump_lammpstrj(reservoir, "reservoir.lammpstrj", later_step)
+        call write_dump_lammpstrj(primary, "trajectory.lammpstrj", later_step, is_reservoir = .false.)
+        if (status%reservoir_provided) then
+            call write_dump_lammpstrj(reservoir, "reservoir.lammpstrj", later_step, is_reservoir = .true.)
+        end if
 
         ! Write energies and move counts to data file
         call write_dat_info()
 
         ! Write LAMMPS data file
-        call write_topology_data(primary)
+        call write_topology_data(primary, is_reservoir = .false.)
 
     end subroutine update_output_files
 
     !------------------------------------------------------------------------------
     ! Write trajectory in lammpstrj format (see https://docs.lammps.org for details)
     !------------------------------------------------------------------------------
-    subroutine write_dump_lammpstrj(box, lammpstrj_filename, append_mode)
+    subroutine write_dump_lammpstrj(box, lammpstrj_filename, append_mode, is_reservoir)
 
         ! Input parameters
         type(type_box), intent(inout) :: box                            ! Type for box
         character(len=*), intent(in), optional :: lammpstrj_filename    ! Output trajectory in lammpstrj format
-        logical, optional :: append_mode                                ! Flag to append to existing files
+        logical, intent(in), optional :: append_mode                    ! Flag to append to existing files
+        logical, intent(in) :: is_reservoir                             ! To indicate if reservoir
 
         ! Local variables
-        integer :: i, j, k                      ! Loop indices over residue types, residues, and atoms
-        integer :: atom_id, atom_type
+        integer :: res_type, mol_index, atom_index                      ! Loop indices over residue types, residues, and atoms
+        integer :: atom_id, atom_type                                   ! Atom type and id
         integer :: UNIT_LMP = 18
-        logical :: do_append                    ! Internal flag controlling append/overwrite
-        integer :: dim                          ! Integer for looping over dimensions
-        character(len=20) :: file_position      ! 'APPEND' or 'ASIS' for file positioning
-        real(real64), dimension(3) :: pos, com  ! Center of mass and atomic position vectors
+        logical :: do_append                                            ! Internal flag controlling append/overwrite
+        character(len=20) :: file_position                              ! 'APPEND' or 'ASIS' for file positioning
+        real(real64), dimension(3) :: pos, com                          ! Center of mass and atomic position vectors
+        type(type_coordinate), pointer :: coord                         ! Pointer for host or guest coordinate
 
         ! Determine whether to append or overwrite
         do_append = .false.
@@ -58,12 +62,12 @@ contains
         end if
 
         ! Open file for writing
-        open(UNIT=UNIT_LMP, FILE=trim(output_path) // lammpstrj_filename, &
+        open(UNIT=UNIT_LMP, FILE=trim(path%outputs) // lammpstrj_filename, &
             STATUS='UNKNOWN', ACTION='write', POSITION=file_position)
 
         ! Write LAMMPS-style header
         write(UNIT_LMP, '(A)') "ITEM: TIMESTEP"
-        write(UNIT_LMP, '(I10)') input%nb_block
+        write(UNIT_LMP, '(I10)') status%desired_block
         write(UNIT_LMP, '(A)') "ITEM: NUMBER OF ATOMS"
         write(UNIT_LMP, '(I10)') box%num_atoms
         write(UNIT_LMP, '(A)') "ITEM: BOX BOUNDS pp pp pp"
@@ -75,30 +79,33 @@ contains
         write(UNIT_LMP, '(A)') "ITEM: ATOMS id type x y z"
 
         atom_id = 0
-        do i = 1, nb%type_residue
-            do j = 1, box%num_residues(i)
+        do res_type = 1, nb%type_residue
+
+            if (is_reservoir) then
+                coord => gas
+            else
+                coord => get_coord(res_type)
+            end if
+
+            do mol_index = 1, box%num_residues(res_type)
 
                 ! Extract CoM
-                do dim = 1, 3
-                    com(dim) = box%mol_com(dim, i, j)
-                end do
+                com(:) = coord%com(:, res_type, mol_index)
 
                 ! Wrap CoM into box for active molecules
-                if (input%is_active(i) == 1) then
+                if (input%is_active(res_type) == 1) then
                     call wrap_into_box(com, box)
                 end if
 
-                do k = 1, nb%atom_in_residue(i)
+                do atom_index = 1, nb%atom_in_residue(res_type)
 
                     atom_id = atom_id + 1
-                    atom_type = box%atom_types(i, k)
+                    atom_type = box%atom_types(res_type, atom_index)
 
-                    do dim = 1, 3
-                        pos(dim) = com(dim) + box%site_offset(dim, i, j, k)
-                    end do
-
+                    pos(:) = com(:) + coord%offset(:, res_type, mol_index, atom_index)
+                    
                     ! Wrap position for inactive structure
-                    if (input%is_active(i) == 0) then
+                    if (input%is_active(res_type) == 0) then
                         call wrap_into_box(pos, box)
                     end if
 
@@ -121,21 +128,21 @@ contains
         integer :: type_residue
 
         ! Decide whether to create new files or append
-        ! For current_block == 0, we want to recreate the file from scratch
+        ! For nb_block == 0, we want to recreate the file from scratch
         ! For later blocks, we append to existing files
-        if (current_block == 0) then
+        if (status%block == 0) then
             file_status = 'REPLACE'
         else
             file_status = 'OLD'
         end if
 
-        call write_dat_energy(current_block, file_status)
+        call write_dat_energy(status%block, file_status)
 
-        call write_dat_number(current_block, file_status)
+        call write_dat_number(status%block, file_status)
 
-        call write_dat_mcmove(current_block, file_status)
+        call write_dat_mcmove(status%block, file_status)
 
-        call write_dat_widom(current_block, file_status)
+        call write_dat_widom(status%block, file_status)
 
     end subroutine write_dat_info
 
@@ -143,10 +150,10 @@ contains
     ! Write energy.dat. Outputs total energy, Coulomb, non-Coulomb,
     ! intramolecular, and Ewald contributions.
     !------------------------------------------------------------------------------
-    subroutine write_dat_energy(current_block, file_status)
+    subroutine write_dat_energy(nb_block, file_status)
 
         ! Input arguments
-        integer, intent(in) :: current_block
+        integer, intent(in) :: nb_block
         character(len=*), intent(in) :: file_status
 
         ! Local variables
@@ -155,11 +162,11 @@ contains
         integer :: UNIT_ENERGY = 18
 
         ! Open energy.dat in append mode
-        open(unit=UNIT_ENERGY, file=trim(output_path) // 'energy.dat', &
+        open(unit=UNIT_ENERGY, file=trim(path%outputs) // 'energy.dat', &
             status=file_status, action='write', position='append')
 
         ! Write header only at first block
-        if (current_block == 0) then
+        if (nb_block == 0) then
             header = '#    block        total        recipCoulomb' // &
                     '     non-coulomb      coulomb     ewald_self    intramolecular-coulomb'
             write(UNIT_ENERGY, '(A)') trim(header)
@@ -167,7 +174,7 @@ contains
 
         ! Build data line with proper formatting
         write(line,'(I10,1X,F16.6,1X,F16.6,1X,F16.6,1X,F16.6,1X,F16.6,1X,F16.6)') &
-            current_block, energy%total, energy%recip_coulomb, energy%non_coulomb, &
+            nb_block, energy%total, energy%recip_coulomb, energy%non_coulomb, &
             energy%coulomb, energy%ewald_self, energy%intra_coulomb
         write(UNIT_ENERGY,'(A)') trim(line)
 
@@ -181,10 +188,10 @@ contains
     ! Outputs block number, excess chemical potential, total chemical potential,
     ! and number of Widom samples. Header written only for first block.
     !------------------------------------------------------------------------------
-    subroutine write_dat_widom(current_block, file_status)
+    subroutine write_dat_widom(nb_block, file_status)
 
         ! Input arguments
-        integer, intent(in) :: current_block
+        integer, intent(in) :: nb_block
         character(len=*), intent(in) :: file_status
 
         ! Local variables
@@ -205,19 +212,19 @@ contains
                 if (input%is_active(type_residue) > 0) then
 
                     ! Construct the file name
-                    filename = trim(output_path) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
+                    filename = trim(path%outputs) // 'widom_' // trim(res%names_1d(type_residue)) // '.dat'
 
                     ! Open file in append mode
                     open(unit=UNIT_WIDOM, file=filename, status=file_status, action='write', position='append')
 
                     ! Write header only at the first block
-                    if (current_block == 0) then
+                    if (nb_block == 0) then
                         write(line,'(A10,1X,A16,1X,A16,1X,A16)') '# Block', 'Excess_Mu_kcalmol', 'Total_Mu_kcalmol', 'Widom_Samples'
                         write(UNIT_WIDOM,'(A)') trim(line)
                     end if
 
                     ! Write the data line: block, excess mu, total mu, number of samples
-                    write(line,'(I10,1X,F16.6,1X,F16.6,1X,I12)') current_block, &
+                    write(line,'(I10,1X,F16.6,1X,F16.6,1X,I12)') nb_block, &
                         widom_stat%mu_ex(type_residue), widom_stat%mu_tot(type_residue), &
                         widom_stat%sample(type_residue)
                     write(UNIT_WIDOM,'(A)') trim(line)
@@ -237,10 +244,10 @@ contains
     ! Write number_RESNAME.dat for each active residue. Tracks block number
     ! and number of active molecules. Header is written only for the first block.
     !------------------------------------------------------------------------------
-    subroutine write_dat_number(current_block, file_status)
+    subroutine write_dat_number(nb_block, file_status)
 
         ! Input arguments
-        integer, intent(in) :: current_block
+        integer, intent(in) :: nb_block
         character(len=*), intent(in) :: file_status
 
         ! Local variables
@@ -254,19 +261,19 @@ contains
 
             if (input%is_active(resi) == 1) then
                 ! Construct the filename for this residue
-                filename = trim(output_path) // 'number_' // trim(res%names_1d(resi)) // '.dat'
+                filename = trim(path%outputs) // 'number_' // trim(res%names_1d(resi)) // '.dat'
 
                 ! Open file for append (create if not exists)
                 open(unit=UNIT_COUNT, file=filename, status=file_status, action='write', position='append')
 
-                ! Write header only once (when current_block == 0)
-                if (current_block == 0) then
+                ! Write header only once (when nb_block == 0)
+                if (nb_block == 0) then
                     write(line,'(A10,1X,A10)') '# Block', 'Active_Molecules'
                     write(UNIT_COUNT,'(A)') trim(line)
                 end if
 
                 ! Write the block number and count for this residue
-                write(line,'(I10,1X,I10)') current_block, primary%num_residues(resi)
+                write(line,'(I10,1X,I10)') nb_block, primary%num_residues(resi)
                 write(UNIT_COUNT,'(A)') trim(line)
 
                 close(UNIT_COUNT)
@@ -281,10 +288,10 @@ contains
     ! rotation, creation/deletion, swap, and Widom moves. Header generated
     ! dynamically based on which move types are enabled.
     !------------------------------------------------------------------------------
-    subroutine write_dat_mcmove(current_block, file_status)
+    subroutine write_dat_mcmove(nb_block, file_status)
 
         ! Input arguments
-        integer, intent(in) :: current_block
+        integer, intent(in) :: nb_block
         character(len=*), intent(in) :: file_status
 
         ! Local variables
@@ -293,10 +300,10 @@ contains
         integer :: UNIT_MOVES  = 20
 
         ! Determine if this is the first block written
-        first_block = (current_block == 0)
+        first_block = (nb_block == 0)
 
         ! Open file
-        open(unit=UNIT_MOVES, file=trim(output_path)//'moves.dat', &
+        open(unit=UNIT_MOVES, file=trim(path%outputs)//'moves.dat', &
             status=file_status, action='write', position='append')
 
         ! -----------------------
@@ -354,37 +361,37 @@ contains
         ! -----------------------
 
         ! Block
-        write(line,'(I12)') current_block
+        write(line,'(I12)') nb_block
 
         ! Translation
         if (proba%translation > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%translations, counter%trial_translations
+            write(tmp,'(1X,I12,1X,I12)') counter%translations(2), counter%translations(1)
             line = trim(line)//tmp
         end if
 
         ! Rotation
         if (proba%rotation > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%rotations, counter%trial_rotations
+            write(tmp,'(1X,I12,1X,I12)') counter%rotations(2), counter%rotations(1)
             line = trim(line)//tmp
         end if
 
         ! Insertion / Deletion
         if (proba%insertion_deletion > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%creations, counter%trial_creations
+            write(tmp,'(1X,I12,1X,I12)') counter%creations(2), counter%creations(1)
             line = trim(line)//tmp
-            write(tmp,'(1X,I12,1X,I12)') counter%deletions, counter%trial_deletions
+            write(tmp,'(1X,I12,1X,I12)') counter%deletions(2), counter%deletions(1)
             line = trim(line)//tmp
         end if
 
         ! Swap
         if (proba%swap > 0) then
-            write(tmp,'(1X,I12,1X,I12)') counter%swaps, counter%trial_swaps
+            write(tmp,'(1X,I12,1X,I12)') counter%swaps(2), counter%swaps(1)
             line = trim(line)//tmp
         end if
 
         ! Widom
         if (proba%widom > 0) then
-            write(tmp,'(1X,I12)') counter%trial_widom
+            write(tmp,'(1X,I12,1X,I12)') counter%widom(2), counter%widom(1)
             line = trim(line)//tmp
         end if
 
@@ -398,12 +405,11 @@ contains
     !------------------------------------------------------------------------------
     ! Write topology in LAMMPS data format (see https://docs.lammps.org for details)
     !------------------------------------------------------------------------------
-    subroutine write_topology_data(box)
-
-        implicit none
+    subroutine write_topology_data(box, is_reservoir)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
+        logical, intent(in) :: is_reservoir                             ! To indicate if reservoir
 
         ! Local variables
         integer :: i, j, k, atom_id, mol_id, atom_type
@@ -412,6 +418,7 @@ contains
         real(real64) :: charge
         real(real64), dimension(3) :: pos
         integer :: dim ! Integer for looping over dimensions
+        type(type_coordinate), pointer :: coord                         ! Pointer for host or guest coordinate
 
         ! Update bond number count
         cpt_bond = 0
@@ -458,7 +465,7 @@ contains
         box%num_impropers = cpt_improper
 
         ! Open file
-        open(UNIT=unit_data, FILE=trim(output_path) // data_filename, STATUS='REPLACE', ACTION='write')
+        open(UNIT=unit_data, FILE=trim(path%outputs) // data_filename, STATUS='REPLACE', ACTION='write')
 
         write(unit_data, *) "! LAMMPS data file (atom_style full)"
         write(unit_data, *) box%num_atoms, " atoms"
@@ -485,7 +492,7 @@ contains
         write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(3,1), box%bounds(3,2)
         write(unit_data, '(A)') "zlo zhi"
 
-        if (box%is_triclinic) then
+        if (box%type == 3) then
             write(unit_data, '(3(F15.8,1X))') box%tilt(1), box%tilt(2), box%tilt(3)
             write(unit_data, '(A)') "xy xz yz"
         end if
@@ -508,6 +515,13 @@ contains
         atom_id = 0
         mol_id = 0
         do i = 1, nb%type_residue
+
+            if (is_reservoir) then
+                coord => gas
+            else
+                coord => get_coord(i)
+            end if
+
             do j = 1, box%num_residues(i)
                 mol_id = mol_id + 1
                 do k = 1, nb%atom_in_residue(i)
@@ -517,7 +531,7 @@ contains
                     charge = box%atom_charges(i,k)
 
                     do dim = 1, 3
-                        pos(dim) = box%mol_com(dim, i, j) + box%site_offset(dim, i, j, k)
+                        pos(dim) = coord%com(dim, i, j) + coord%offset(dim, i, j, k)
                     end do
 
                     ! Only wrap atom of inative species (i.e. leave active molecules continuous at the pbc)

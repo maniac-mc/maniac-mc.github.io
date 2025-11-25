@@ -39,8 +39,8 @@ contains
 
         call check_molecule_index(molecule_index)
 
-        ! Count trial move (success + fail)
-        counter%trial_creations = counter%trial_creations + 1
+        ! Count trial move
+        counter%creations(1) = counter%creations(1) + 1
 
         ! Compute old energy
         call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
@@ -95,13 +95,14 @@ contains
         counter%creations = counter%creations + 1
 
         ! Remove molecule from reservoir if present
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
 
             ! Replace molecule_index with the last molecule in the list to maintain continuity
             last_molecule_index = reservoir%num_residues(residue_type)
-            reservoir%mol_com(:, residue_type, rand_mol_index) = reservoir%mol_com(:, residue_type, last_molecule_index)
-            reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type)) = &
-                reservoir%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+            gas%com(:, residue_type, rand_mol_index) = &
+                gas%com(:, residue_type, last_molecule_index)
+            gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type)) = &
+                gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
             reservoir%num_residues(residue_type) = reservoir%num_residues(residue_type) - 1
             reservoir%num_atoms = reservoir%num_atoms - nb%atom_in_residue(residue_type)

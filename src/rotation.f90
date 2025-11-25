@@ -19,7 +19,7 @@ contains
     ! angle. The move is accepted or rejected based on the Metropolis
     ! criterion using energy differences.
     !---------------------------------------------------------------------------
-    subroutine Rotation(residue_type, molecule_index)
+    subroutine attempt_rotation_move(residue_type, molecule_index)
 
         ! Input arguments
         integer, intent(in) :: residue_type             ! Residue type to be moved
@@ -31,8 +31,8 @@ contains
         ! Exit early if molecule cannot rotate
         if ((nb%atom_in_residue(residue_type) == 1) .or. (molecule_index == 0)) return
 
-        ! Count trial move (success + fail)
-        counter%trial_rotations = counter%trial_rotations + 1
+        ! Count trial move
+        counter%rotations(1) = counter%rotations(1) + 1
 
         call save_molecule_state(residue_type, molecule_index, offset_old = res%site_offset_old)
 
@@ -40,7 +40,7 @@ contains
         call compute_old_energy(residue_type, molecule_index)
 
         ! Rotate the molecule randomly
-        call ApplyRandomRotation(residue_type, molecule_index)
+        call apply_random_rotation(residue_type, molecule_index)
 
         ! Recompute energies
         call compute_new_energy(residue_type, molecule_index)
@@ -57,6 +57,6 @@ contains
             call reject_molecule_move(residue_type, molecule_index, site_offset_old = res%site_offset_old)
         end if
 
-    end subroutine Rotation
+    end subroutine attempt_rotation_move
 
 end module molecule_rotation

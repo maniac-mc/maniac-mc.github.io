@@ -5,6 +5,8 @@ module prepare_utils
     use ewald_kvectors
     use ewald_phase
     use ewald_energy
+    use tabulated_utils
+
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
@@ -15,7 +17,7 @@ contains
     ! Convert fugacities to dimensionless activities and
     ! initialize Ewald summation parameters for the simulation.
     !-----------------------------------------------------------
-    subroutine prepare_simulation_parameters()
+    subroutine setup_simulation_parameters()
 
         ! Initialize Ewald summation parameters
         ! (cutoff, precision, reciprocal space, etc.)
@@ -35,16 +37,20 @@ contains
         ! reproducibility and debugging
         call log_ewald_parameters()
 
-    end subroutine prepare_simulation_parameters
+        ! Precompute tables for faster calculation
+        call precompute_table()
+
+    end subroutine setup_simulation_parameters
 
     !-------------------------------------------------------------------
     ! Allocate arrays used for Fourier components and related data
     !-------------------------------------------------------------------
     subroutine allocate_array()
 
+        ! Local variable
         integer :: kmax_max
 
-        allocate(res%site_offset_old(3, nb%max_atom_in_residue))
+        allocate(res%site_offset_old(3, nb%max_atom_in_any_residue))
 
         ! Allocate real arrays for coefficients (dimension ewald%num_kvectors)
         allocate(ewald%recip_constants(1:ewald%num_kvectors))
@@ -54,16 +60,16 @@ contains
 
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%kmax)
-        allocate(ewald%phase_factor(3, nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase_factor_old(3, 1:nb%max_atom_in_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase_factor(3, nb%type_residue, 0:NB_MAX_MOLECULE, 1:nb%max_atom_in_any_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase_factor_old(3, 1:nb%max_atom_in_any_residue, -kmax_max:kmax_max))
 
         allocate(ewald%temp_1d(-kmax_max:kmax_max))
 
         ! Allocate temporary arrays once
         allocate(ewald%temp(3, -kmax_max:kmax_max))
-        allocate(ewald%phase_new(nb%max_atom_in_residue))
-        allocate(ewald%phase_old(nb%max_atom_in_residue))
-        allocate(ewald%charges(nb%max_atom_in_residue))
+        allocate(ewald%phase_new(nb%max_atom_in_any_residue))
+        allocate(ewald%phase_old(nb%max_atom_in_any_residue))
+        allocate(ewald%charges(nb%max_atom_in_any_residue))
 
         ! Allocate kvectors
         allocate(ewald%kvectors(ewald%num_kvectors))
@@ -100,7 +106,7 @@ contains
             if (do_log) then
 
                 write(msg, '(A)') 'WARNING: real_space_cutoff too large for box. Reducing to safe value.'
-                call LogMessage(msg)
+                call log_message(msg)
             
             end if
             
@@ -119,20 +125,20 @@ contains
         character(200) :: formatted_msg
 
         write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', input%real_space_cutoff
-        call LogMessage(formatted_msg)
-        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', input%ewald_tolerance
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
+        write(formatted_msg, '(A, ES12.5)') 'Ewald accuracy tolerance: ', ewald%tolerance
+        call log_message(formatted_msg)
         write(formatted_msg, '(A, F10.4)') 'Screening factor (dimensionless): ', ewald%screening_factor
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '(A, F10.4)') 'Ewald damping parameter alpha (1/Å): ', ewald%alpha
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '(A, F10.4)') 'Fourier-space precision parameter: ', ewald%fourier_precision
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '(A, I5, A, I5, A, I5)') 'Max Fourier index (kmax(1), kmax(2), kmax(3)): ', &
             ewald%kmax(1), ', ', ewald%kmax(2), ', ', ewald%kmax(3)
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '(A, I10)') 'Total reciprocal lattice vectors: ', ewald%num_kvectors
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
 
     end subroutine log_ewald_parameters
 
@@ -204,7 +210,7 @@ contains
     subroutine clamp_tolerance()
 
         ! Clamp accuracy tolerance to max 0.5
-        input%ewald_tolerance = min(abs(input%ewald_tolerance), half)
+        ewald%tolerance = min(abs(ewald%tolerance), half)
     
     end subroutine clamp_tolerance
 
@@ -215,14 +221,14 @@ contains
     subroutine compute_ewald_parameters()
     
         ! Intermediate tolerance factor for screening width
-        ewald%screening_factor = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff)))
+        ewald%screening_factor = sqrt(abs(log(ewald%tolerance * input%real_space_cutoff)))
 
         ! Compute Ewald damping parameter
-        ewald%alpha = sqrt(abs(log(input%ewald_tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
+        ewald%alpha = sqrt(abs(log(ewald%tolerance * input%real_space_cutoff * ewald%screening_factor))) / &
                     input%real_space_cutoff
 
         ! Estimate needed Fourier-space precision
-        ewald%fourier_precision = sqrt(-log(input%ewald_tolerance * input%real_space_cutoff * &
+        ewald%fourier_precision = sqrt(-log(ewald%tolerance * input%real_space_cutoff * &
                                 (two * ewald%screening_factor * ewald%alpha)**2))
 
     end subroutine compute_ewald_parameters

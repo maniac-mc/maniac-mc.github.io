@@ -16,10 +16,10 @@ contains
     subroutine setup_output_files()
 
         ! Ensure output directory exists
-        call ensure_directory_exists(output_path)
+        call ensure_directory_exists(path%outputs)
 
         ! Open log file for writing, replacing any existing file
-        call open_log_file(output_path, 'log.maniac')
+        call open_log_file(path%outputs, 'log.maniac')
 
         ! Write header to log
         call write_header()
@@ -47,7 +47,7 @@ contains
         
             call execute_command_line(command, exitstat=exit_status)
         
-            if (exit_status /= 0) call AbortRun("Failed to create output directory: "//trim(path), exit_status)
+            if (exit_status /= 0) call abort_run("Failed to create output directory: "//trim(path), exit_status)
         end if
 
     end subroutine ensure_directory_exists
@@ -82,7 +82,7 @@ contains
         open(unit=unit_to_use, file=join_path(path, logname), status='replace', iostat=ios)
 
         if (ios /= 0) then
-            call AbortRun("Failed to open log file: "//trim(path)//trim(logname), ios)
+            call abort_run("Failed to open log file: "//trim(path)//trim(logname), ios)
         end if
     
     end subroutine open_log_file
@@ -95,10 +95,10 @@ contains
         integer, parameter :: box_width = 78 ! width of the box
 
         ! Blank line before header
-        call LogMessage("")
+        call log_message("")
 
         ! Top border
-        call LogMessage("+" // repeat_char("-", box_width-2) // "+")
+        call log_message("+" // repeat_char("-", box_width-2) // "+")
 
         ! Version info lines
         call BoxLine("MANIAC-MC - Version " // version, box_width)
@@ -107,10 +107,10 @@ contains
         call BoxLine("Code written and maintained by Simon Gravelle, LIPhy, CNRS", box_width)
 
         ! Bottom border
-        call LogMessage("+" // repeat_char("-", box_width-2) // "+")
+        call log_message("+" // repeat_char("-", box_width-2) // "+")
 
         ! Blank line after header
-        call LogMessage("")
+        call log_message("")
 
     end subroutine write_header
 

@@ -32,7 +32,7 @@ contains
         if (molecule_index == 0) return
 
         ! Increment trial move counter
-        counter%trial_translations = counter%trial_translations + 1
+        counter%translations(1) = counter%translations(1) + 1
 
         ! Save the current state of the molecule
         call save_molecule_state(residue_type, molecule_index, com_old = com_old)
@@ -76,15 +76,19 @@ contains
         
         ! Local variables
         real(real64) :: trial_pos(3)
+        type(type_coordinate), pointer :: coord     ! Pointer for host or guest coordinate
 
         ! Generate random move of max size "translation_step/2"
         trial_pos = rand_symmetric(3) * input%translation_step
 
+        ! Return the correct pointer (host or guest)
+        coord => get_coord(res_type)
+
         ! Apply translation to previous COM position
-        primary%mol_com(:, res_type, mol_index) = primary%mol_com(:, res_type, mol_index) + trial_pos(:)
+        coord%com(:, res_type, mol_index) = coord%com(:, res_type, mol_index) + trial_pos(:)
 
         ! Apply minimum image convension
-        call apply_PBC(primary%mol_com(:, res_type, mol_index), primary)
+        call apply_PBC(coord%com(:, res_type, mol_index), primary)
 
     end subroutine propose_translation_move
 

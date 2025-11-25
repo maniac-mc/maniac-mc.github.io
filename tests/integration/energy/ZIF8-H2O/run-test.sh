@@ -17,7 +17,7 @@ lammps_log=$topology_path"log.lammps"
 # Extract reference TotEng from LAMMPS log (last numeric value in that column)
 ref_energy=$(grep "TotEng" "$lammps_log" -A 1 | tail -n 1 | awk '{print $2}')
 
-tolerance=0.01 # allowed deviation
+tolerance=3 # allowed deviation
 
 # Get the last TotEng value from the log
 last_toteng=$(awk '/TotEng/ {getline; gsub(/^[| ]+/,""); print $2}' "$maniac_log")

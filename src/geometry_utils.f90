@@ -55,7 +55,7 @@ contains
         integer :: dim                               ! Loop index
 
         ! Orthogonal / Rectangular Box
-        if (.not. box%is_triclinic) then
+        if (box%type <= 3) then
 
             do dim = 1,3
 
@@ -177,7 +177,7 @@ contains
 
         ! Check for denormal/underflow values in determinant
         if (abs(box%determinant) < one) then
-            call AbortRun("Error: Determinant fell into denormal/underflow range")
+            call abort_run("Error: Determinant fell into denormal/underflow range")
         end if
 
         ! Calculate reciprocal of determinant if non-zero
@@ -186,7 +186,7 @@ contains
             reciprocal = one / box%determinant
         else
             ! Handle singular matrix case if needed, e.g. print error or return
-            call WarnUser("Determinant is zero or near zero, inverse not computed.")
+            call warn_user("Determinant is zero or near zero, inverse not computed.")
             return
         end if
 
@@ -207,33 +207,38 @@ contains
     ! neighboring periodic images are checked to ensure the true
     ! shortest distance is returned.
     !---------------------------------------------------------------------
-    function minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
-                            residue_type_2, molecule_index_2, atom_index_2) result(distance)
+    function minimum_image_distance(box, res_type_1, mol_index_1, atom_index_1, &
+                            res_type_2, mol_index_2, atom_index_2) result(distance)
 
         ! Input parameters
-        type(type_box), intent(in) :: box                 ! simulation box (geometry + PBC matrices)
-        integer, intent(in) :: residue_type_1             ! residue type ID for atom 1
-        integer, intent(in) :: molecule_index_1           ! molecule index within that residue type
-        integer, intent(in) :: atom_index_1               ! atom index within the molecule (atom 1)
-        integer, intent(in) :: residue_type_2             ! residue type ID for atom 2
-        integer, intent(in) :: molecule_index_2           ! molecule index within that residue type
-        integer, intent(in) :: atom_index_2               ! atom index within the molecule (atom 2)
+        type(type_box), intent(in) :: box                   ! simulation box (geometry + PBC matrices)
+        integer, intent(in) :: res_type_1                   ! residue type ID for atom 1
+        integer, intent(in) :: mol_index_1                  ! molecule index within that residue type
+        integer, intent(in) :: atom_index_1                 ! atom index within the molecule (atom 1)
+        integer, intent(in) :: res_type_2                   ! residue type ID for atom 2
+        integer, intent(in) :: mol_index_2                  ! molecule index within that residue type
+        integer, intent(in) :: atom_index_2                 ! atom index within the molecule (atom 2)
 
         ! Local variables
         integer :: shift_x, shift_y, shift_z   ! periodic image shifts in triclinic search
         integer :: dim                         ! Cartesian dimension index (1..3)
         real(real64) :: delta(3)               ! displacement vector between atoms (with PBC)
         real(real64) :: trial_delta(3)         ! displacement to a specific periodic image
-        real(real64) :: distance               ! final minimum-image distance
         real(real64) :: min_dist2              ! smallest squared distance found
         real(real64) :: trial_dist2            ! squared distance for current image
         real(real64) :: pos1(3), pos2(3)       ! absolute Cartesian positions of the two atoms
+        type(type_coordinate), pointer :: coord ! Pointer for host or guest coordinate
 
-        pos1 = box%mol_com(:,residue_type_1,molecule_index_1) + &
-            box%site_offset(:,residue_type_1,molecule_index_1,atom_index_1)
+        ! Return value
+        real(real64) :: distance               ! final minimum-image distance
 
-        pos2 = box%mol_com(:,residue_type_2,molecule_index_2) + &
-            box%site_offset(:,residue_type_2,molecule_index_2,atom_index_2)
+        coord => get_coord(res_type_1)
+        pos1 = coord%com(:, res_type_1, mol_index_1) + &
+            coord%offset(:, res_type_1, mol_index_1, atom_index_1)
+
+        coord => get_coord(res_type_2)
+        pos2 = coord%com(:, res_type_2, mol_index_2) + &
+            coord%offset(:, res_type_2, mol_index_2, atom_index_2)
 
         ! Compute Cartesian difference between the two atoms
         delta = pos2 - pos1
@@ -260,8 +265,7 @@ contains
                     do shift_z = -1,1
 
                         trial_delta = delta + shift_x*box%matrix(:,1) + &
-                                            shift_y*box%matrix(:,2) + &
-                                            shift_z*box%matrix(:,3)
+                            shift_y*box%matrix(:,2) + shift_z*box%matrix(:,3)
 
                         trial_dist2 = sum(trial_delta * trial_delta)
 
@@ -372,31 +376,31 @@ contains
         ! Local variable
         character(200) :: formatted_msg ! Buffer for formatted output messages
 
-        call LogMessage("====== Simulation preparation ======")
-        call LogMessage("")
+        call log_message("====== Simulation preparation ======")
+        call log_message("")
 
         select case (box%type)
             case (1)
 
-                call LogMessage("Box symmetry type: Cubic")
+                call log_message("Box symmetry type: Cubic")
             
             case (2)
             
-                call LogMessage("Box symmetry type: Orthorhombic")
+                call log_message("Box symmetry type: Orthorhombic")
             
             case (3)
             
-                call LogMessage("Box symmetry type: Triclinic")
+                call log_message("Box symmetry type: Triclinic")
             
             case default
             
                 write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%type
-                call LogMessage(formatted_msg)
+                call log_message(formatted_msg)
         
         end select
 
         write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%volume
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
 
     end subroutine log_geometry_parameters
 

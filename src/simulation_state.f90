@@ -6,83 +6,89 @@ module simulation_state
 
     implicit none
 
-    character(len=200) :: output_path               ! Path for saving outputs
-    character(len=200) :: maniac_file               ! Main input file
-    character(len=200) :: data_file                 ! Topology/data file
-    character(len=200) :: inc_file                  ! Parameters include file
-    character(len=200) :: res_file                  ! Optional reservoir file
-    integer :: current_block                        ! Current Monte Carlo block number
-    integer :: current_step                         ! Current Monte Carlo step within the block
-    integer :: out_unit = 10                        ! Default log file unit
-    logical :: has_reservoir                        ! Wether a reservoir was provided or
+    !---------------------------------------------------------------------------
+    ! Path and file names
+    !---------------------------------------------------------------------------
+    type path_type
+        character(len=200) :: outputs               ! Folder for saving outputs
+        character(len=200) :: input                 ! Main input file
+        character(len=200) :: topology              ! Topology/data file
+        character(len=200) :: parameters            ! Parameters include file
+        character(len=200) :: reservoir             ! Optional reservoir file
+    end type path_type
+    type(path_type) :: path
 
+    !---------------------------------------------------------------------------
+    ! Generic status information
+    !---------------------------------------------------------------------------
+    type status_type
+        integer :: desired_block                    ! Desired Monte Carlo block number
+        integer :: desired_step                     ! Desired Monte Carlo step
+        integer :: block                            ! Monte Carlo block number
+        integer :: step                             ! Monte Carlo step within the block
+        logical :: reservoir_provided               ! Is reservoir provided by the user
+    end type status_type
+    type(status_type) :: status
+
+    !---------------------------------------------------------------------------
+    ! Counters for Monte Carlo move (trial, success)
+    !---------------------------------------------------------------------------
     type :: counter_type
-        integer :: rotations = 0                    ! Counter for rotational Monte Carlo moves
-        integer :: translations = 0                 ! Counter for translational Monte Carlo moves
-        integer :: creations = 0                    ! Counter for creation moves
-        integer :: deletions = 0                    ! Counter for deletion moves
-        integer :: swaps = 0                        ! Counter for swap moves
-        integer :: trial_translations = 0           ! Counter for trial translation moves
-        integer :: trial_rotations = 0              ! Counter for trial rotation moves
-        integer :: trial_creations = 0              ! Counter for trial rotation moves
-        integer :: trial_deletions = 0              ! Counter for trial deletion moves
-        integer :: trial_swaps = 0                  ! Counter for trial swap moves
-        integer :: trial_widom = 0                  ! Counter for widom moves
+        integer :: creations(2) = 0                 ! Counter for creation moves
+        integer :: deletions(2) = 0                 ! Counter for deletion moves
+        integer :: translations(2) = 0              ! Counter for translational Monte Carlo moves
+        integer :: rotations(2) = 0                 ! Counter for rotational Monte Carlo moves
+        integer :: swaps(2) = 0                     ! Counter for swap moves
+        integer :: widom(2) = 0                     ! Counter for widom moves
     end type counter_type
     type(counter_type) :: counter
 
-    ! Monte carlo move probability
+    !---------------------------------------------------------------------------
+    ! Desired Monte Carlo move probability
+    !---------------------------------------------------------------------------
     type :: proba_type
+        real(real64) :: insertion_deletion          ! Probability of attempting an insertion or a deletion
         real(real64) :: translation                 ! Probability of attempting a translation move
         real(real64) :: rotation                    ! Probability of attempting a rotation move
-        real(real64) :: insertion_deletion          ! Probability of attempting an insertion/deletion
         real(real64) :: swap                        ! Probability of attempting a swap move
         real(real64) :: widom                       ! Probability of attempting a widom move
     end type proba_type
     type(proba_type) :: proba
 
+    !---------------------------------------------------------------------------
+    ! Energy terms
+    !---------------------------------------------------------------------------
+    type :: energy_type
+        ! Main terms
+        real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
+        real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
+        real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
+        real(real64) :: ewald_self                  ! Ewald self-interaction energy
+        real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy (alternative)
+        real(real64) :: total                       ! Total energies
+        ! Additional terms
+        real(real64) :: self_interaction            ! Site-site short-range energy
+        real(real64) :: ke_reciprocal               ! Reciprocal-space (k-space) energy
+        real(real64) :: total_coulomb               ! Total Coulomb energy
+        real(real64) :: total_non_coulomb           ! Total non-Coulomb energy
+    end type energy_type
+    type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
+
+
+
     ! Parameters provided in the input file
     type :: input_type
         real(real64), dimension(:), allocatable :: fugacity ! Fugacity of the GCMC reservoir, unitless (for each species)
         real(real64), dimension(:), allocatable :: chemical_potential ! Chemical potential of the GCMC reservoir, kcal/mol (for each species)
+        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         real(real64) :: temperature                 ! Temperature in Kelvin
         real(real64) :: translation_step            ! Maximum displacement for MC moves
         real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
-        real(real64) :: ewald_tolerance             ! Numerical accuracy for Ewald summation,
         real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
-        integer, dimension(:), allocatable :: is_active ! Activity flags or counts for each molecule type
         integer :: seed                             ! Initial seed for the random number generator
-        integer :: nb_block                         ! Total desired Monte Carlo block number
-        integer :: nb_step                          ! Total desired Monte Carlo step
         logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
     end type input_type
     type(input_type) :: input
-
-    ! Energy terms
-    type :: energy_type
-        real(real64) :: self_interaction            ! Site-site short-range energy
-        real(real64) :: coulomb                     ! Charged-electrostatic interaction energy
-        real(real64) :: non_coulomb                 ! Neutral-charged interaction energy
-        real(real64) :: ewald_self                  ! Ewald self-interaction energy
-        real(real64) :: ke_reciprocal               ! Reciprocal-space (k-space) energy
-        real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy (alternative)
-        real(real64) :: total_coulomb               ! Total Coulomb energy
-        real(real64) :: total_non_coulomb           ! Total non-Coulomb energy
-        real(real64) :: recip_coulomb               ! Reciprocal-space Coulomb contribution
-        real(real64) :: total                       ! Total system energy
-    end type energy_type
-    type(energy_type) :: energy
-
-    ! Energy status for Monte Carlo move
-    type :: energy_state
-        real(real64) :: non_coulomb                 ! Non-coulombic energy
-        real(real64) :: coulomb                     ! Coulombic energy
-        real(real64) :: recip_coulomb               ! Reciprocal-space energy
-        real(real64) :: ewald_self                  ! Ewald self contribution
-        real(real64) :: intra_coulomb               ! Intra-residue Coulomb contribution
-        real(real64) :: total                       ! Total energies
-    end type energy_state
-    type(energy_state) :: old, new
 
     ! Simulation box definition
     type :: type_box
@@ -94,9 +100,8 @@ module simulation_state
         real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
         real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
         real(real64) :: volume                      ! Box volume
-        ! About box content
-        logical :: is_triclinic                     ! Indicate if box is triclinic
         integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+        ! About box content
         integer :: num_atoms                        ! Number of atoms in the box
         integer :: num_atomtypes                    ! Number of atom types
         integer :: num_bonds                        ! Number of bonds
@@ -115,15 +120,28 @@ module simulation_state
         character(len=10), dimension(:, :), allocatable :: atom_names ! Atom names for each residue (1,:,:)=system, (2,:,:)=reservoir
         integer, dimension(:, :), allocatable :: atom_types ! Atom types for each residue (1,:,:)=system, (2,:,:)=reservoir
         integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
-        real(real64), dimension(:, :, :), allocatable :: mol_com ! X Y Z coordinate of molecule centers or atoms (1,:,:,:)=system, (2,:,:,:)=reservoir
-        real(real64), dimension(:, :, :, :), allocatable :: site_offset ! Local site X Y Z displacements from molecule center (1,:,:,:,:)=system, (2,:,:,:,:)=reservoir
     end type type_box
     type(type_box) :: primary, reservoir
+
+    !---------------------------------------------------------------------------
+    ! Separate coordinate for host, guest, and gas residue
+    !---------------------------------------------------------------------------
+    type :: type_coordinate
+        integer :: max_nb_atom
+        integer :: max_nb_molecule
+        logical, dimension(:), allocatable :: residue_exists            ! #tofix : remove?
+        real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
+        real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
+    end type type_coordinate
+    ! type(type_coordinate) :: host, guest, gas                           ! Host and gest from the main, gas from reservoir
+    type(type_coordinate), target :: host, guest, gas
+
+    integer, allocatable :: resid_location(:) ! size = nb%type_residue
 
     ! Simulation box definition
     type :: type_number
         integer :: type_residue                     ! Total number of residues
-        integer :: max_atom_in_residue              ! Max number of atoms in the largest residue
+        integer :: max_atom_in_any_residue          ! Max number of atoms in the largest residue
         integer :: max_type_per_residue             ! Max number of type per residue
         integer, dimension(:), allocatable :: atom_in_residue ! Number of atoms in the residue
         integer, dimension(:), allocatable :: types_per_residue ! Number of atom types in the residue
@@ -132,8 +150,27 @@ module simulation_state
         integer, dimension(:), allocatable :: dihedrals_per_residue ! Number of dihedrals in the residue
         integer, dimension(:), allocatable :: impropers_per_residue ! Number of impropers in the residue
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
+        integer :: max_atom_in_residue_active
+        integer :: max_atom_in_residue_inactive
+        integer :: max_active_residue
+        integer :: max_inactive_residue
+        ! integer, allocatable :: residue_count(:)
     end type type_number
     type(type_number) :: nb
+
+    !---------------------------------------------------------------------------
+    ! Information extracted during the prescan for each residue type.
+    ! Stores the list of atom types, the number of types, and the expected atom
+    ! count for that residue as defined in the Maniac input file.
+    !---------------------------------------------------------------------------
+    type residue
+        integer, allocatable :: types(:)    ! List of atom types belonging to this residue
+        integer :: nb_types                 ! Number of atom types in this residue
+        integer :: nb_atoms                 ! Total number of atoms in this residue
+        integer :: nb_res(2)                ! Total number of residue in primary and reservoir 
+        logical :: is_active                ! The residue is active
+    end type residue
+    type(residue), allocatable :: res_infos(:)
 
     ! Residues information
     type :: type_residue
@@ -196,6 +233,7 @@ module simulation_state
         complex(real64), dimension(:), allocatable :: phase_new  ! Temporary array for new configuration phases
         complex(real64), dimension(:), allocatable :: phase_old  ! Temporary array for old configuration phases
         real(real64), dimension(:), allocatable :: charges ! Temporary array for atom charges    
+        real(real64) :: tolerance                   ! Numerical accuracy for Ewald summation,
     end type type_ewald
     type(type_ewald) :: ewald
 

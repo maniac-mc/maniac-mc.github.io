@@ -38,8 +38,8 @@ contains
 
         call check_molecule_index(molecule_index)
 
-        ! Count trial move (success + fail)
-        counter%trial_widom = counter%trial_widom + 1
+        ! Count trial move
+        counter%widom(1) = counter%widom(1) + 1
 
         ! Compute old energy
         call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
@@ -80,6 +80,10 @@ contains
         real(real64) :: weight                  ! Boltzmann weight
 
         weight = exp(-deltaU * beta)
+
+        if (weight > error) then ! Correspond to a success
+            counter%widom(2) = counter%widom(2) + 1
+        end if
 
         widom_stat%weight(residue_type) = widom_stat%weight(residue_type) + weight
         widom_stat%sample(residue_type) = widom_stat%sample(residue_type) + 1

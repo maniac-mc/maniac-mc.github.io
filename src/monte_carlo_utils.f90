@@ -15,17 +15,12 @@ module monte_carlo_utils
 
 contains
 
-    !========================================================
+    !---------------------------------------------------------------------------
     ! Rotates all atoms of a residue around a randomly chosen
     ! axis (X, Y, or Z) by a random angle. Angle can be a
     ! small perturbation or a full 0-2π rotation.
-    !
-    ! Inputs:
-    !   res_type - integer, index of the residue type
-    !   mol_index - integer, index of the molecule
-    !   full_rotation - optional logical, if .true. use full rotation
-    !========================================================
-    subroutine ApplyRandomRotation(res_type, mol_index, full_rotation)
+    !---------------------------------------------------------------------------
+    subroutine apply_random_rotation(res_type, mol_index, full_rotation)
 
         ! Input arguments
         integer, intent(in) :: res_type           ! Index of the residue type
@@ -38,8 +33,9 @@ contains
         logical :: use_full_rotation              ! Actual value of full_rotation (defaults to .false.)
         real(real64) :: rotation_matrix(3,3)      ! 3x3 rotation matrix for the rotation
         real(real64) :: theta                     ! Rotation angle in radians
+        type(type_coordinate), pointer :: coord   ! Pointer for host or guest coordinate
 
-        ! Handle optional argument: default = .false.
+        ! Handle optional argument
         use_full_rotation = .false.
         if (present(full_rotation)) use_full_rotation = full_rotation
 
@@ -48,22 +44,28 @@ contains
         if (n_atoms == 1) return
 
         ! Choose rotation angle
-        theta = ChooseRotationAngle(use_full_rotation)
+        theta = choose_rotation_angle(use_full_rotation)
 
         ! Choose random axis (1=X, 2=Y, 3=Z)
         rotation_axis = int(rand_uniform() * three) + 1 ! Random integer in range [1,3]
 
         ! Set rotation matrix based on axis
-        rotation_matrix = RotationMatrix(rotation_axis, theta)
+        rotation_matrix = return_rotation_matrix(rotation_axis, theta)
+
+        ! Return the correct pointer (host or guest)
+        coord => get_coord(res_type)
 
         ! Apply rotation to all atoms in the residue
-        primary%site_offset(:, res_type, mol_index, 1:n_atoms) = &
-            matmul(rotation_matrix, primary%site_offset(:, res_type, mol_index, 1:n_atoms))
+        coord%offset(:, res_type, mol_index, 1:n_atoms) = &
+            matmul(rotation_matrix, coord%offset(:, res_type, mol_index, 1:n_atoms))
 
-    end subroutine ApplyRandomRotation
+    end subroutine apply_random_rotation
 
-    ! Returns a random rotation angle (radians); small-step if use_full_rotation=.false., full [0,2π] if .true.
-    function ChooseRotationAngle(use_full_rotation) result(theta)
+    !---------------------------------------------------------------------------
+    ! Returns a random rotation angle (radians), 
+    ! small-step if use_full_rotation=.false., full [0,2π] if use_full_rotation =.true.
+    !---------------------------------------------------------------------------
+    function choose_rotation_angle(use_full_rotation) result(theta)
 
         ! Input variables
         logical, intent(in) :: use_full_rotation
@@ -75,7 +77,7 @@ contains
 
             ! For small-step mode, make sure rotation_step_angle is reasonable
             if (input%rotation_step_angle <= zero .or. input%rotation_step_angle > TWOPI) then
-                call AbortRun('Invalid rotation_step_angle in ChooseRotationAngle')
+                call abort_run('Invalid rotation_step_angle in choose_rotation_angle')
             end if
 
             ! Use small rotation
@@ -85,24 +87,13 @@ contains
             theta = rand_uniform() * TWOPI
         end if
 
-    end function ChooseRotationAngle
+    end function choose_rotation_angle
 
     !----------------------------------------------------------------------
     ! Adjust the Monte Carlo translation and rotation step sizes using a
     ! Robbins–Monro adaptive scheme.
-    !
-    ! This routine updates the translational and rotational move amplitudes
-    ! based on the acceptance ratios observed over recent trial moves.
-    ! The adjustment follows the Robbins–Monro stochastic approximation:
-    !
-    !     step_new = step_old * exp( γ * (acc - TARGET) )
-    !
-    ! where:
-    !     acc   = observed acceptance ratio for the move type
-    !     γ     = learning rate (small positive constant)
-    !     TARGET = desired acceptance probability
     !----------------------------------------------------------------------
-    subroutine AdjustMoveStepSizes()
+    subroutine adjust_move_step_sizes()
 
         ! Local variables
         real(real64) :: acc_trans, acc_rot
@@ -111,10 +102,10 @@ contains
         if (.not. input%recalibrate_moves) return
 
         ! Adjust translation step
-        if (counter%trial_translations > MIN_TRIALS_FOR_RECALIBRATION) then
+        if (counter%translations(1) > MIN_TRIALS_FOR_RECALIBRATION) then
 
-            acc_trans = real(counter%translations, real64) / &
-                real(counter%trial_translations, real64)
+            acc_trans = real(counter%translations(2), real64) / &
+                real(counter%translations(1), real64)
 
             input%translation_step = input%translation_step * &
                                     exp(gamma * (acc_trans - TARGET_ACCEPTANCE))
@@ -125,10 +116,10 @@ contains
         end if
 
         ! Adjust rotational step
-        if (counter%trial_rotations > MIN_TRIALS_FOR_RECALIBRATION) then
+        if (counter%rotations(1) > MIN_TRIALS_FOR_RECALIBRATION) then
 
-            acc_rot = real(counter%rotations,real64) / &
-                    real(counter%trial_rotations,real64)
+            acc_rot = real(counter%rotations(2),real64) / &
+                    real(counter%rotations(1),real64)
 
             input%rotation_step_angle = input%rotation_step_angle * &
                                         exp(gamma * (acc_rot - TARGET_ACCEPTANCE))
@@ -138,16 +129,21 @@ contains
 
         end if
 
-    end subroutine AdjustMoveStepSizes
+    end subroutine adjust_move_step_sizes
 
     !----------------------------------------------------------------------
-    ! PickRandomResidueType: randomly selects an active residue type from the
+    ! Randomly selects an active residue type from the
     ! available types in [1, active_residue_count].
     !----------------------------------------------------------------------
-    function PickRandomResidueType(is_active) result(residue_type)
+    function pick_random_residue_type(is_active) result(residue_type)
 
+        ! Input parameter
         integer, dimension(:), intent(in) :: is_active
+        
+        ! Output parameter
         integer :: residue_type
+
+        ! Local variables
         integer :: i, n_active
         integer, allocatable :: active_indices(:)
 
@@ -173,15 +169,19 @@ contains
         residue_type = active_indices(INT(rand_uniform() * n_active) + 1)
 
         deallocate(active_indices)
-    end function PickRandomResidueType
+
+    end function pick_random_residue_type
 
     !----------------------------------------------------------------------
-    ! PickRandomMoleculeIndex: randomly select a molecule index within a given
+    ! Randomly select a molecule index within a given
     ! residue type. Returns 0 if there are no molecules of that type.
     !----------------------------------------------------------------------
-    function PickRandomMoleculeIndex(residue_count_for_type) result(molecule_index)
+    function pick_random_molecule_index(residue_count_for_type) result(molecule_index)
 
+        ! Input parameter
         integer, intent(in) :: residue_count_for_type
+        
+        ! Output parameter
         integer :: molecule_index
 
         if (residue_count_for_type == 0) then
@@ -200,20 +200,16 @@ contains
 
         end if
 
-    end function PickRandomMoleculeIndex
+    end function pick_random_molecule_index
 
     !----------------------------------------------------------------------
     ! Compute the Metropolis acceptance probability for a Monte Carlo move.
-    ! 
-    ! This routine evaluates the acceptance probability for creation,
-    ! deletion, translation, and rotation moves in a grand-canonical or
-    ! canonical Monte Carlo simulation.
     !----------------------------------------------------------------------
     function compute_acceptance_probability(old, new, residue_type, move_type) result(probability)
 
         ! Input arguments
-        type(energy_state), intent(in) :: old   ! Old energy states
-        type(energy_state), intent(in) :: new   ! New energy states
+        type(energy_type), intent(in) :: old   ! Old energy states
+        type(energy_type), intent(in) :: new   ! New energy states
         integer, intent(in) :: move_type        ! MC move type (TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, or TYPE_ROTATION)
         integer, intent(in) :: residue_type     ! Index of the residue type
 
@@ -243,15 +239,6 @@ contains
                 prefactor = primary%volume / N / lambda**3 ! note: N must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
-                ! write (*,*) "creation"
-                ! write (*,*) "beta", beta
-                ! write (*,*) "lambda", lambda
-                ! write (*,*) "deltaU", deltaU
-                ! write (*,*) "mu", mu
-                ! write (*,*) "prefactor", prefactor
-                ! write (*,*) "probability", probability
-                ! write (*,*)
-
             case (TYPE_DELETION)
 
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
@@ -259,30 +246,14 @@ contains
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
                 prefactor = Nplus1 * lambda**3 / (primary%volume) ! note: Nplus1 must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
-            
-                ! write (*,*) "deletion"
-                ! write (*,*) "beta", beta
-                ! write (*,*) "lambda", lambda
-                ! write (*,*) "deltaU", deltaU
-                ! write (*,*) "mu", mu
-                ! write (*,*) "prefactor", prefactor
-                ! write (*,*) "probability", probability
-                ! write (*,*)
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
                 ! P_acc = min[1, exp(-β * ΔU)]
                 probability = min(1.0_real64, exp(-beta * deltaU))
 
-                ! write (*,*) "move"
-                ! write (*,*) "beta", beta
-                ! write (*,*) "deltaU", deltaU
-                ! write (*,*) "probability", probability
-                ! write (*,*)
-
-
             case default
-                call AbortRun("Unknown move_type in compute_acceptance_probability!", 1)
+                call abort_run("Unknown move_type in compute_acceptance_probability!", 1)
         end select
 
     end function compute_acceptance_probability
@@ -297,8 +268,8 @@ contains
     function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
         ! Arguments
-        type(energy_state), intent(in) :: old   ! Energy of system with old molecule
-        type(energy_state), intent(in) :: new   ! Energy of system with new molecule
+        type(energy_type), intent(in) :: old   ! Energy of system with old molecule
+        type(energy_type), intent(in) :: new   ! Energy of system with new molecule
         integer, intent(in) :: type_old         ! Residue type being removed
         integer, intent(in) :: type_new         ! Residue type being inserted
 
@@ -327,9 +298,8 @@ contains
     end function swap_acceptance_probability
 
     !---------------------------------------------------------------------------
-    ! Purpose:
-    !   Compute the updated energy of a single molecule after a trial move
-    !   for use in the Monte Carlo acceptance test.
+    ! Compute the updated energy of a single molecule after a trial move
+    ! for use in the Monte Carlo acceptance test.
     !---------------------------------------------------------------------------
     subroutine compute_new_energy(residue_type, molecule_index, is_creation, is_deletion)
 
@@ -352,7 +322,7 @@ contains
 
             call single_mol_fourier_terms(residue_type, molecule_index)
             call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb, is_creation = creation_flag)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(residue_type, new%ewald_self)
             call compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, new%intra_coulomb)
         
@@ -380,7 +350,7 @@ contains
 
             call single_mol_fourier_terms(residue_type, molecule_index)
             call compute_recip_energy_single_mol(residue_type, molecule_index, new%recip_coulomb)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, new%non_coulomb, new%coulomb)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
@@ -426,7 +396,7 @@ contains
             ! Note: In deletion scenario, compute all energy components
             call compute_ewald_self_interaction_single_mol(residue_type, old%ewald_self)
             call compute_intra_residue_real_coulomb_energy_single_mol(residue_type, molecule_index, old%intra_coulomb)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
             call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
 
             ! Recalculate total energy
@@ -437,7 +407,7 @@ contains
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
             call compute_recip_energy_single_mol(residue_type, molecule_index, old%recip_coulomb)
-            call ComputePairInteractionEnergy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
+            call compute_pair_interaction_energy_singlemol(primary, residue_type, molecule_index, old%non_coulomb, old%coulomb)
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb
@@ -453,14 +423,14 @@ contains
     subroutine accept_molecule_move(old, new, counter_var)
 
         ! Input arguments
-        type(energy_state), intent(in) :: old, new  ! Old and new energy states
-        integer, intent(inout) :: counter_var       ! Counter for succesfull move
+        type(energy_type), intent(in) :: old, new  ! Old and new energy states
+        integer, intent(inout) :: counter_var(2)    ! Counter for succesfull move
 
         energy%recip_coulomb = energy%recip_coulomb + new%recip_coulomb - old%recip_coulomb
         energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb
         energy%coulomb = energy%coulomb + new%coulomb - old%coulomb
         energy%total = energy%total + new%total - old%total
-        counter_var = counter_var + 1
+        counter_var(2) = counter_var(2) + 1
 
     end subroutine accept_molecule_move
 
@@ -485,13 +455,13 @@ contains
 
         ! Save center-of-mass if requested (translation)
         if (present(com_old)) then
-            com_old(:) = primary%mol_com(:, res_type, mol_index)
+            com_old(:) = guest%com(:, res_type, mol_index)
         end if
 
         ! Save site offsets if requested (rotation)
         if (present(offset_old)) then
             natoms = nb%atom_in_residue(res_type)
-            offset_old(:, 1:natoms) = primary%site_offset(:, res_type, mol_index, 1:natoms)
+            offset_old(:, 1:natoms) = guest%offset(:, res_type, mol_index, 1:natoms)
         end if
 
     end subroutine save_molecule_state
@@ -513,13 +483,13 @@ contains
 
         ! Restore COM if present (translation)
         if (present(com_old)) then
-            primary%mol_com(:, res_type, mol_index) = com_old(:)
+            guest%com(:, res_type, mol_index) = com_old(:)
         end if
 
         ! Restore site offsets if present (rotation)
         if (present(site_offset_old)) then
             natoms = nb%atom_in_residue(res_type)
-            primary%site_offset(:, res_type, mol_index, 1:natoms) = &
+            guest%offset(:, res_type, mol_index, 1:natoms) = &
                 site_offset_old(:, 1:natoms)
         end if
 
@@ -557,12 +527,12 @@ contains
         ! Generate a random position in the simulation box (if enabled)
         if (do_place_com) then
             call random_number(trial_pos) ! Random numbers in [0,1)
-            primary%mol_com(:, residue_type, molecule_index) = primary%bounds(:,1) &
+            guest%com(:, residue_type, molecule_index) = primary%bounds(:,1) &
                 + matmul(primary%matrix, trial_pos)
         end if
 
         ! Copy geometry from reservoir or rotate if no reservoir
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
 
                 if (present(rand_mol_index)) then
                     ! Pick a random (and existing) molecule in the reservoir
@@ -570,24 +540,24 @@ contains
                     rand_mol_index = int(random_nmb * reservoir%num_residues(residue_type)) + 1
 
                     ! Copy site offsets from the chosen molecule
-                    primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                        reservoir%site_offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
+                    guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                        gas%offset(:, residue_type, rand_mol_index, 1:nb%atom_in_residue(residue_type))
 
                 else
 
                     ! Error: reservoir exists but no output index provided
-                    call AbortRun("Rand mol index must be provided when reservoir exists.", 1)
+                    call abort_run("Rand mol index must be provided when reservoir exists.", 1)
                 end if
 
         else
 
             ! Copy site offsets from the first molecule
-            primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-                primary%site_offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
+            guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+                guest%offset(:, residue_type, 1, 1:nb%atom_in_residue(residue_type))
 
             ! Rotate the new molecule randomly (using full 360° rotation)
             full_rotation = .true.
-            call ApplyRandomRotation(residue_type, molecule_index, full_rotation)
+            call apply_random_rotation(residue_type, molecule_index, full_rotation)
 
         end if
 
@@ -667,10 +637,10 @@ contains
         integer, intent(in):: last_molecule_index ! Index of the last molecule in the primary box
 
         ! Replace with the last molecule
-        primary%mol_com(:, residue_type, molecule_index) = &
-            primary%mol_com(:, residue_type, last_molecule_index)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
-            primary%site_offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
+        guest%com(:, residue_type, molecule_index) = &
+            guest%com(:, residue_type, last_molecule_index)
+        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+            guest%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))
 
         ! Replace Fourier terms
         call replace_fourier_terms_single_mol(residue_type, molecule_index, last_molecule_index)

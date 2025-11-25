@@ -16,7 +16,6 @@ program test_apply_PBC
     ! Test 1: Cubic box
     !======================================================
     box%type = 1
-    box%is_triclinic = .false.
     box%bounds(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
     box%bounds(:,2) = [1.0_real64, 1.0_real64, 1.0_real64]
     box%matrix = 0.0_real64
@@ -39,7 +38,6 @@ program test_apply_PBC
     ! Test 2: Orthorhombic box
     !======================================================
     box%type = 2
-    box%is_triclinic = .false.
     box%bounds(:,1) = [0.0_real64, -1.5_real64, 0.0_real64]
     box%bounds(:,2) = [2.0_real64, 1.5_real64, 4.0_real64]
     box%matrix = 0.0_real64
@@ -64,7 +62,6 @@ program test_apply_PBC
     ! Test 3: Triclinic box
     !======================================================
     box%type = 3
-    box%is_triclinic = .true.
     ! Define lower bounds
     box%bounds(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
     ! Box vectors: a=(1,0,0), b=(0.5,1,0), c=(0,0.5,1)

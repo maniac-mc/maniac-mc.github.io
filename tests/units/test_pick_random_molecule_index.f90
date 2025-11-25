@@ -1,4 +1,4 @@
-program test_PickRandomMoleculeIndex
+program test_pick_random_molecule_index
 
     use, intrinsic :: iso_fortran_env, only: real64
     use monte_carlo_utils
@@ -18,7 +18,7 @@ program test_PickRandomMoleculeIndex
     !---------------------------------------
     pass1 = .true.
     do i = 1, n_trials
-        pick = PickRandomMoleculeIndex(n_molecules)
+        pick = pick_random_molecule_index(n_molecules)
         if (pick < 1 .or. pick > n_molecules) then
             pass1 = .false.
             exit
@@ -28,7 +28,7 @@ program test_PickRandomMoleculeIndex
     !---------------------------------------
     ! Test 2: Zero molecules
     !---------------------------------------
-    pick = PickRandomMoleculeIndex(0)
+    pick = pick_random_molecule_index(0)
     pass2 = (pick == 0)
 
     !---------------------------------------
@@ -38,7 +38,7 @@ program test_PickRandomMoleculeIndex
     seen = 0
 
     do i = 1, n_trials
-        pick = PickRandomMoleculeIndex(n_molecules)
+        pick = pick_random_molecule_index(n_molecules)
         if (pick >= 1 .and. pick <= n_molecules) then
             seen(pick) = 1
         end if
@@ -50,22 +50,22 @@ program test_PickRandomMoleculeIndex
     ! Final output
     !---------------------------------------
     if (.not. pass1) then
-        print *, 'PickRandomMoleculeIndex test FAILED'
+        print *, 'pick_random_molecule_index test FAILED'
         print *, ' Error: returned index out of range'
         stop 1
     end if
 
     if (.not. pass2) then
-        print *, 'PickRandomMoleculeIndex test FAILED'
+        print *, 'pick_random_molecule_index test FAILED'
         print *, ' Error: did not return 0 for zero molecules'
         stop 1
     end if
 
     if (.not. pass3) then
-        print *, 'PickRandomMoleculeIndex test FAILED'
+        print *, 'pick_random_molecule_index test FAILED'
         print *, ' Error: random sampling missed some indices'
         stop 1
     end if
 
 
-end program test_PickRandomMoleculeIndex
+end program test_pick_random_molecule_index

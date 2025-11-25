@@ -38,7 +38,7 @@ contains
 
         if (total_mass <= 0.0_real64) then
             write(mass_str, '(F12.5)') total_mass
-            call AbortRun("Total mass is zero or negative: " // trim(mass_str), 1)
+            call abort_run("Total mass is zero or negative: " // trim(mass_str), 1)
         end if
 
         com = com / total_mass
@@ -160,8 +160,8 @@ contains
         end do
 
         ! Check if we found the required values
-        if (.not. found_atoms)      call WarnUser("Number of atoms not found in header")
-        if (.not. found_atom_types) call WarnUser("Number of atom types not found in header")
+        if (.not. found_atoms)      call warn_user("Number of atoms not found in header")
+        if (.not. found_atom_types) call warn_user("Number of atom types not found in header")
 
     end subroutine ReadLMPHeaderInfo
 
@@ -190,7 +190,6 @@ contains
         real(real64) :: zero = 0.0_real64
         integer :: ios
 
-        box%is_triclinic = .false.
         box%tilt(:) = zero
 
         ! Initialize bounds to a tiny value to indicate "not set"
@@ -233,22 +232,21 @@ contains
                 box%tilt(1) = tmp1
                 box%tilt(2) = tmp2
                 box%tilt(3) = tmp3
-                box%is_triclinic = .true.
             end if
 
         end do
 
         ! Make sure that box size were provided
         if (abs(box%bounds(1,1)) < 1.0e-11_real64 .and. abs(box%bounds(1,2)) < 1.0e-11_real64) then
-            call AbortRun("ParseLAMMPSBox: xlo xhi not found in input file!")
+            call abort_run("ParseLAMMPSBox: xlo xhi not found in input file!")
         end if
 
         if (abs(box%bounds(2,1)) < 1.0e-11_real64 .and. abs(box%bounds(2,2)) < 1.0e-11_real64) then
-            call AbortRun("ParseLAMMPSBox: ylo yhi not found in input file!")
+            call abort_run("ParseLAMMPSBox: ylo yhi not found in input file!")
         end if
 
         if (abs(box%bounds(3,1)) < 1.0e-11_real64 .and. abs(box%bounds(3,2)) < 1.0e-11_real64) then
-            call AbortRun("ParseLAMMPSBox: zlo zhi not found in input file!")
+            call abort_run("ParseLAMMPSBox: zlo zhi not found in input file!")
         end if
 
         ! Box lengths
@@ -316,7 +314,7 @@ contains
                 ! Back to Cartesian
                 delta_r_cart = matmul(box%matrix, delta_r_frac)
             else
-                call AbortRun("ERROR in repair_molecule: box%type is invalid.", 1)
+                call abort_run("ERROR in repair_molecule: box%type is invalid.", 1)
             end if
 
             ! Update atom position
@@ -338,7 +336,6 @@ contains
         xwrap = modulo(x + 0.5_real64*boxlen, boxlen) - 0.5_real64*boxlen
 
     end function wrap_nearest
-
 
     subroutine sort_pairs(n, p1, p2, eps, sig)
         integer, intent(in) :: n
@@ -368,6 +365,22 @@ contains
             end do
         end do
     end subroutine sort_pairs
+
+    !-----------------------------------------------------------------------------    !
+    ! Checks the I/O status returned by Fortran read/open/write operations
+    ! and aborts the program with a message if an error occurred.
+    !-----------------------------------------------------------------------------
+    subroutine check_IO_status(filename, ios)
+
+        ! Input parameters
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: ios
+
+        if (ios /= 0) then
+            call abort_run("I/O error on file: "//trim(filename), ios)
+        end if
+
+    end subroutine check_IO_status
 
 end module readers_utils
 

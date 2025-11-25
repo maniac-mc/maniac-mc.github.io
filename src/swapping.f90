@@ -53,8 +53,8 @@ contains
         ! Check that there is at least one molecule of the selected type to swap
         if (primary%num_residues(residue_type_bis)==0) return ! #todo : Is this really necessary ?
 
-        ! Count trial move (success + fail)
-        counter%trial_swaps = counter%trial_swaps + 1
+        ! Count trial move
+        counter%swaps(1) = counter%swaps(1) + 1
 
         ! Pick a molecule ID for the second type
         molecule_index_bis = primary%num_residues(residue_type_bis) + 1
@@ -82,7 +82,7 @@ contains
         primary%num_atoms = primary%num_atoms + nb%atom_in_residue(residue_type_bis)
 
         ! Use the CoM of the deleted molecule
-        primary%mol_com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
+        guest%com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
 
         ! Generate or pick orientation for the new molecule
         call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_mol_index, place_random_com = .false.)
@@ -126,8 +126,8 @@ contains
         primary%num_residues(residue_type_bis) = primary%num_residues(residue_type_bis) - 1
 
         ! Restore previous positions and orientation
-        primary%mol_com(:, residue_type, molecule_index) = mol_com_old(:)
-        primary%site_offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
+        guest%com(:, residue_type, molecule_index) = mol_com_old(:)
+        guest%offset(:, residue_type, molecule_index, 1:nb%atom_in_residue(residue_type)) = &
             site_offset_old(:, 1:nb%atom_in_residue(residue_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
@@ -181,7 +181,7 @@ contains
 
         ! Try to pick a different type
         do while (attempt < n_attempts)
-            new_type = PickRandomResidueType(input%is_active)
+            new_type = pick_random_residue_type(input%is_active)
 
             if (new_type /= current_type) then
                 return

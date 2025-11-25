@@ -12,12 +12,11 @@ module parameters_parser
 contains
 
     !---------------------------------------------------------------
-    ! Subroutine: ReadParameters
     ! Reads Lennard-Jones parameters (epsilon, sigma) from input file,
     ! assigns them to atom type pairs in the system, and applies
     ! mixing rules (Lorentz-Berthelot) if needed.
     !---------------------------------------------------------------
-    subroutine ReadParameters()
+    subroutine read_parameters()
 
         ! Local variables
         integer :: ios                                      ! I/O status code for file operations
@@ -38,7 +37,7 @@ contains
         integer :: n_pairs                                  ! Counter for the number of unique atom type pairs found
 
         ! Determine the maximum atom type index for array allocation
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
         else
             max_atom_type = maxval(primary%atom_types(:,:))
@@ -48,12 +47,14 @@ contains
         allocate(printed(max_atom_type, max_atom_type))     ! Allocate array to track logged atom type pairs
         allocate(pair1(max_pairs), pair2(max_pairs))        ! Allocate arrays for storing atom type indices of pairs
         allocate(epsilons(max_pairs), sigmas(max_pairs))    ! Allocate arrays for storing epsilon and sigma values
+
+        ! Initialise LJ coefficients to 0.0
         coeff%sigma = 0.0_real64
         coeff%epsilon = 0.0_real64
 
         printed = .false.                                   ! Initialize printed array to false (no pairs logged yet)
 
-        open(UNIT=INFILE, FILE=inc_file, STATUS='OLD', ACTION='read')
+        open(UNIT=INFILE, FILE=path%parameters, STATUS='OLD', ACTION='read')
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -73,7 +74,7 @@ contains
                 case ("pair_coeff")
                 read(rest_line, *, IOSTAT=ios) val_int1, val_int2, epsilon, sigma
                 if (ios /= 0) then
-                    call AbortRun("Failed to read pair_coeff value", 1)
+                    call abort_run("Failed to read pair_coeff value", 1)
                 end if
             end select
 
@@ -101,14 +102,14 @@ contains
         close(INFILE)
 
         ! If cross parameters are missing, enforce Lorenz-Berthelot rule
-        call ApplyLorentzBerthelot()
+        call apply_lorentz_berthelot()
 
         ! Print parameters in log
-        call LogParameters(inc_file, n_pairs, pair1, pair2, epsilons, sigmas)
+        call log_parameters(path%parameters, n_pairs, pair1, pair2, epsilons, sigmas)
 
-    end subroutine ReadParameters
+    end subroutine read_parameters
 
-    subroutine ApplyLorentzBerthelot()
+    subroutine apply_lorentz_berthelot()
 
         integer :: i, j, k, l               ! Loop indices for iterating over residues and atoms
         integer :: type_i, type_j           ! Atom type indices for the current pair of atoms
@@ -118,7 +119,7 @@ contains
         integer :: max_atom_type            ! Maximum atom type index from atom_types_2d array
 
         ! Determine the maximum atom type index for array allocation
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
         else
             max_atom_type = maxval(primary%atom_types(:,:))
@@ -149,7 +150,7 @@ contains
                                     ! Print the "rule enforcement" warning only once globally
                                     if (.not. any(warned)) then
                                         call InfoMessage("Enforcing the Lorentz-Berthelot rule")
-                                        call LogMessage("typei typej epsilon sigma")
+                                        call log_message("typei typej epsilon sigma")
                                     end if
 
                                     if (type_i < type_j) then
@@ -159,7 +160,7 @@ contains
                                         write(formatted_msg,'("",I3," -",I3," : ",F8.4," Å ",F8.4," kcal/mol")') &
                                             type_j, type_i, sigma, epsilon
                                     end if
-                                    call LogMessage(formatted_msg)
+                                    call log_message(formatted_msg)
 
                                     warned(type_i, type_j) = .true.
                                     warned(type_j, type_i) = .true.
@@ -174,6 +175,6 @@ contains
                 end do
             end do
         end do
-    end subroutine ApplyLorentzBerthelot
+    end subroutine apply_lorentz_berthelot
 
 end module parameters_parser

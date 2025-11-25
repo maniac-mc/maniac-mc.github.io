@@ -24,8 +24,8 @@ contains
 
         ! Compute each energy components
         call compute_pairwise_energy(box)
-        call ComputeEwaldSelf()
-        call ComputeEwaldRecip()
+        call compute_ewald_self()
+        call compute_ewald_recip()
         call compute_total_intra_residue_coulomb_energy()
 
         ! Calculate total energy
@@ -143,7 +143,8 @@ contains
 
                     ! Enforce ordering to avoid double-counting
                     if ((residue_type_2 < residue_type_1) .or. &
-                        ((residue_type_2 == residue_type_1) .and. (molecule_index_2 <= molecule_index_1))) cycle
+                        ((residue_type_2 == residue_type_1) .and. &
+                        (molecule_index_2 <= molecule_index_1))) cycle
 
                     ! Loop over all side of the selected molecule 2
                     do atom_index_2 = 1, nb%atom_in_residue(residue_type_2)
@@ -159,10 +160,10 @@ contains
                                    residue_type_2, molecule_index_2, atom_index_2)                      ! In Angstrom
 
                         ! Update non-Coulomb energy
-                        e_non_coulomb = e_non_coulomb + LennardJonesEnergy(distance, sigma, epsilon)    ! In kcal/mol
+                        e_non_coulomb = e_non_coulomb + lennard_jones_energy(distance, sigma, epsilon)    ! In kcal/mol
 
                         ! Update Coulomb energy
-                        e_coulomb = e_coulomb + CoulombEnergy(distance, charge_1, charge_2)             ! In e^2/Å
+                        e_coulomb = e_coulomb + coulomb_energy(distance, charge_1, charge_2)             ! In e^2/Å
 
                     end do
                 end do
@@ -177,17 +178,17 @@ contains
     !------------------------------------------------------------------------------
     ! Function to compute Lennard-Jones interaction energy
     !------------------------------------------------------------------------------
-    pure function LennardJonesEnergy(r, sigma, epsilon) result(energy)
+    pure function lennard_jones_energy(r, sigma, epsilon) result(energy)
 
         ! Input variables
-        real(real64), intent(in) :: r          ! Distance between the two atoms (in Å)
-        real(real64), intent(in) :: sigma      ! Lennard-Jones sigma parameter (in Å)
-        real(real64), intent(in) :: epsilon    ! Lennard-Jones epsilon parameter (in kJ/mol)
+        real(real64), intent(in) :: r           ! Distance between the two atoms (in Å)
+        real(real64), intent(in) :: sigma       ! Lennard-Jones sigma parameter (in Å)
+        real(real64), intent(in) :: epsilon     ! Lennard-Jones epsilon parameter (in kJ/mol)
 
         ! Local variables
-        real(real64) :: r6      ! (σ / r)^6 term of the LJ potential
-        real(real64) :: r12     ! (σ / r)^12 term of the LJ potential
-        real(real64) :: energy  ! Lennard-Jones energy contribution (kcal/mol)
+        real(real64) :: r6                      ! (sigma / r)^6 term of the LJ potential
+        real(real64) :: r12                     ! (sigma / r)^12 term of the LJ potential
+        real(real64) :: energy                  ! Lennard-Jones energy contribution (kcal/mol)
 
         if (r >= input%real_space_cutoff) then
 
@@ -214,12 +215,12 @@ contains
 
         end if
 
-    end function LennardJonesEnergy
+    end function lennard_jones_energy
 
     !------------------------------------------------------------------------------
     ! Function to compute Coulomb interaction energy (Ewald direct-space term)
     !------------------------------------------------------------------------------
-    pure function CoulombEnergy(r, q1, q2) result(energy)
+    pure function coulomb_energy(r, q1, q2) result(energy)
 
         ! Input variables
         real(real64), intent(in) :: r       ! Distance between the two atoms (in Å)
@@ -240,19 +241,15 @@ contains
 
         ! Compute Coulomb energy (tabulated or direct)
         if (use_table .and. erfc_r_table%initialized) then
-
             ! energy = q1*q2 * f(r)  , f(r) is erfc(r) / r from lookup table
             energy = q1 * q2 * LookupTabulated(erfc_r_table, r)     ! In units of e^2/Å
-
         else
-
             ! Direct-space Coulomb potential with Ewald damping
             ! V(r) = (q1*q2) * erfc(alpha * r) / r
             energy = q1 * q2 * erfc(ewald%alpha * r) / r            ! In units of e^2/Å
-
         end if
 
-    end function CoulombEnergy
+    end function coulomb_energy
 
     !------------------------------------------------------------------------------
     ! Computes the reciprocal-space contribution to the Ewald electrostatic energy.
@@ -262,7 +259,7 @@ contains
     !   2. Compute Fourier structure factors (∑ q_j exp(i·k·r_j)) for each molecule.
     !   3. Accumulate the reciprocal-space energy using precomputed factors.
     !------------------------------------------------------------------------------
-    subroutine ComputeEwaldRecip()
+    subroutine compute_ewald_recip()
 
         ! Step 1: Precompute weighting coefficients that depend only on |k|-vectors.
         ! These account for the Gaussian charge screening used in the Ewald method.
@@ -276,7 +273,7 @@ contains
         ! factors and the precomputed reciprocal weighting coefficients.
         call compute_reciprocal_energy(energy%recip_coulomb)
 
-    end subroutine ComputeEwaldRecip
+    end subroutine compute_ewald_recip
 
     !------------------------------------------------------------------------------
     ! Computes the Ewald self-interaction correction.
@@ -285,7 +282,7 @@ contains
     ! with its own Gaussian "image". The self-energy term removes this contribution
     ! to avoid overcounting.
     !------------------------------------------------------------------------------
-    subroutine ComputeEwaldSelf()
+    subroutine compute_ewald_self()
 
         ! Local variables
         integer :: residue_type_1
@@ -296,7 +293,7 @@ contains
 
             ! Compute self-energy for a single molecule of this residue type
             e_ewald_self = zero
-            call SingleMolEwaldSelf(residue_type_1, e_ewald_self)
+            call single_mol_ewald_self(residue_type_1, e_ewald_self)
 
             ! Multiply by the number of molecules of this residue type
             e_ewald_self = e_ewald_self * primary%num_residues(residue_type_1)
@@ -306,7 +303,7 @@ contains
 
         end do
 
-    end subroutine ComputeEwaldSelf
+    end subroutine compute_ewald_self
 
     !------------------------------------------------------------------------------
     ! Computes the Ewald self-energy correction for a single molecule.
@@ -316,7 +313,7 @@ contains
     ! self-interaction energy that must be subtracted to obtain the correct total
     ! electrostatic energy.
     !------------------------------------------------------------------------------
-    subroutine SingleMolEwaldSelf(residue_type, self_energy_1)
+    subroutine single_mol_ewald_self(residue_type, self_energy_1)
 
         ! Input arguments
         integer, intent(in) :: residue_type           ! Residue type for the molecule
@@ -345,12 +342,12 @@ contains
         ! Convert to kcal/mol at the end
         self_energy_1 = self_energy_1 * EPS0_INV_real  ! In kcal/mol
 
-    end subroutine SingleMolEwaldSelf
+    end subroutine single_mol_ewald_self
 
     !------------------------------------------------------------------------------
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
-    subroutine ComputePairInteractionEnergy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
+    subroutine compute_pair_interaction_energy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -418,6 +415,6 @@ contains
         ! Convert to kcal/mol at the end
         e_coulomb = e_coulomb * EPS0_INV_real                          ! In kcal/mol
 
-    end subroutine ComputePairInteractionEnergy_singlemol
+    end subroutine compute_pair_interaction_energy_singlemol
 
 end module energy_utils

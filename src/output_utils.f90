@@ -13,6 +13,8 @@ module output_utils
 
     implicit none
 
+    integer :: out_unit = 10                        ! Default log file unit
+
 contains
 
     !---------------------------------------------------------------------------
@@ -29,7 +31,7 @@ contains
     !---------------------------------------------------------------------------
     ! Write a custom message to the specified output unit.
     !---------------------------------------------------------------------------
-    subroutine LogMessage(msg)
+    subroutine log_message(msg)
 
         ! Input parameter
         character(*), intent(in) :: msg
@@ -38,7 +40,7 @@ contains
         write(out_unit,*) trim(msg)
         flush(out_unit) ! Forces the data to be written to disk
 
-    end subroutine LogMessage
+    end subroutine log_message
 
     !---------------------------------------------------------------------------
     !  Log the start of the Monte Carlo loop with a modern ASCII style
@@ -46,19 +48,19 @@ contains
     subroutine LogStartMC()
 
         ! Blank line before message
-        call LogMessage("")
+        call log_message("")
 
         ! Top border
-        call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
+        call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Message line centered
         call BoxLine("Started Monte Carlo Loop", BOX_WIDTH)
 
         ! Bottom border
-        call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
+        call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Blank line after message
-        call LogMessage("")
+        call log_message("")
 
     end subroutine LogStartMC
 
@@ -80,7 +82,7 @@ contains
             padded(len_trim(padded)+1:) = ' '  ! pad with spaces
         end if
 
-        call LogMessage("| " // padded(1:width-4) // " |")
+        call log_message("| " // padded(1:width-4) // " |")
 
     end subroutine BoxLine
 
@@ -93,40 +95,44 @@ contains
         character(len=256) :: line
 
         ! Blank line before footer
-        call LogMessage("")
+        call log_message("")
 
         ! Top border
-        call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
+        call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Title
-        call BoxLine("MANIAC-MC Simulation Completed", BOX_WIDTH)
+        call BoxLine("MANIAC-MC simulation completed", BOX_WIDTH)
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
+
+        ! Output path information
+        call BoxLine("All output files have been written to:", BOX_WIDTH)
+        call BoxLine(trim(path%outputs), BOX_WIDTH)
 
         ! Summary statistics (Trial / Accepted moves)
         if (proba%translation > 0) then
             write(line,'(A,I8,A,I8)') "  Translations (Trial/Accepted): ", &
-                counter%trial_translations, " / ", counter%translations
+                counter%translations(1), " / ", counter%translations(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
         if (proba%rotation > 0) then
             write(line,'(A,I8,A,I8)') "  Rotations    (Trial/Accepted): ", &
-                counter%trial_rotations, " / ", counter%rotations
+                counter%rotations(1), " / ", counter%rotations(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
         if (proba%insertion_deletion > 0) then
             write(line,'(A,I8,A,I8)') "  Creations    (Trial/Accepted): ", &
-                counter%trial_creations, " / ", counter%creations
+                counter%creations(1), " / ", counter%creations(2)
             call BoxLine(trim(line), BOX_WIDTH)
             write(line,'(A,I8,A,I8)') "  Deletions    (Trial/Accepted): ", &
-                counter%trial_deletions, " / ", counter%deletions
+                counter%deletions(1), " / ", counter%deletions(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
         if (proba%swap > 0) then
             write(line,'(A,I8,A,I8)') "  Swap         (Trial/Accepted): ", &
-                counter%trial_swaps, " / ", counter%swaps
+                counter%swaps(1), " / ", counter%swaps(2)
             call BoxLine(trim(line), BOX_WIDTH)
         end if
 
@@ -145,15 +151,11 @@ contains
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
 
-        ! Output path information
-        call BoxLine("All output files have been written to:", BOX_WIDTH)
-        call BoxLine(trim(output_path), BOX_WIDTH)
-
         ! Bottom border
-        call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
+        call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Blank line after footer
-        call LogMessage("")
+        call log_message("")
 
     end subroutine PrintTerminationMessage
 
@@ -169,7 +171,7 @@ contains
         real(real64) :: e_tot, e_coul, e_long
 
         ! Blank line before status
-        call LogMessage("")
+        call log_message("")
 
         ! -----------------------
         ! Active molecule summary
@@ -185,7 +187,7 @@ contains
                 end if
             end if
         end do
-        call LogMessage(header_msg)
+        call log_message(header_msg)
 
         ! Composite energies
         e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
@@ -198,7 +200,7 @@ contains
         ! -----------------------
         write(header_msg,'(A10,1X,A14,1X,A14,1X,A14,1X,A14,2X,A10,2X,A10,2X,A20)') &
             'Step','TotEng','E_vdwl','E_coul','E_long','TransStep','RotAngle','MC (acc/trial)'
-        call LogMessage(header_msg)
+        call log_message(header_msg)
 
         ! -----------------------
         ! Build dynamic MC move statistics into move_msg
@@ -206,29 +208,29 @@ contains
         move_msg = ""
 
         if (proba%translation > 0) then
-            write(tmp,'("T(",I0,"/",I0,")")') counter%translations, counter%trial_translations
+            write(tmp,'("T(",I0,"/",I0,")")') counter%translations(2), counter%translations(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%rotation > 0) then
-            write(tmp,'("R(",I0,"/",I0,")")') counter%rotations, counter%trial_rotations
+            write(tmp,'("R(",I0,"/",I0,")")') counter%rotations(2), counter%rotations(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%insertion_deletion > 0) then
-            write(tmp,'("C(",I0,"/",I0,")")') counter%creations, counter%trial_creations
+            write(tmp,'("C(",I0,"/",I0,")")') counter%creations(2), counter%creations(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
-            write(tmp,'("D(",I0,"/",I0,")")') counter%deletions, counter%trial_deletions
+            write(tmp,'("D(",I0,"/",I0,")")') counter%deletions(2), counter%deletions(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%swap > 0) then
-            write(tmp,'("S(",I0,"/",I0,")")') counter%swaps, counter%trial_swaps
+            write(tmp,'("S(",I0,"/",I0,")")') counter%swaps(2), counter%swaps(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
         if (proba%widom > 0) then
-            write(tmp,'("W(",I0,")")') counter%trial_widom
+            write(tmp,'("S(",I0,"/",I0,")")') counter%widom(2), counter%widom(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
@@ -236,7 +238,7 @@ contains
         ! Build the complete single-line status (numbers + MC moves)
         ! -----------------------
         write(numeric_msg,'(I10,1X,F14.4,1X,F14.4,1X,F14.4,1X,F14.4,2X,F10.4,2X,F10.4)') &
-            current_block, e_tot, energy%non_coulomb, e_coul, e_long, &
+            status%block, e_tot, energy%non_coulomb, e_coul, e_long, &
             input%translation_step, input%rotation_step_angle
 
         ! Append MC move string to the same line
@@ -245,14 +247,14 @@ contains
         endif
 
         ! Print final combined line
-        call LogMessage(numeric_msg)
+        call log_message(numeric_msg)
 
     end subroutine PrintStatus
 
     !------------------------------------------------------------------------------
-    ! Subroutine: FinalReport
+    ! Subroutine: final_report
     !------------------------------------------------------------------------------
-    subroutine FinalReport()
+    subroutine final_report()
 
         ! Energy components in kcal/mol
         real(real64) :: e_tot          ! Total energy for reporting (computed)
@@ -267,10 +269,10 @@ contains
         e_long = energy%recip_coulomb + energy%ewald_self ! In kcal/mol
 
         ! Blank line before box
-        call LogMessage("")
+        call log_message("")
 
         ! Top border
-        call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
+        call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Box title
         call BoxLine("Final Energy Report", BOX_WIDTH)
@@ -281,22 +283,22 @@ contains
 
         ! Energies line
         write(formatted_msg,'(I10,1X,F15.6,1X,F15.6,1X,F15.6,1X,F15.6)') &
-            current_block, e_tot, energy%non_coulomb, e_coul, e_long
+            status%block, e_tot, energy%non_coulomb, e_coul, e_long
         call BoxLine(trim(formatted_msg), BOX_WIDTH)
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
 
         ! Bottom border
-        call LogMessage("+" // repeat_char("-", BOX_WIDTH-2) // "+")
+        call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Blank line after box
-        call LogMessage("")
+        call log_message("")
 
         call CloseOutput()                  ! Close files and finalize
 
-    end subroutine FinalReport
+    end subroutine final_report
 
-    subroutine LogParameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
+    subroutine log_parameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
 
         character(len=*), intent(in) :: input_file_name         ! Name of the parameter input file being processed
         integer, intent(out) :: n_pairs                         ! Counter for the number of unique atom type pairs
@@ -311,7 +313,7 @@ contains
         logical, allocatable :: printed(:,:)                    ! 2D array to track which atom type pairs have been recorded
         integer :: max_atom_type                                ! Maximum atom type index from atom_types_2d array
 
-        if (has_reservoir) then
+        if (status%reservoir_provided) then
             max_atom_type = max(maxval(primary%atom_types(:,:)), maxval(reservoir%atom_types(:,:)) )
         else
             max_atom_type = maxval(primary%atom_types(:,:))
@@ -320,11 +322,11 @@ contains
         printed = .false.
 
         ! Log the start of parameter file import
-        call LogMessage("")
-        call LogMessage("====== Import parameter file ======")
-        call LogMessage("")
+        call log_message("")
+        call log_message("====== Import parameter file ======")
+        call log_message("")
         write(formatted_msg, '("Reading file ", A)') trim(input_file_name) ! Format message with input file name
-        call LogMessage(formatted_msg)                                     ! Log the input file name
+        call log_message(formatted_msg)                                     ! Log the input file name
 
         n_pairs = 0 ! Initialize the pair counter
         do i = 1, nb%type_residue
@@ -359,7 +361,7 @@ contains
                 end do
             end do
         end do
-    end subroutine LogParameters
+    end subroutine log_parameters
 
     subroutine LogData(data_file_name, box, is_primary)
 
@@ -374,17 +376,17 @@ contains
         integer :: active_molecule_count ! Number of species that will be moved/inserted/deleted
 
         ! === Step 9: Logging ===
-        call LogMessage("")
-        call LogMessage("====== Import data file ======")
+        call log_message("")
+        call log_message("====== Import data file ======")
         write(formatted_msg, '("Reading file ", A)') trim(data_file_name)
-        call LogMessage(formatted_msg)
-        call LogMessage("")
+        call log_message(formatted_msg)
+        call log_message("")
         write(formatted_msg, '("Number of atoms: ", I0)') box%num_atoms
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '("Number of type of residues: ", I0)') nb%type_residue
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '("Number of type of atoms: ", I0)') box%num_atomtypes
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
 
         do i = 1, nb%type_residue
             if ((box%num_residues(i) /= 0) .and. (input%is_active(i) == 1)) then
@@ -399,26 +401,26 @@ contains
                     trim(res%names_1d(i)), box%num_residues(i)
             else if ((box%num_residues(i) == 0) .and. (input%is_active(i) == 0) .and. (is_primary)) then
                 ! Inactive residue defined in input but not present in data file
-                call AbortRun("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
+                call abort_run("Inactive residue '" // trim(res%names_1d(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
             end if
-            call LogMessage(formatted_msg)
+            call log_message(formatted_msg)
         end do
 
-        call LogMessage("")
-        call LogMessage("Simulation box (rows):")
+        call log_message("")
+        call log_message("Simulation box (rows):")
         write(formatted_msg, '(3F12.6)') box%matrix(1,1), box%matrix(1,2), box%matrix(1,3)
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '(3F12.6)') box%matrix(2,1), box%matrix(2,2), box%matrix(2,3)
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
         write(formatted_msg, '(3F12.6)') box%matrix(3,1), box%matrix(3,2), box%matrix(3,3)
-        call LogMessage(formatted_msg)
+        call log_message(formatted_msg)
 
-        call LogMessage("")
-        call LogMessage("Atoms masses (g/mol):")
+        call log_message("")
+        call log_message("Atoms masses (g/mol):")
         do atom_id = 1, primary%num_atomtypes
             write(formatted_msg, '(I5, 2X, F12.6)') atom_id, box%site_masses_vector(atom_id)
-            call LogMessage(formatted_msg)
+            call log_message(formatted_msg)
         end do
 
     end subroutine LogData
@@ -435,67 +437,67 @@ contains
 
         if ((box%num_bonds > 0) .or. (box%num_angles > 0)) then
 
-            call LogMessage("")
-            call LogMessage("===== Connectivity summary =====")
+            call log_message("")
+            call log_message("===== Connectivity summary =====")
 
             ! --- Bonds ---
-            call LogMessage("")
+            call log_message("")
             do i = 1, nb%type_residue
                 if (box%num_residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " bonds")') &
                         trim(res%names_1d(i)), nb%bonds_per_residue(i)
-                    call LogMessage(formatted_msg)
+                    call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT bonds
                     do j = 1, min(nb%bonds_per_residue(i), MAX_PRINT)
                         write(formatted_msg, '("   bond type ", I0, ": atoms [", I0, ",", I0, "]")') &
                             res%bond_type_2d(i,j,1), res%bond_type_2d(i,j,2), res%bond_type_2d(i,j,3)
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end do
 
                     ! If more bonds exist, indicate truncation
                     if (nb%bonds_per_residue(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more bonds not shown")') &
                             nb%bonds_per_residue(i) - MAX_PRINT
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end if
                 end if
             end do
 
             ! --- Angles ---
-            call LogMessage("")
+            call log_message("")
             do i = 1, nb%type_residue
 
                 if (box%num_residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " angles")') &
                         trim(res%names_1d(i)), nb%angles_per_residue(i)
-                    call LogMessage(formatted_msg)
+                    call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT angles
                     do j = 1, min(nb%angles_per_residue(i), MAX_PRINT)
                         write(formatted_msg, '("   angle type ", I0, ": atoms [", I0, ",", I0, ",", I0, "]")') &
                             res%angle_type_2d(i,j,1), res%angle_type_2d(i,j,2), &
                             res%angle_type_2d(i,j,3), res%angle_type_2d(i,j,4)
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end do
 
                     ! If more angles exist, indicate truncation
                     if (nb%angles_per_residue(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more angles not shown")') &
                             nb%angles_per_residue(i) - MAX_PRINT
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end if
                 end if
             end do
 
             ! --- Dihedrals ---
-            call LogMessage("")
+            call log_message("")
             do i = 1, nb%type_residue
 
                 if (box%num_residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " dihedrals")') &
                         trim(res%names_1d(i)), nb%dihedrals_per_residue(i)
-                    call LogMessage(formatted_msg)
+                    call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT dihedrals
                     do j = 1, min(nb%dihedrals_per_residue(i), MAX_PRINT)
@@ -504,26 +506,26 @@ contains
                             res%dihedral_type_2d(i,j,1), res%dihedral_type_2d(i,j,2), &
                             res%dihedral_type_2d(i,j,3), res%dihedral_type_2d(i,j,4), &
                             res%dihedral_type_2d(i,j,5)
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end do
 
                     ! If more dihedrals exist, indicate truncation
                     if (nb%dihedrals_per_residue(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more dihedrals not shown")') &
                             nb%dihedrals_per_residue(i) - MAX_PRINT
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end if
                 end if
             end do
 
             ! --- Impropers ---
-            call LogMessage("")
+            call log_message("")
             do i = 1, nb%type_residue
 
                 if (box%num_residues(i) > 0) then
                     write(formatted_msg, '("Residue ", A, ": ", I0, " impropers")') &
                         trim(res%names_1d(i)), nb%impropers_per_residue(i)
-                    call LogMessage(formatted_msg)
+                    call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT impropers
                     do j = 1, min(nb%impropers_per_residue(i), MAX_PRINT)
@@ -532,14 +534,14 @@ contains
                             res%improper_type_2d(i,j,1), res%improper_type_2d(i,j,2), &
                             res%improper_type_2d(i,j,3), res%improper_type_2d(i,j,4), &
                             res%improper_type_2d(i,j,5)
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end do
 
                     ! If more impropers exist, indicate truncation
                     if (nb%impropers_per_residue(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more impropers not shown")') &
                             nb%impropers_per_residue(i) - MAX_PRINT
-                        call LogMessage(formatted_msg)
+                        call log_message(formatted_msg)
                     end if
                 end if
             end do
@@ -548,7 +550,7 @@ contains
 
     end subroutine LogConnectivity
 
-    subroutine AbortRun(error_msg, exit_code)
+    subroutine abort_run(error_msg, exit_code)
 
         ! Input parameters
         character(len=*), intent(in) :: error_msg   ! Error description
@@ -563,36 +565,36 @@ contains
             code = 1
         end if
 
-        call LogMessage("--------------------------------------------------")
-        call LogMessage("FATAL ERROR:")
-        call LogMessage("" // trim(error_msg))
-        call LogMessage("Simulation will now terminate.")
-        call LogMessage("--------------------------------------------------")
+        call log_message("--------------------------------------------------")
+        call log_message("FATAL ERROR:")
+        call log_message("" // trim(error_msg))
+        call log_message("Simulation will now terminate.")
+        call log_message("--------------------------------------------------")
 
-        ! Ensure buffers/files are flushed if LogMessage writes to files
+        ! Ensure buffers/files are flushed if log_message writes to files
         call flush(output_unit)
 
         stop code
 
-    end subroutine AbortRun
+    end subroutine abort_run
 
     !-----------------------------------------------------------------------------
     ! Print a standardized warning message without terminating
     !-----------------------------------------------------------------------------
-    subroutine WarnUser(warn_msg)
+    subroutine warn_user(warn_msg)
 
         character(len=*), intent(in) :: warn_msg   ! Warning description
 
-        call LogMessage("--------------------------------------------------")
-        call LogMessage("WARNING:")
-        call LogMessage("" // trim(warn_msg))
-        call LogMessage("Execution will continue.")
-        call LogMessage("--------------------------------------------------")
+        call log_message("--------------------------------------------------")
+        call log_message("WARNING:")
+        call log_message("" // trim(warn_msg))
+        call log_message("Execution will continue.")
+        call log_message("--------------------------------------------------")
 
         ! Ensure message is flushed immediately
         call flush(output_unit)
 
-    end subroutine WarnUser
+    end subroutine warn_user
 
     !-----------------------------------------------------------------------------
     ! Print a standardized informational message
@@ -601,7 +603,7 @@ contains
 
         character(len=*), intent(in) :: info_msg   ! Information description
 
-        call LogMessage("INFO: " // trim(info_msg))
+        call log_message("INFO: " // trim(info_msg))
         call flush(output_unit)
 
     end subroutine InfoMessage
@@ -622,7 +624,7 @@ contains
         if (molecule_index > NB_MAX_MOLECULE) then
             write(formatted_msg, '(A, I0)') &
                 "Trying to insert a molecule with index = " , molecule_index
-            call AbortRun(trim(formatted_msg)//new_line('a')// &
+            call abort_run(trim(formatted_msg)//new_line('a')// &
                         "This exceeds the maximum allowed number of molecules = "// &
                         trim(adjustl(to_string(NB_MAX_MOLECULE)))//new_line('a')// &
                         "Increase 'NB_MAX_MOLECULE' in src/parameters.f90 and recompile.")
@@ -656,78 +658,78 @@ contains
         character(len=200) :: msg, temp
 
         ! ===== HEADER =====
-        call LogMessage("====== Import input file ======")
-        call LogMessage("")
-        write(msg, '("Reading file ", A)') trim(maniac_file)
-        call LogMessage(msg)
-        call LogMessage("")
+        call log_message("====== Import input file ======")
+        call log_message("")
+        write(msg, '("Reading file ", A)') trim(path%input)
+        call log_message(msg)
+        call log_message("")
 
         ! ===== GENERIC PARAMETERS =====
-        call LogMessage("=== Generic parameters")
-        write(msg, '("Number of blocks: ", I0)') input%nb_block
-        call LogMessage(msg)
-        write(msg, '("Number of steps: ", I0)') input%nb_step
-        call LogMessage(msg)
+        call log_message("=== Generic parameters")
+        write(msg, '("Number of blocks: ", I0)') status%desired_block
+        call log_message(msg)
+        write(msg, '("Number of steps: ", I0)') status%desired_step
+        call log_message(msg)
         write(msg, '("Temperature (K): ", F10.2)') input%temperature
-        call LogMessage(msg)
-        call LogMessage("")
+        call log_message(msg)
+        call log_message("")
 
         ! ===== ELECTROSTATIC =====
-        call LogMessage("=== Electrostatic interactions")
-        write(msg, '("Ewald tolerance: ", F15.8)') input%ewald_tolerance
-        call LogMessage(msg)
+        call log_message("=== Electrostatic interactions")
+        write(msg, '("Ewald tolerance: ", F15.8)') ewald%tolerance
+        call log_message(msg)
         write(msg, '("Cutoff (Å): ", F10.2)') input%real_space_cutoff
-        call LogMessage(msg)
-        call LogMessage("")
+        call log_message(msg)
+        call log_message("")
 
         ! ===== MONTE CARLO =====
-        call LogMessage("=== Monte carlo move")
+        call log_message("=== Monte carlo move")
         write(msg, '("Translation step (Å): ", F10.2)') input%translation_step
-        call LogMessage(msg)
+        call log_message(msg)
         write(msg, '("Rotation step angle (radian): ", F10.2)') input%rotation_step_angle
-        call LogMessage(msg)
+        call log_message(msg)
 
         write(msg, '("Translation proba: ", F10.2)') proba%translation
-        call LogMessage(msg)
+        call log_message(msg)
         write(msg, '("Rotation proba: ", F10.2)') proba%rotation
-        call LogMessage(msg)
+        call log_message(msg)
         write(msg, '("Insertion deletion proba: ", F10.2)') proba%insertion_deletion
-        call LogMessage(msg)
+        call log_message(msg)
         write(msg, '("Swap proba: ", F10.2)') proba%swap
-        call LogMessage(msg)
-        call LogMessage("")
+        call log_message(msg)
+        call log_message("")
 
         ! ===== RESIDUES =====
-        call LogMessage("=== Residue information")
-        call LogMessage("")
+        call log_message("=== Residue information")
+        call log_message("")
         write(msg, '("Number of type of residue found: ", I0)') nb%type_residue
-        call LogMessage(msg)
-        call LogMessage("")
+        call log_message(msg)
+        call log_message("")
 
         do i = 1, nb%type_residue
             write(msg, '("  Residue ", A)') trim(res%names_1d(i))
-            call LogMessage(msg)
+            call log_message(msg)
 
             write(msg, '("  Is active: ", A)') merge("yes", "no ", input%is_active(i) == 1)
-            call LogMessage(msg)
+            call log_message(msg)
 
             if (input%is_active(i) == 1) then
                 if (input%fugacity(i) > 0) then
                     write(msg, '("  Fugacity (atm): ", F10.2)') input%fugacity(i)
-                    call LogMessage(msg)
+                    call log_message(msg)
                 end if
             end if
 
             if (input%is_active(i) == 1) then
                 write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') input%chemical_potential(i)
-                call LogMessage(msg)
+                call log_message(msg)
             end if
 
             write(msg, '("  Number of atoms in residue: ", I0)') nb%atom_in_residue(i)
-            call LogMessage(msg)
+            call log_message(msg)
 
             write(msg, '("  Number of atom types in residue: ", I0)') nb%types_per_residue(i)
-            call LogMessage(msg)
+            call log_message(msg)
 
             ! Types
             msg = "  Types: "
@@ -735,7 +737,7 @@ contains
                 write(temp, '(I0)') res%types_2d(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
-            call LogMessage(msg)
+            call log_message(msg)
 
             ! Names
             msg = "  Names: "
@@ -743,9 +745,9 @@ contains
                 temp = res%names_2d(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
-            call LogMessage(msg)
+            call log_message(msg)
 
-            call LogMessage("")
+            call log_message("")
         end do
 
     end subroutine PrintInputSummary
