@@ -100,9 +100,9 @@ contains
         character(200) :: msg           ! Buffer for logging
         real(real64) :: safe_cutoff     ! Adjusted real-space cutoff length to fit inside the simulation box safely
 
-        if (input%real_space_cutoff > primary%metrics(1) &
-                .or. input%real_space_cutoff > primary%metrics(2) &
-                .or. input%real_space_cutoff > primary%metrics(3)) then
+        if (input%real_space_cutoff > primary%cell%metrics(1) &
+                .or. input%real_space_cutoff > primary%cell%metrics(2) &
+                .or. input%real_space_cutoff > primary%cell%metrics(3)) then
 
             if (do_log) then
 
@@ -111,7 +111,7 @@ contains
             
             end if
             
-            safe_cutoff = min(primary%metrics(1), primary%metrics(2), primary%metrics(3)) / two
+            safe_cutoff = min(primary%cell%metrics(1), primary%cell%metrics(2), primary%cell%metrics(3)) / two
             input%real_space_cutoff = safe_cutoff
         
         end if
@@ -129,7 +129,7 @@ contains
         real(real64) :: k_squared           ! Normalized squared magnitude of k-vector
 
         ! Compute maximum Fourier indices in X, Y, Z directions
-        ewald%kmax = nint(quarter + primary%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
+        ewald%kmax = nint(quarter + primary%cell%metrics(1:3) * ewald%alpha * ewald%fourier_precision / PI)
 
         ! Count the total number of valid reciprocal vectors
         count = 0

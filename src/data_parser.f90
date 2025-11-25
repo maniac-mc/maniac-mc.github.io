@@ -1468,7 +1468,7 @@ contains
 
                     ! Perform sanity checks
                     call check_finite_vector(com, "Invalid (NaN/Inf) CoM detected in residue")
-                    call check_inside_bounds(com, box%bounds(:,1), box%bounds(:,2), &
+                    call check_inside_bounds(com, box%cell%bounds(:,1), box%cell%bounds(:,2), &
                         "Molecule COM outside simulation box")
                     if (thermo%is_active(i)) then
                         call check_com_distance(tmp_atom_xyz, nb%atom_in_residue(i), &

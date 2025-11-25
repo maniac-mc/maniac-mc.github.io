@@ -417,11 +417,11 @@ contains
 
         call log_message("")
         call log_message("Simulation box (rows):")
-        write(formatted_msg, '(3F12.6)') box%matrix(1,1), box%matrix(1,2), box%matrix(1,3)
+        write(formatted_msg, '(3F12.6)') box%cell%matrix(1,1), box%cell%matrix(1,2), box%cell%matrix(1,3)
         call log_message(formatted_msg)
-        write(formatted_msg, '(3F12.6)') box%matrix(2,1), box%matrix(2,2), box%matrix(2,3)
+        write(formatted_msg, '(3F12.6)') box%cell%matrix(2,1), box%cell%matrix(2,2), box%cell%matrix(2,3)
         call log_message(formatted_msg)
-        write(formatted_msg, '(3F12.6)') box%matrix(3,1), box%matrix(3,2), box%matrix(3,3)
+        write(formatted_msg, '(3F12.6)') box%cell%matrix(3,1), box%cell%matrix(3,2), box%cell%matrix(3,3)
         call log_message(formatted_msg)
 
         call log_message("")

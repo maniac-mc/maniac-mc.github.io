@@ -88,9 +88,19 @@ module simulation_state
     end type type_coordinate
     type(type_coordinate), target :: host, guest, gas
 
-
-
-
+    !---------------------------------------------------------------------------
+    ! Simulation box definition
+    !---------------------------------------------------------------------------
+    type type_cell
+        real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
+        real(real64) :: matrix(3,3)                 ! Simulation box matrix
+        real(real64) :: bounds(3,2)                 ! Box dimensions (lo, hi)
+        real(real64) :: metrics(9)                  ! Misc. box properties (e.g., lengths, cosines of angles)
+        real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
+        real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
+        real(real64) :: volume                      ! Box volume
+        integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+    end type type_cell
 
 
 
@@ -111,14 +121,7 @@ module simulation_state
     ! Simulation box definition
     type type_box
         ! Generic box geometry parameters
-        real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
-        real(real64) :: matrix(3,3)                 ! Simulation box matrix
-        real(real64) :: bounds(3,2)                 ! Box dimensions (lo, hi)
-        real(real64) :: metrics(9)                  ! Misc. box properties (e.g., lengths, cosines of angles)
-        real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
-        real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
-        real(real64) :: volume                      ! Box volume
-        integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+        type(type_cell) :: cell
         ! About box content
         integer :: num_atoms                        ! Number of atoms in the box
         integer :: num_atomtypes                    ! Number of atom types

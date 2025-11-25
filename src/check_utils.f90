@@ -43,7 +43,7 @@ contains
 
                 ! Assert COM is inside the box
                 do dim = 1,3
-                    if (com(dim) < box%bounds(dim,1) .or. com(dim) > box%bounds(dim,2)) then
+                    if (com(dim) < box%cell%bounds(dim,1) .or. com(dim) > box%cell%bounds(dim,2)) then
                         call warn_user("Error: Molecule COM outside simulation box!")
                     end if
                 end do

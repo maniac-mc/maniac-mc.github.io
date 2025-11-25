@@ -56,7 +56,7 @@ contains
         end do
 
         ! Convert accumulated energy to correct units (kcal/mol)
-        u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%volume ! In kcal/mol
+        u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
     end subroutine compute_reciprocal_energy
 
@@ -149,7 +149,7 @@ contains
         end do
 
         ! Convert accumulated energy to physical units:
-        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%volume ! In kcal/mol
+        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
     end subroutine compute_recip_energy_single_mol
 

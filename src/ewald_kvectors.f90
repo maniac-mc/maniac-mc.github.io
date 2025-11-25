@@ -30,7 +30,7 @@ contains
         real(real64), dimension(3,3) :: kvec_matrix ! Columns are reciprocal lattice vectors b1, b2, b3
 
         ! Store reciprocal lattice vectors as columns of a 3x3 matrix
-        kvec_matrix = TWOPI * reshape(primary%reciprocal, shape(kvec_matrix))
+        kvec_matrix = TWOPI * reshape(primary%cell%reciprocal, shape(kvec_matrix))
 
         ! Fill the array with the actual k-vectors
         count = 0

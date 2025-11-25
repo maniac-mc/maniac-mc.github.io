@@ -236,7 +236,7 @@ contains
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 ! Note: N+1 instead of N to avoid division by zero
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = primary%volume / N / lambda**3 ! note: N must be used because the residue was already added
+                prefactor = primary%cell%volume / N / lambda**3 ! note: N must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
             case (TYPE_DELETION)
@@ -244,7 +244,7 @@ contains
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(residue_type) ! Thermal de Broglie wavelength (A)
-                prefactor = Nplus1 * lambda**3 / (primary%volume) ! note: Nplus1 must be used because the residue was already removed
+                prefactor = Nplus1 * lambda**3 / (primary%cell%volume) ! note: Nplus1 must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
@@ -527,8 +527,8 @@ contains
         ! Generate a random position in the simulation box (if enabled)
         if (do_place_com) then
             call random_number(trial_pos) ! Random numbers in [0,1)
-            guest%com(:, residue_type, molecule_index) = primary%bounds(:,1) &
-                + matmul(primary%matrix, trial_pos)
+            guest%com(:, residue_type, molecule_index) = primary%cell%bounds(:,1) &
+                + matmul(primary%cell%matrix, trial_pos)
         end if
 
         ! Copy geometry from reservoir or rotate if no reservoir
@@ -615,7 +615,7 @@ contains
                 ! μ_ideal = k_B * T * ln(ρ * Λ^3)
                 lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
                 N = primary%num_residues(type_residue)              ! Number of molecules
-                volume = primary%volume                             ! Box volume (A^3)
+                volume = primary%cell%volume                             ! Box volume (A^3)
                 rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
                 mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)
 

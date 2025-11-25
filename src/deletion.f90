@@ -104,9 +104,9 @@ contains
 
             ! Place the deleted molecule randomly in the reservoir
             gas%com(:, residue_type, reservoir%num_residues(residue_type)+1) = &
-                trial_pos(1)*reservoir%matrix(:, 1) + &
-                trial_pos(2)*reservoir%matrix(:, 2) + &
-                trial_pos(3)*reservoir%matrix(:, 3)
+                trial_pos(1)*reservoir%cell%matrix(:, 1) + &
+                trial_pos(2)*reservoir%cell%matrix(:, 2) + &
+                trial_pos(3)*reservoir%cell%matrix(:, 3)
             gas%offset(:, residue_type, reservoir%num_residues(residue_type)+1, &
                 1:nb%atom_in_residue(residue_type)) = &
                 gas%offset(:, residue_type, last_molecule_index, 1:nb%atom_in_residue(residue_type))

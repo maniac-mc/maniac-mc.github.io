@@ -224,7 +224,7 @@ contains
             ! Compute the phase vector components as the dot product of the atom position
             ! with each reciprocal lattice vector (columns of reciprocal_box), scaled by 2π.
             ! Compute the phase vector (2π * reciprocal_boxᵀ · atom)
-            phase = compute_atom_phase(atom, primary%reciprocal)
+            phase = compute_atom_phase(atom, primary%cell%reciprocal)
 
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly

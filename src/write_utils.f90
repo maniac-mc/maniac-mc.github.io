@@ -71,9 +71,9 @@ contains
         write(UNIT_LMP, '(A)') "ITEM: NUMBER OF ATOMS"
         write(UNIT_LMP, '(I10)') box%num_atoms
         write(UNIT_LMP, '(A)') "ITEM: BOX BOUNDS pp pp pp"
-        write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%matrix(1, 1)/2, box%matrix(1, 1)/2
-        write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%matrix(2, 2)/2, box%matrix(2, 2)/2
-        write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%matrix(3, 3)/2, box%matrix(3, 3)/2
+        write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%cell%matrix(1, 1)/2, box%cell%matrix(1, 1)/2
+        write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%cell%matrix(2, 2)/2, box%cell%matrix(2, 2)/2
+        write(UNIT_LMP, '(F15.8,1X,F15.8)') -box%cell%matrix(3, 3)/2, box%cell%matrix(3, 3)/2
 
         ! Atom data header
         write(UNIT_LMP, '(A)') "ITEM: ATOMS id type x y z"
@@ -481,19 +481,19 @@ contains
         write(unit_data, *)
 
         ! X bounds
-        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(1,1), box%bounds(1,2)
+        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%cell%bounds(1,1), box%cell%bounds(1,2)
         write(unit_data, '(A)') "xlo xhi"
 
         ! Y bounds
-        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(2,1), box%bounds(2,2)
+        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%cell%bounds(2,1), box%cell%bounds(2,2)
         write(unit_data, '(A)') "ylo yhi"
 
         ! Z bounds
-        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%bounds(3,1), box%bounds(3,2)
+        write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%cell%bounds(3,1), box%cell%bounds(3,2)
         write(unit_data, '(A)') "zlo zhi"
 
-        if (box%type == 3) then
-            write(unit_data, '(3(F15.8,1X))') box%tilt(1), box%tilt(2), box%tilt(3)
+        if (box%cell%type == 3) then
+            write(unit_data, '(3(F15.8,1X))') box%cell%tilt(1), box%cell%tilt(2), box%cell%tilt(3)
             write(unit_data, '(A)') "xy xz yz"
         end if
 

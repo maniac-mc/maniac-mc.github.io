@@ -55,12 +55,12 @@ contains
         integer :: dim                               ! Loop index
 
         ! Orthogonal / Rectangular Box
-        if (box%type <= 3) then
+        if (box%cell%type <= 3) then
 
             do dim = 1,3
 
-                box_length   = box%matrix(dim, dim)     ! Box length along this dimension
-                lower_bound  = box%bounds(dim, 1)      ! Lower bound (minimum coordinate) along this dimension
+                box_length   = box%cell%matrix(dim, dim)     ! Box length along this dimension
+                lower_bound  = box%cell%bounds(dim, 1)      ! Lower bound (minimum coordinate) along this dimension
 
                 ! Wrap coordinate into [lower_bound, lower_bound + box_length):
                 ! x' = lower_bound + mod(x - lower_bound, box_length)
@@ -76,9 +76,9 @@ contains
             !   s = H^{-1} * (r - r0)
             ! where:
             !   r  = Cartesian position
-            !   r0 = lower corner of the box (box%bounds(:,1))
+            !   r0 = lower corner of the box (box%cell%bounds(:,1))
             !   s  = fractional coordinates in [0,1)^3
-            frac_coords = matmul(box%reciprocal, pos - box%bounds(:,1))
+            frac_coords = matmul(box%cell%reciprocal, pos - box%cell%bounds(:,1))
 
             ! Wrap fractional coords into [0,1)
             ! Equation: s' = mod(s, 1)
@@ -90,7 +90,7 @@ contains
             ! Convert back to Cartesian
             ! Equation: r' = r0 + H * s'
             ! Resulting position r' is wrapped inside the triclinic box
-            pos = box%bounds(:,1) + matmul(box%matrix, frac_coords)
+            pos = box%cell%bounds(:,1) + matmul(box%cell%matrix, frac_coords)
 
         end if
 
@@ -113,19 +113,19 @@ contains
         integer :: dim                                  ! Loop index over Cartesian dimensions
 
         ! Cubic or Orthorhombic box
-        if (box%type == 1 .or. box%type == 2) then
+        if (box%cell%type == 1 .or. box%cell%type == 2) then
 
             do dim = 1, 3
                 ! Shift position into [-L/2, L/2]
-                pos(dim) = pos(dim) - box%matrix(dim, dim) * &
-                        nint(pos(dim) / box%matrix(dim, dim))
+                pos(dim) = pos(dim) - box%cell%matrix(dim, dim) * &
+                        nint(pos(dim) / box%cell%matrix(dim, dim))
             end do
 
         ! Triclinic box
-        else if (box%type == 3) then
+        else if (box%cell%type == 3) then
 
             ! Convert Cartesian to fractional coordinates
-            fractional_pos = matmul(box%reciprocal, pos)
+            fractional_pos = matmul(box%cell%reciprocal, pos)
 
             ! Wrap fractional coordinates into [-0.5, 0.5)
             do dim = 1, 3
@@ -133,7 +133,7 @@ contains
             end do
 
             ! Convert back to Cartesian
-            pos = matmul(box%matrix, fractional_pos)
+            pos = matmul(box%cell%matrix, fractional_pos)
 
         end if
 
@@ -158,32 +158,32 @@ contains
 
         ! Compute the adjugate (cofactor transpose) using cross products
         ! First column of adjugate
-        vec1 = box%matrix(:, 2)
-        vec2 = box%matrix(:, 3)
+        vec1 = box%cell%matrix(:, 2)
+        vec2 = box%cell%matrix(:, 3)
         adjugate(:,1) = compute_cross_product(vec1, vec2)
 
         ! Second column
-        vec1 = box%matrix(:, 3)
-        vec2 = box%matrix(:, 1)
+        vec1 = box%cell%matrix(:, 3)
+        vec2 = box%cell%matrix(:, 1)
         adjugate(:,2) = compute_cross_product(vec1, vec2)
 
         ! Third column
-        vec1 = box%matrix(:, 1)
-        vec2 = box%matrix(:, 2)
+        vec1 = box%cell%matrix(:, 1)
+        vec2 = box%cell%matrix(:, 2)
         adjugate(:,3) = compute_cross_product(vec1, vec2)
 
         ! Compute determinant from first row
-        box%determinant = dot_product(box%matrix(:,1), adjugate(:,1))
+        box%cell%determinant = dot_product(box%cell%matrix(:,1), adjugate(:,1))
 
         ! Check for denormal/underflow values in determinant
-        if (abs(box%determinant) < one) then
+        if (abs(box%cell%determinant) < one) then
             call abort_run("Error: Determinant fell into denormal/underflow range")
         end if
 
         ! Calculate reciprocal of determinant if non-zero
         reciprocal = zero
-        if (abs(box%determinant) > error) then  ! small tolerance to avoid near-zero
-            reciprocal = one / box%determinant
+        if (abs(box%cell%determinant) > error) then  ! small tolerance to avoid near-zero
+            reciprocal = one / box%cell%determinant
         else
             ! Handle singular matrix case if needed, e.g. print error or return
             call warn_user("Determinant is zero or near zero, inverse not computed.")
@@ -193,7 +193,7 @@ contains
         ! Store inverse matrix in reciprocal
         do i = 1, 3
             do j = 1, 3
-                box%reciprocal(i, j) = reciprocal * adjugate(i, j)
+                box%cell%reciprocal(i, j) = reciprocal * adjugate(i, j)
             end do
         end do
 
@@ -244,19 +244,19 @@ contains
         delta = pos2 - pos1
 
         ! Cubic or Orthorhombic box
-        if (box%type == 1 .or. box%type == 2) then
+        if (box%cell%type == 1 .or. box%cell%type == 2) then
 
             ! Apply PBC to delta vector directly
             do dim = 1,3
-                delta(dim) = modulo(delta(dim) + half*box%matrix(dim,dim), &
-                    box%matrix(dim,dim)) - half*box%matrix(dim,dim)
+                delta(dim) = modulo(delta(dim) + half*box%cell%matrix(dim,dim), &
+                    box%cell%matrix(dim,dim)) - half*box%cell%matrix(dim,dim)
             end do
 
             ! Compute distance
             distance = vector_norm(delta)
 
         ! Triclinic box
-        else if (box%type == 3) then
+        else if (box%cell%type == 3) then
 
             min_dist2 = huge(one)
 
@@ -264,8 +264,8 @@ contains
                 do shift_y = -1,1
                     do shift_z = -1,1
 
-                        trial_delta = delta + shift_x*box%matrix(:,1) + &
-                            shift_y*box%matrix(:,2) + shift_z*box%matrix(:,3)
+                        trial_delta = delta + shift_x*box%cell%matrix(:,1) + &
+                            shift_y*box%cell%matrix(:,2) + shift_z*box%cell%matrix(:,3)
 
                         trial_dist2 = sum(trial_delta * trial_delta)
 
@@ -303,12 +303,12 @@ contains
         real(real64) :: a(3), b(3), c(3) ! Local vectors for cross products
 
         ! Calculate lengths of cell vectors
-        box%metrics(1:3) = sqrt(sum(box%matrix(:, 1:3)**2, dim=1))
+        box%cell%metrics(1:3) = sqrt(sum(box%cell%matrix(:, 1:3)**2, dim=1))
 
         ! Copy cell vectors from the box matrix
-        a = box%matrix(:, 1)
-        b = box%matrix(:, 2)
-        c = box%matrix(:, 3)
+        a = box%cell%matrix(:, 1)
+        b = box%cell%matrix(:, 2)
+        c = box%cell%matrix(:, 3)
 
         ! Calculate vector lengths
         vec_lengths(1) = vector_norm(a)
@@ -316,9 +316,9 @@ contains
         vec_lengths(3) = vector_norm(c)
 
         ! Calculate cosines of angles using dot products divided by product of lengths
-        box%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
-        box%metrics(5) = dot_product(a, c) / (vec_lengths(1) * vec_lengths(3))
-        box%metrics(6) = dot_product(b, c) / (vec_lengths(2) * vec_lengths(3))
+        box%cell%metrics(4) = dot_product(a, b) / (vec_lengths(1) * vec_lengths(2))
+        box%cell%metrics(5) = dot_product(a, c) / (vec_lengths(1) * vec_lengths(3))
+        box%cell%metrics(6) = dot_product(b, c) / (vec_lengths(2) * vec_lengths(3))
 
         ! Calculate cross products
         axb = compute_cross_product(a, b)
@@ -326,12 +326,12 @@ contains
         cxa = compute_cross_product(c, a)
 
         ! Calculate volume of cell
-        box%volume = abs(dot_product(box%matrix(:,1), bxc))
+        box%cell%volume = abs(dot_product(box%cell%matrix(:,1), bxc))
 
         ! Calculate cell perpendicular widths
-        box%metrics(7) = box%volume / vector_norm(bxc)
-        box%metrics(8) = box%volume / vector_norm(cxa)
-        box%metrics(9) = box%volume / vector_norm(axb)
+        box%cell%metrics(7) = box%cell%volume / vector_norm(bxc)
+        box%cell%metrics(8) = box%cell%volume / vector_norm(cxa)
+        box%cell%metrics(9) = box%cell%volume / vector_norm(axb)
 
     end subroutine compute_cell_properties
 
@@ -347,20 +347,20 @@ contains
         real(real64), dimension(6) :: off_diag
 
         ! Collect off-diagonal elements
-        off_diag = [box%matrix(1,2), box%matrix(1,3), &
-                    box%matrix(2,1), box%matrix(2,3), &
-                    box%matrix(3,1), box%matrix(3,2)]
+        off_diag = [box%cell%matrix(1,2), box%cell%matrix(1,3), &
+                    box%cell%matrix(2,1), box%cell%matrix(2,3), &
+                    box%cell%matrix(3,1), box%cell%matrix(3,2)]
 
         ! Check for triclinic (any off-diagonal > tolerance)
         if (maxval(abs(off_diag)) > error) then
-            box%type = 3
+            box%cell%type = 3
         ! Check for orthorhombic (unequal diagonals)
-        else if (abs(box%matrix(1,1) - box%matrix(2,2)) > error .or. &
-                 abs(box%matrix(1,1) - box%matrix(3,3)) > error) then
-            box%type = 2
+        else if (abs(box%cell%matrix(1,1) - box%cell%matrix(2,2)) > error .or. &
+                 abs(box%cell%matrix(1,1) - box%cell%matrix(3,3)) > error) then
+            box%cell%type = 2
         ! Otherwise, cubic
         else
-            box%type = 1
+            box%cell%type = 1
         end if
 
     end subroutine determine_box_symmetry
@@ -379,7 +379,7 @@ contains
         call log_message("====== Simulation preparation ======")
         call log_message("")
 
-        select case (box%type)
+        select case (box%cell%type)
             case (1)
 
                 call log_message("Box symmetry type: Cubic")
@@ -394,12 +394,12 @@ contains
             
             case default
             
-                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%type
+                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%cell%type
                 call log_message(formatted_msg)
         
         end select
 
-        write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%volume
+        write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%cell%volume
         call log_message(formatted_msg)
 
     end subroutine log_geometry_parameters
