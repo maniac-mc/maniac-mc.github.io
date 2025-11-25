@@ -35,7 +35,7 @@ contains
         real(real64) :: theta                     ! Rotation angle in radians
         type(type_coordinate), pointer :: coord   ! Pointer for host or guest coordinate
 
-        ! Handle optional argument: default = .false.
+        ! Handle optional argument
         use_full_rotation = .false.
         if (present(full_rotation)) use_full_rotation = full_rotation
 

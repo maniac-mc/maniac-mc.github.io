@@ -101,8 +101,12 @@ contains
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Title
-        call BoxLine("MANIAC-MC Simulation Completed", BOX_WIDTH)
+        call BoxLine("MANIAC-MC simulation completed", BOX_WIDTH)
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
+
+        ! Output path information
+        call BoxLine("All output files have been written to:", BOX_WIDTH)
+        call BoxLine(trim(path%outputs), BOX_WIDTH)
 
         ! Summary statistics (Trial / Accepted moves)
         if (proba%translation > 0) then
@@ -146,10 +150,6 @@ contains
         end if
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box
-
-        ! Output path information
-        call BoxLine("All output files have been written to:", BOX_WIDTH)
-        call BoxLine(trim(path%outputs), BOX_WIDTH)
 
         ! Bottom border
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
