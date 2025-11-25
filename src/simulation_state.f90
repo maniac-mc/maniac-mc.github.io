@@ -89,6 +89,15 @@ module simulation_state
     type(type_coordinate), target :: host, guest, gas
 
     !---------------------------------------------------------------------------
+    ! Old coordinate used in Monte Carlo move
+    !---------------------------------------------------------------------------
+    type saved_coordinate
+        real(real64), dimension(:), allocatable :: com                  ! X Y Z coordinate of molecule centers or atoms
+        real(real64), dimension(:, :), allocatable :: offset            ! Local site X Y Z displacements from molecule center
+    end type saved_coordinate
+    type(saved_coordinate), target :: saved
+
+    !---------------------------------------------------------------------------
     ! Simulation cell geometrical properties
     !---------------------------------------------------------------------------
     type type_cell
@@ -141,6 +150,72 @@ module simulation_state
     end type type_box
     type(type_box) :: primary, reservoir                ! Primary simulation box and optional reservoir box
 
+    !---------------------------------------------------------------------------
+    ! Maximum counts for residue and atom-type characteristics
+    !---------------------------------------------------------------------------
+    type type_max
+        integer :: atoms_per_residue          ! Max number of atoms in any residue
+        integer :: types_per_residue          ! Max number of atom types in any residue
+        integer :: active_residues            ! Max number of active residues
+        integer :: inactive_residues          ! Max number of inactive residues
+        integer :: atoms_active_residue       ! Max number of atoms in active residues
+        integer :: atoms_inactive_residue     ! Max number of atoms in inactive residues
+    end type type_max
+    type (type_max) :: nmax
+
+    !---------------------------------------------------------------------------
+    ! Statistic accumulator
+    !---------------------------------------------------------------------------
+    type mc_stat_type
+        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
+        real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
+        real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
+        real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
+    end type mc_stat_type
+    type(mc_stat_type) :: statistic
+
+    !---------------------------------------------------------------------------
+    ! Interaction arrays
+    !---------------------------------------------------------------------------
+    type type_coeff
+        real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
+        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
+    end type type_coeff
+    type(type_coeff) :: coeff
+
+   !---------------------------------------------------------------------------
+    ! For tabulating potential
+    !---------------------------------------------------------------------------
+    type tabulated
+        ! Table properties
+        real(real64), allocatable :: x(:)           ! Grid points (r, k^2, etc.)
+        real(real64), allocatable :: f(:)           ! Function values
+        real(real64) :: dx                          ! Grid spacing
+        integer :: npoint                           ! Number of points
+        logical :: initialized = .false.            ! Flag to indicate table is ready
+    end type tabulated
+    type(tabulated) :: erfc_r_table                 ! For precomputed erfc(r) / r
+    type(tabulated) :: r6_table                     ! For precomputed r**6
+    type(tabulated) :: r12_table                    ! For precomputed r**12
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -159,8 +234,6 @@ module simulation_state
     ! Simulation box definition
     type type_number
         integer :: type_residue                     ! Total number of residues
-        integer :: max_atom_in_any_residue          ! Max number of atoms in the largest residue
-        integer :: max_type_per_residue             ! Max number of type per residue
         integer, dimension(:), allocatable :: atom_in_residue ! Number of atoms in the residue
         integer, dimension(:), allocatable :: types_per_residue ! Number of atom types in the residue
         integer, dimension(:), allocatable :: bonds_per_residue ! Number of bonds in the residue
@@ -169,10 +242,6 @@ module simulation_state
         integer, dimension(:), allocatable :: impropers_per_residue ! Number of impropers in the residue
         integer, allocatable :: resid_location(:) ! size = nb%type_residue
         integer, dimension(:, :), allocatable :: types_pattern ! Type pattern in residue (eg, for TIP4P water 1 2 3 3)
-        integer :: max_atom_in_residue_active
-        integer :: max_atom_in_residue_inactive
-        integer :: max_active_residue
-        integer :: max_inactive_residue
     end type type_number
     type(type_number) :: nb
 
@@ -202,30 +271,10 @@ module simulation_state
         integer, dimension(:, :, :), allocatable :: angle_type_2d ! Site angles for each residue
         integer, dimension(:, :, :), allocatable :: dihedral_type_2d ! Site dihedrals for each residue
         integer, dimension(:, :, :), allocatable :: improper_type_2d ! Site impropers for each residue
-        real(real64), dimension(:, :), allocatable :: site_offset_old ! Local site X Y Z displacements from molecule center
-        real(real64), dimension(3) :: mol_com_old           ! For storing old molecule center-of-mass
     end type type_residue
     type(type_residue) :: res
 
-    !---------------------------------------------------------------------------
-    ! Statistic accumulator
-    !---------------------------------------------------------------------------
-    type mc_stat_type
-        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
-        real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
-        real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
-        real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
-    end type mc_stat_type
-    type(mc_stat_type) :: statistic
 
-    !---------------------------------------------------------------------------
-    ! Interaction arrays
-    !---------------------------------------------------------------------------
-    type type_coeff
-        real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
-        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
-    end type type_coeff
-    type(type_coeff) :: coeff
 
     !---------------------------------------------------------------------------
     ! Type to store precomputed reciprocal vectors (used in ewald)
@@ -261,19 +310,5 @@ module simulation_state
     end type type_ewald
     type(type_ewald) :: ewald
 
-    !---------------------------------------------------------------------------
-    ! For tabulating potential
-    !---------------------------------------------------------------------------
-    type tabulated
-        ! Table properties
-        real(real64), allocatable :: x(:)           ! Grid points (r, k^2, etc.)
-        real(real64), allocatable :: f(:)           ! Function values
-        real(real64) :: dx                          ! Grid spacing
-        integer :: npoint                           ! Number of points
-        logical :: initialized = .false.            ! Flag to indicate table is ready
-    end type tabulated
-    type(tabulated) :: erfc_r_table                 ! For precomputed erfc(r) / r
-    type(tabulated) :: r6_table                     ! For precomputed r**6
-    type(tabulated) :: r12_table                    ! For precomputed r**12
-
+ 
 end module simulation_state

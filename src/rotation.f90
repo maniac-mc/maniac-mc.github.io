@@ -34,7 +34,7 @@ contains
         ! Count trial move
         counter%rotations(1) = counter%rotations(1) + 1
 
-        call save_molecule_state(residue_type, molecule_index, offset_old = res%site_offset_old)
+        call save_molecule_state(residue_type, molecule_index, offset_old = saved%offset)
 
         ! Compute previous energy
         call compute_old_energy(residue_type, molecule_index)
@@ -54,7 +54,7 @@ contains
             call accept_molecule_move(old, new, counter%rotations)
         else ! Reject move
             ! Reject move: restore previous orientation
-            call reject_molecule_move(residue_type, molecule_index, site_offset_old = res%site_offset_old)
+            call reject_molecule_move(residue_type, molecule_index, site_offset_old = saved%offset)
         end if
 
     end subroutine attempt_rotation_move

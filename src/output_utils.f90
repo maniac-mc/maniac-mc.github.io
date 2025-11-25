@@ -322,7 +322,7 @@ contains
         integer :: max_atom_type                                ! Maximum atom type index from atom_types_2d array
 
         if (status%reservoir_provided) then
-            max_atom_type = max(maxval(primary%atoms%types(:,:)), maxval(reservoir%atoms%types(:,:)) )
+            max_atom_type = max(maxval(primary%atoms%types(:,:)), maxval(reservoir%atoms%types(:,:)))
         else
             max_atom_type = maxval(primary%atoms%types(:,:))
         end if

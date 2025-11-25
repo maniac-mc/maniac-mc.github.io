@@ -44,7 +44,7 @@ contains
 
         ! Energy of the previous configuration
         call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
-        call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
+        call save_molecule_state(residue_type, molecule_index, com_old = saved%com, offset_old = saved%offset)
 
         ! Record the index of the last molecule
         last_molecule_index = primary%num%residues(residue_type)
@@ -66,7 +66,7 @@ contains
         if (rand_uniform() <= probability) then ! Accept move
             call accept_deletion_move(residue_type, last_molecule_index)
         else ! Reject move
-            call reject_deletion_move(residue_type, molecule_index, res%mol_com_old, res%site_offset_old)
+            call reject_deletion_move(residue_type, molecule_index, saved%com, saved%offset)
         end if
 
     end subroutine attempt_deletion_move

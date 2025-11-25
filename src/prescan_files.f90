@@ -76,8 +76,8 @@ contains
 
         ! Initialize counters
         nb%type_residue = 0
-        nb%max_type_per_residue = 0
-        nb%max_atom_in_any_residue = 0
+        nmax%types_per_residue = 0
+        nmax%atoms_per_residue = 0
         in_residue_block = .false.
 
         ! Loop over lines in input file
@@ -128,8 +128,8 @@ contains
                 end do
 
                 ! Update global max
-                if (nb_type_per_residue > nb%max_type_per_residue) then
-                    nb%max_type_per_residue = nb_type_per_residue
+                if (nb_type_per_residue > nmax%types_per_residue) then
+                    nmax%types_per_residue = nb_type_per_residue
                 end if
             end if
 
@@ -155,18 +155,18 @@ contains
                 read(rest_line, *, iostat=ios) max_atom_in_residue
 
                 ! Update global maximum
-                if (max_atom_in_residue > nb%max_atom_in_any_residue) then
-                    nb%max_atom_in_any_residue = max_atom_in_residue
+                if (max_atom_in_residue > nmax%atoms_per_residue) then
+                    nmax%atoms_per_residue = max_atom_in_residue
                 end if
 
                 ! Update active / inactive maxima
                 if (is_active_residue) then
-                    if (max_atom_in_residue > nb%max_atom_in_residue_active) then
-                        nb%max_atom_in_residue_active = max_atom_in_residue
+                    if (max_atom_in_residue > nmax%atoms_active_residue) then
+                        nmax%atoms_active_residue = max_atom_in_residue
                     end if
                 else
-                    if (max_atom_in_residue > nb%max_atom_in_residue_inactive) then
-                        nb%max_atom_in_residue_inactive = max_atom_in_residue
+                    if (max_atom_in_residue > nmax%atoms_inactive_residue) then
+                        nmax%atoms_inactive_residue = max_atom_in_residue
                     end if
                 end if
             end if
@@ -394,18 +394,18 @@ contains
         !----------------------------------------------------------
         ! Determine maximum active and inactive residues
         !----------------------------------------------------------
-        nb%max_active_residue = 0
-        nb%max_inactive_residue = 0
+        nmax%active_residues = 0
+        nmax%inactive_residues = 0
 
         do residue_id = 1, nb%type_residue
             nb_residue = res_infos(residue_id)%nb_res(1) + res_infos(residue_id)%nb_res(2)
             if (res_infos(residue_id)%is_active) then
-                if (nb_residue > nb%max_active_residue) then
-                    nb%max_active_residue = nb_residue
+                if (nb_residue > nmax%active_residues) then
+                    nmax%active_residues = nb_residue
                 end if
             else
-                if (nb_residue > nb%max_inactive_residue) then
-                    nb%max_inactive_residue = nb_residue
+                if (nb_residue > nmax%inactive_residues) then
+                    nmax%inactive_residues = nb_residue
                 end if
             end if
         end do

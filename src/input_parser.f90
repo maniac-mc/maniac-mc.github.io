@@ -33,7 +33,7 @@ contains
 
     !---------------------------------------------------------------------------
     ! Opens the full MANIAC input file, reads and parses its contents by calling
-    ! ParseInputFile, then closes the file.
+    ! parse_input_file, then closes the file.
     !---------------------------------------------------------------------------
     subroutine ReadFullInputFile(filename)
 
@@ -46,7 +46,7 @@ contains
 
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
             call check_IO_status(filename, ios)
-            call ParseInputFile(unit)
+            call parse_input_file(unit)
         close(unit)
 
     end subroutine ReadFullInputFile
@@ -111,8 +111,8 @@ contains
         ! Allocate residue-level arrays
         allocate(res%mass(nb%type_residue))
         allocate(res%lambda(nb%type_residue))
-        allocate(res%types_2d(nb%type_residue, nb%max_type_per_residue))
-        allocate(res%names_2d(nb%type_residue, nb%max_type_per_residue))
+        allocate(res%types_2d(nb%type_residue, nmax%types_per_residue))
+        allocate(res%names_2d(nb%type_residue, nmax%types_per_residue))
         allocate(res%names_1d(nb%type_residue))
         allocate(res%bond_type_2d(nb%type_residue, NB_MAX_BOND, 3))
         allocate(res%angle_type_2d(nb%type_residue, NB_MAX_ANGLE, 4))
@@ -121,9 +121,9 @@ contains
 
         ! Allocate interaction parameters
         allocate(coeff%sigma(nb%type_residue, nb%type_residue, &
-                            nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
+                            nmax%atoms_per_residue, nmax%atoms_per_residue))
         allocate(coeff%epsilon(nb%type_residue, nb%type_residue, &
-                            nb%max_atom_in_any_residue, nb%max_atom_in_any_residue))
+                            nmax%atoms_per_residue, nmax%atoms_per_residue))
 
         ! Allocate input arrays
         allocate(thermo%fugacity(nb%type_residue))
@@ -137,7 +137,7 @@ contains
         allocate(nb%angles_per_residue(nb%type_residue))
         allocate(nb%dihedrals_per_residue(nb%type_residue))
         allocate(nb%impropers_per_residue(nb%type_residue))
-        allocate(nb%types_pattern(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(nb%types_pattern(nb%type_residue, nmax%atoms_per_residue))
 
     end subroutine allocate_atom_arrays
 
@@ -151,11 +151,11 @@ contains
         type(type_box), intent(inout) :: system
 
         ! Allocate basic atom properties
-        allocate(system%atoms%charges(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atoms%masses(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atoms%names(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atoms%types(nb%type_residue, nb%max_atom_in_any_residue))
-        allocate(system%atoms%ids(nb%type_residue, nb%max_atom_in_any_residue))
+        allocate(system%atoms%charges(nb%type_residue, nmax%atoms_per_residue))
+        allocate(system%atoms%masses(nb%type_residue, nmax%atoms_per_residue))
+        allocate(system%atoms%names(nb%type_residue, nmax%atoms_per_residue))
+        allocate(system%atoms%types(nb%type_residue, nmax%atoms_per_residue))
+        allocate(system%atoms%ids(nb%type_residue, nmax%atoms_per_residue))
 
         ! Allocate residue counters
         allocate(system%num%residues(nb%type_residue))
@@ -179,14 +179,14 @@ contains
         ! Detect max number of atom
         if (is_host) then
             ! Host (i.., the inactive residue)
-            max_atom = nb%max_atom_in_residue_inactive
-            max_molecule = nb%max_inactive_residue
+            max_atom = nmax%atoms_inactive_residue
+            max_molecule = nmax%inactive_residues
         else
-            max_atom = nb%max_atom_in_residue_active
+            max_atom = nmax%atoms_active_residue
             if (status%reservoir_provided) then
                 ! In presence of a reservoir, the maximum number of molecule is
                 ! the sum of residue in box and reservoir
-                max_molecule = nb%max_active_residue
+                max_molecule = nmax%active_residues
             else
                 ! In absence of a reservoir, use NB_MAX_MOLECULE
                 max_molecule = NB_MAX_MOLECULE
@@ -203,7 +203,7 @@ contains
     ! Reads the MANIAC input file, parses global parameters and residue blocks,
     ! validates required values, and initializes simulation probabilities and states.
     !-----------------------------------------------------------------------------
-    subroutine ParseInputFile(INFILE)
+    subroutine parse_input_file(INFILE)
 
         ! Input parameter
         integer, intent(in) :: INFILE
@@ -538,11 +538,15 @@ contains
         ! Use provided seed, or generate a new one
         if (.not. has_seed) call seed_rng(input%seed)
 
-        call SortResidues()
+        call sort_residues()
 
-    end subroutine ParseInputFile
+    end subroutine parse_input_file
 
-    subroutine SortResidues()
+    !---------------------------------------------------------------------------
+    ! This subroutine sorts all residue-related data structures in the simulatio
+    ! according to the minimum atom type ID of each residue.
+    !---------------------------------------------------------------------------
+    subroutine sort_residues()
 
         integer :: i, j, k, n
         integer, allocatable :: keys(:), order(:)
@@ -597,8 +601,6 @@ contains
             tmp_types_per_residue(i) = nb%types_per_residue(k)
             tmp_types_2d(i,:) = res%types_2d(k,:)
             tmp_names_2d(i,:) = res%names_2d(k,:)
-            ! tmp_types_2d(i, 1:nb%types_per_residue(k)) = res%types_2d(k, 1:nb%types_per_residue(k))
-            ! tmp_names_2d(i, 1:nb%types_per_residue(k)) = res%names_2d(k, 1:nb%types_per_residue(k))
         end do
 
         ! Copy temporary arrays back into original arrays
@@ -615,6 +617,6 @@ contains
         deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &
                 tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
-    end subroutine SortResidues
+    end subroutine sort_residues
 
 end module input_parser

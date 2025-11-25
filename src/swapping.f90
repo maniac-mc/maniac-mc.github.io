@@ -63,7 +63,7 @@ contains
 
         ! Energy of the previous configuration
         call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
-        call save_molecule_state(residue_type, molecule_index, com_old = res%mol_com_old, offset_old = res%site_offset_old)
+        call save_molecule_state(residue_type, molecule_index, com_old = saved%com, offset_old = saved%offset)
 
         ! Record the index of the last molecule of type "residue_type"
         last_molecule_index = primary%num%residues(residue_type)
@@ -82,7 +82,7 @@ contains
         primary%num%atoms = primary%num%atoms + nb%atom_in_residue(residue_type_bis)
 
         ! Use the CoM of the deleted molecule
-        guest%com(:, residue_type_bis, molecule_index_bis) = res%mol_com_old
+        guest%com(:, residue_type_bis, molecule_index_bis) = saved%com
 
         ! Generate or pick orientation for the new molecule
         call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_mol_index, place_random_com = .false.)
@@ -99,7 +99,7 @@ contains
         if (rand_uniform() <= probability) then ! Accept move
             call accept_swap_move()
         else ! Reject move
-            call reject_swap_move(residue_type, molecule_index, residue_type_bis, res%mol_com_old, res%site_offset_old)
+            call reject_swap_move(residue_type, molecule_index, residue_type_bis, saved%com, saved%offset)
         end if
 
     end subroutine attempt_swap_move
