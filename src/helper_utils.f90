@@ -224,6 +224,7 @@ contains
                 coord => guest
             case default
                 nullify(coord)
+                error stop "get_coord: invalid residue type in resid_location(res_type)"
         end select
         
     end function get_coord

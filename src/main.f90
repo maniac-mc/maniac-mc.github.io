@@ -22,14 +22,14 @@ program MANIAC
     call read_system_data()             ! Read topology/data file
     call read_parameters()               ! Read simulation parameters (Lennard-Jones, etc.)
 
-    ! ! Step 3 : Simulation preparation
+    ! Step 3 : Simulation preparation
     call setup_simulation_parameters()  ! Set up MC parameters, initial checks
     call compute_system_energy(primary)   ! Compute initial total energy for the main box
 
-    ! ! Step 4 :Monte Carlo simulation
+    ! Step 4 :Monte Carlo simulation
     call monte_carlo_loop()               ! Main MC loop
 
-    ! ! Step 5 :Final reporting and cleanup
+    ! Step 5 :Final reporting and cleanup
     call final_report()                  ! Print energy and statistics
 
 end program MANIAC

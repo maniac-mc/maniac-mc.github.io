@@ -1408,6 +1408,14 @@ contains
         cpt = 1
         do i = 1, nb%type_residue
 
+            ! #tofix, should have been done before
+            ! Store CoM position
+            if (input%is_active(i) == 1) then
+                resid_location(i) = TYPE_GUEST
+            else
+                resid_location(i) = TYPE_HOST
+            end if
+
             if (is_reservoir) then
                 coord => gas
             else
@@ -1465,13 +1473,6 @@ contains
                     if (input%is_active(i) == 1) then
                         call check_com_distance(tmp_atom_xyz, nb%atom_in_residue(i), &
                             original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
-                    end if
-
-                    ! Store CoM position
-                    if (input%is_active(i) == 1) then
-                        resid_location(i) = TYPE_GUEST
-                    else
-                        resid_location(i) = TYPE_HOST
                     end if
 
                     coord%residue_exists(i) = .true.

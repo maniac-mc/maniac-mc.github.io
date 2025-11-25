@@ -109,6 +109,8 @@ contains
             end select
         end do
 
+        if (seen_res_file) status%reservoir_provided = .true.
+
     end subroutine read_command_line_args
 
     !-----------------------------------------------------------------
