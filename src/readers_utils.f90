@@ -289,14 +289,14 @@ contains
             ! Raw displacement between the two atoms (may cross PBC boundary)
             delta_r_cart = curr_coords - ref_coords
 
-            if (box%cell%type == 1 .or. box%cell%type == 2) then
+            if (box%cell%shape == ORTHORHOMBIC) then
 
                 ! Cubic/orthorhombic: simple wrapping along box edges
                 do idim = 1, 3
                     delta_r_cart(idim) = wrap_nearest(delta_r_cart(idim), box%cell%matrix(idim, idim))
                 end do
 
-            else if (box%cell%type == 3) then
+            else if (box%cell%shape == TRICLINIC) then
                 ! Triclinic: use fractional coords
                 delta_r_frac = matmul(box%cell%reciprocal, delta_r_cart)
 

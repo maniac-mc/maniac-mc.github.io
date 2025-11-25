@@ -89,7 +89,7 @@ module simulation_state
     type(type_coordinate), target :: host, guest, gas
 
     !---------------------------------------------------------------------------
-    ! Simulation box definition
+    ! Simulation cell geometrical properties
     !---------------------------------------------------------------------------
     type type_cell
         real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
@@ -99,26 +99,12 @@ module simulation_state
         real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
         real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
         real(real64) :: volume                      ! Box volume
-        integer :: type = 0                         ! 0 = unset, 1 = cubic, 2 = orthorhombic, 3 = triclinic
+        integer :: shape                            ! To differentiace between triclinic and orthorhombic boc
     end type type_cell
 
-
-
-
-
-
-
-    ! Parameters provided in the input file
-    type input_type
-        real(real64) :: translation_step            ! Maximum displacement for MC moves
-        real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
-        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
-        integer :: seed                             ! Initial seed for the random number generator
-        logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
-    end type input_type
-    type(input_type) :: input
-
+    !---------------------------------------------------------------------------
     ! Simulation box definition
+    !---------------------------------------------------------------------------
     type type_box
         ! Generic box geometry parameters
         type(type_cell) :: cell
@@ -143,6 +129,21 @@ module simulation_state
         integer, dimension(:, :), allocatable :: atom_ids ! Atom ids for each residue (1,:,:)=system, (2,:,:)=reservoir
     end type type_box
     type(type_box) :: primary, reservoir
+
+
+
+
+
+
+    ! Parameters provided in the input file
+    type input_type
+        real(real64) :: translation_step            ! Maximum displacement for MC moves
+        real(real64) :: rotation_step_angle         ! Maximum rotation for MC moves
+        real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
+        integer :: seed                             ! Initial seed for the random number generator
+        logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
+    end type input_type
+    type(input_type) :: input
 
 
     ! Simulation box definition

@@ -45,6 +45,10 @@ module parameters
     integer, parameter :: TYPE_DELETION = 2             ! Move type: molecule deletion
     integer, parameter :: TYPE_TRANSLATION = 3          ! Move type: molecular translation
     integer, parameter :: TYPE_ROTATION = 4             ! Move type: molecular rotation
+    
+    ! Define constants for box types
+    integer, parameter :: ORTHORHOMBIC = 1
+    integer, parameter :: TRICLINIC = 2
 
     ! In module parameters
     integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions

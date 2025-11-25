@@ -55,7 +55,7 @@ contains
         integer :: dim                               ! Loop index
 
         ! Orthogonal / Rectangular Box
-        if (box%cell%type <= 3) then
+        if (box%cell%shape == ORTHORHOMBIC) then
 
             do dim = 1,3
 
@@ -112,8 +112,8 @@ contains
         real(real64), dimension(3) :: fractional_pos    ! Position in fractional coordinates (triclinic)
         integer :: dim                                  ! Loop index over Cartesian dimensions
 
-        ! Cubic or Orthorhombic box
-        if (box%cell%type == 1 .or. box%cell%type == 2) then
+        ! Orthorhombic box
+        if (box%cell%shape == ORTHORHOMBIC) then
 
             do dim = 1, 3
                 ! Shift position into [-L/2, L/2]
@@ -122,7 +122,7 @@ contains
             end do
 
         ! Triclinic box
-        else if (box%cell%type == 3) then
+        else if (box%cell%shape == TRICLINIC) then
 
             ! Convert Cartesian to fractional coordinates
             fractional_pos = matmul(box%cell%reciprocal, pos)
@@ -244,7 +244,7 @@ contains
         delta = pos2 - pos1
 
         ! Cubic or Orthorhombic box
-        if (box%cell%type == 1 .or. box%cell%type == 2) then
+        if (box%cell%shape == ORTHORHOMBIC) then
 
             ! Apply PBC to delta vector directly
             do dim = 1,3
@@ -256,7 +256,7 @@ contains
             distance = vector_norm(delta)
 
         ! Triclinic box
-        else if (box%cell%type == 3) then
+        else if (box%cell%shape == TRICLINIC) then
 
             min_dist2 = huge(one)
 
@@ -353,14 +353,9 @@ contains
 
         ! Check for triclinic (any off-diagonal > tolerance)
         if (maxval(abs(off_diag)) > error) then
-            box%cell%type = 3
-        ! Check for orthorhombic (unequal diagonals)
-        else if (abs(box%cell%matrix(1,1) - box%cell%matrix(2,2)) > error .or. &
-                 abs(box%cell%matrix(1,1) - box%cell%matrix(3,3)) > error) then
-            box%cell%type = 2
-        ! Otherwise, cubic
+            box%cell%shape = TRICLINIC
         else
-            box%cell%type = 1
+            box%cell%shape = ORTHORHOMBIC
         end if
 
     end subroutine determine_box_symmetry
@@ -379,22 +374,18 @@ contains
         call log_message("====== Simulation preparation ======")
         call log_message("")
 
-        select case (box%cell%type)
+        select case (box%cell%shape)
             case (1)
-
-                call log_message("Box symmetry type: Cubic")
-            
-            case (2)
             
                 call log_message("Box symmetry type: Orthorhombic")
             
-            case (3)
+            case (2)
             
                 call log_message("Box symmetry type: Triclinic")
             
             case default
             
-                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%cell%type
+                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%cell%shape
                 call log_message(formatted_msg)
         
         end select

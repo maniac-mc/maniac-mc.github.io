@@ -492,7 +492,7 @@ contains
         write(unit_data, '(2(F15.8,1X))', ADVANCE='NO') box%cell%bounds(3,1), box%cell%bounds(3,2)
         write(unit_data, '(A)') "zlo zhi"
 
-        if (box%cell%type == 3) then
+        if (box%cell%shape == TRICLINIC) then
             write(unit_data, '(3(F15.8,1X))') box%cell%tilt(1), box%cell%tilt(2), box%cell%tilt(3)
             write(unit_data, '(A)') "xy xz yz"
         end if
