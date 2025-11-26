@@ -15,15 +15,14 @@ program test_apply_PBC
     !======================================================
     ! Test 1: Cubic box
     !======================================================
-    box%type = 1
-    box%bounds(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
-    box%bounds(:,2) = [1.0_real64, 1.0_real64, 1.0_real64]
-    box%matrix = 0.0_real64
-    box%matrix(1,1) = 1.0_real64
-    box%matrix(2,2) = 1.0_real64
-    box%matrix(3,3) = 1.0_real64
+    box%cell%shape = 1
+    box%cell%bounds(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
+    box%cell%bounds(:,2) = [1.0_real64, 1.0_real64, 1.0_real64]
+    box%cell%matrix = 0.0_real64
+    box%cell%matrix(1,1) = 1.0_real64
+    box%cell%matrix(2,2) = 1.0_real64
+    box%cell%matrix(3,3) = 1.0_real64
 
-    ! Position outside [0,1)
     pos = [1.2_real64, -0.3_real64, 2.7_real64]
     call apply_PBC(pos, box)
 
@@ -37,19 +36,19 @@ program test_apply_PBC
     !======================================================
     ! Test 2: Orthorhombic box
     !======================================================
-    box%type = 2
-    box%bounds(:,1) = [0.0_real64, -1.5_real64, 0.0_real64]
-    box%bounds(:,2) = [2.0_real64, 1.5_real64, 4.0_real64]
-    box%matrix = 0.0_real64
-    box%matrix(1,1) = 2.0_real64
-    box%matrix(2,2) = 3.0_real64
-    box%matrix(3,3) = 4.0_real64
+    box%cell%shape = 1
+    box%cell%bounds(:,1) = [0.0_real64, -1.5_real64, 0.0_real64]
+    box%cell%bounds(:,2) = [2.0_real64, 1.5_real64, 4.0_real64]
+    box%cell%matrix = 0.0_real64
+    box%cell%matrix(1,1) = 2.0_real64
+    box%cell%matrix(2,2) = 3.0_real64
+    box%cell%matrix(3,3) = 4.0_real64
 
     pos = [2.5_real64, -1.6_real64, 9.0_real64]
     call apply_PBC(pos, box)
 
     do i = 1,3
-        expected(i) = box%bounds(i,1) + modulo(pos(i) - box%bounds(i,1), box%matrix(i,i))
+        expected(i) = box%cell%bounds(i,1) + modulo(pos(i) - box%cell%bounds(i,1), box%cell%matrix(i,i))
     end do
 
     pass2 = all(abs(pos - expected) < tol)
@@ -61,23 +60,20 @@ program test_apply_PBC
     !======================================================
     ! Test 3: Triclinic box
     !======================================================
-    box%type = 3
-    ! Define lower bounds
-    box%bounds(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
-    ! Box vectors: a=(1,0,0), b=(0.5,1,0), c=(0,0.5,1)
-    box%matrix(:,1) = [1.0_real64, 0.0_real64, 0.0_real64]
-    box%matrix(:,2) = [0.5_real64, 1.0_real64, 0.0_real64]
-    box%matrix(:,3) = [0.0_real64, 0.5_real64, 1.0_real64]
+    box%cell%shape = 2
+    box%cell%bounds(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
+    box%cell%matrix(:,1) = [1.0_real64, 0.0_real64, 0.0_real64]
+    box%cell%matrix(:,2) = [0.5_real64, 1.0_real64, 0.0_real64]
+    box%cell%matrix(:,3) = [0.0_real64, 0.5_real64, 1.0_real64]
 
-    ! Compute reciprocal matrix
-    recip = inverse(box%matrix)
-    box%reciprocal = recip
+    recip = inverse(box%cell%matrix)
+    box%cell%reciprocal = recip
 
     pos = [1.2_real64, 0.3_real64, -0.6_real64]
     call apply_PBC(pos, box)
 
-    ! Compute expected using fractional coordinates
-    expected = box%bounds(:,1) + matmul(box%matrix, modulo(matmul(box%reciprocal, pos - box%bounds(:,1)), 1.0_real64))
+    expected = box%cell%bounds(:,1) + matmul(box%cell%matrix, &
+        modulo(matmul(box%cell%reciprocal, pos - box%cell%bounds(:,1)), 1.0_real64))
 
     pass3 = all(abs(pos - expected) < tol)
     if (.not. pass3) then

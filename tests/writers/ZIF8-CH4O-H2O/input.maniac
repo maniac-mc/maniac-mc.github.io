@@ -1,8 +1,8 @@
 # Input for maniac program
 
 # Generic parameters
-nb_block 50                      # number of MC block
-nb_step 50                        # Number of MC step
+nb_block 10                      # number of MC block
+nb_step 10                        # Number of MC step
 temperature	300                 # Temperature in Kelvin
 
 # Electrostatic interactions

@@ -11,13 +11,13 @@ program test_choose_rotation_angle
     !--------------------------------------------
     ! Setup input parameters
     !--------------------------------------------
-    input%rotation_step_angle = 0.5_real64  ! small-step max rotation (radians)
+    mc_input%rotation_step_angle = 0.5_real64  ! small-step max rotation (radians)
 
     !--------------------------------------------
     ! Test 1: small-step rotation
     !--------------------------------------------
     theta = choose_rotation_angle(.false.)
-    if (theta < -input%rotation_step_angle - error .or. theta > input%rotation_step_angle + error) then
+    if (theta < -mc_input%rotation_step_angle - error .or. theta > mc_input%rotation_step_angle + error) then
         print *, "FAILED: small-step rotation out of range."
         stop 1
     end if

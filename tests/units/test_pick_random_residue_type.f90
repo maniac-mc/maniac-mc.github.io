@@ -6,8 +6,8 @@ program test_pick_random_residue_type
 
     implicit none
 
-    integer, allocatable :: is_active(:)
     integer :: i, pick
+    logical, allocatable :: is_active(:)
     logical :: pass1, pass2
     integer, parameter :: n_trials = 1000
 
@@ -15,7 +15,7 @@ program test_pick_random_residue_type
     ! Test 1: Some active residues
     !---------------------------------------
     allocate(is_active(5))
-    is_active = [1, 0, 1, 0, 1]  ! residues 1,3,5 are active
+    is_active = [.true., .false., .true., .false., .true.]  ! residues 1,3,5 are active
     pass1 = .true.
 
     do i = 1, n_trials
@@ -29,7 +29,7 @@ program test_pick_random_residue_type
     !---------------------------------------
     ! Test 2: No active residues
     !---------------------------------------
-    is_active = [0,0,0,0,0]
+    is_active = [.false., .false., .false., .false., .false.]
     pick = pick_random_residue_type(is_active)
     pass2 = (pick == 0)
 

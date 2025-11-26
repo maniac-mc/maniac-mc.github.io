@@ -13,18 +13,18 @@ program test_compute_box_determinant_and_inverse
     !-------------------------------------------------------------
     ! Test 1: Cubic box (diagonal with equal sides)
     !-------------------------------------------------------------
-    test_box%matrix = 0.0_real64
-    test_box%matrix(1,1) = 2.0_real64
-    test_box%matrix(2,2) = 2.0_real64
-    test_box%matrix(3,3) = 2.0_real64
+    test_box%cell%matrix = 0.0_real64
+    test_box%cell%matrix(1,1) = 2.0_real64
+    test_box%cell%matrix(2,2) = 2.0_real64
+    test_box%cell%matrix(3,3) = 2.0_real64
 
     call compute_box_determinant_and_inverse(test_box)
 
     ! Check determinant
-    pass1 = abs(test_box%determinant - 8.0_real64) < tol
+    pass1 = abs(test_box%cell%determinant - 8.0_real64) < tol
 
     ! Check inverse correctness: A * A_inv ≈ I
-    identity_check = matmul(test_box%matrix, test_box%reciprocal)
+    identity_check = matmul(test_box%cell%matrix, test_box%cell%reciprocal)
     do i = 1,3
         do j = 1,3
             if (i == j) then
@@ -43,15 +43,15 @@ program test_compute_box_determinant_and_inverse
     !-------------------------------------------------------------
     ! Test 2: Orthorhombic box (diagonal with unequal sides)
     !-------------------------------------------------------------
-    test_box%matrix = 0.0_real64
-    test_box%matrix(1,1) = 1.0_real64
-    test_box%matrix(2,2) = 2.0_real64
-    test_box%matrix(3,3) = 3.0_real64
+    test_box%cell%matrix = 0.0_real64
+    test_box%cell%matrix(1,1) = 1.0_real64
+    test_box%cell%matrix(2,2) = 2.0_real64
+    test_box%cell%matrix(3,3) = 3.0_real64
 
     call compute_box_determinant_and_inverse(test_box)
 
-    pass2 = abs(test_box%determinant - 6.0_real64) < tol
-    identity_check = matmul(test_box%matrix, test_box%reciprocal)
+    pass2 = abs(test_box%cell%determinant - 6.0_real64) < tol
+    identity_check = matmul(test_box%cell%matrix, test_box%cell%reciprocal)
     do i = 1,3
         do j = 1,3
             if (i == j) then
@@ -70,14 +70,14 @@ program test_compute_box_determinant_and_inverse
     !-------------------------------------------------------------
     ! Test 3: General (triclinic) box with off-diagonal elements
     !-------------------------------------------------------------
-    test_box%matrix(:,1) = [2.0_real64, 0.1_real64, 0.05_real64]
-    test_box%matrix(:,2) = [0.1_real64, 3.0_real64, 0.1_real64]
-    test_box%matrix(:,3) = [0.05_real64, 0.1_real64, 4.0_real64]
+    test_box%cell%matrix(:,1) = [2.0_real64, 0.1_real64, 0.05_real64]
+    test_box%cell%matrix(:,2) = [0.1_real64, 3.0_real64, 0.1_real64]
+    test_box%cell%matrix(:,3) = [0.05_real64, 0.1_real64, 4.0_real64]
 
     call compute_box_determinant_and_inverse(test_box)
 
-    pass3 = abs(test_box%determinant) > tol
-    identity_check = matmul(test_box%matrix, test_box%reciprocal)
+    pass3 = abs(test_box%cell%determinant) > tol
+    identity_check = matmul(test_box%cell%matrix, test_box%cell%reciprocal)
     do i = 1,3
         do j = 1,3
             if (i == j) then
