@@ -39,8 +39,16 @@ jobs:
         run: ./run-test.sh
 
       # Run reader tests
-      - name: Run reader tests
+      - name: Run reader data tests
         working-directory: tests/readers/data
+        run: ./run-test.sh
+
+      - name: Run reader input tests
+        working-directory: tests/readers/inputs
+        run: ./run-test.sh
+
+      - name: Run reader prescan tests
+        working-directory: tests/readers/prescan
         run: ./run-test.sh
 
       # Run integration tests
