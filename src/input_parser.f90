@@ -495,8 +495,8 @@ contains
             has_chemical_potential = (thermo%chemical_potential(val_int) < zero)
 
             ! Rule 1: at least one must be provided
-            if (.not.(has_fugacity .or. has_chemical_potential)) then
-                call abort_run("Neither fugacity nor chemical potential provided for active residue: " // &
+            if (.not.(has_fugacity .or. has_chemical_potential) .and. proba%insertion_deletion > 0) then
+                call abort_run("Chemical potential not provided for GCMC insert of active residue: " // &
                             trim(res%names(val_int)))
             end if
 

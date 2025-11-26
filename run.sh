@@ -11,91 +11,28 @@ base_widom="mc-topology/testcase-widom"
 case "$case" in
   "ZIF8-CH4O")
     folder="$base_adsorption/ZIF8-CH4O"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
     ;;
+
   "WIDOM")
     folder="$base_widom/ZIF8-MET"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
     ;;
+
   "SLIT")
     folder="$base_adsorption/SLIT"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
     ;;
-  "CH4O-H2O")
-    folder="$base_reservoir/CH4O-H2O"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
-    ;;
-  "ZIF8-CH4O-H2O")
-    folder="$base_adsorption/ZIF8-CH4O-H2O"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
-    res="$base_reservoir/CH4O-H2O/topology.data"
-    ;;
-  "ZIF8-H2O-1")
-    folder="$base_energy/ZIF8-H2O"
-    input="$folder/zif8-water.maniac"
-    data="$folder/zif8-water.data"
-    inc="$folder/zif8-water.inc"
-    res="$base_reservoir/tip4p-water/water.data"
-    ;;
-  "ZIF8-H2O-2")
-    folder="$base_adsorption/ZIF8-H2O"
-    input="$folder/zif8-water.maniac"
-    data="$folder/zif8-water.data"
-    inc="$folder/zif8-water.inc"
-    res="$base_reservoir/tip4p-water/water.data"
-    ;;
-  "MFI-CO2")
-    folder="$base_adsorption/MFI-CO2"
-    input="$folder/MFI-CO2.maniac"
-    data="$folder/MFI-CO2.data"
-    inc="$folder/MFI-CO2.inc"
-    res="$base_reservoir/co2/co2.data"
-    ;;
-  "LJ-gas")
-    folder="$base_energy/LJ-gas"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
-    res=""
-    ;;
-  "H2O-gas")
-    folder="$base_adsorption/H2O"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
-    res=""
-    ;;
-  "H2O-gas-energy")
-    folder="$base_energy/H2O-gas"
-    input="$folder/input.maniac"
-    data="$folder/topology.data"
-    inc="$folder/parameters.inc"
-    res=""
-    ;;
-  "DIPOLE-orthorhombic")
-    folder="$base_energy/DIPOLE-orthorhombic"
-    input="$folder/dipole.maniac"
-    data="$folder/dipole.data"
-    inc="$folder/dipole.inc"
-    res=""
-    ;;
+
   *)
     echo "Unknown case: $case"
     exit 1
     ;;
 esac
 
+# --- Shared filenames (automatic for all cases) ---
+input="$folder/input.maniac"
+data="$folder/topology.data"
+inc="$folder/parameters.inc"
+
 outputs="outputs/"
 
 echo "Running maniac with system=$case ..."
-./build/maniac -i "$input" -d "$data" -p "$inc" -o "$outputs"  ${res:+-r "$res"}
+./build/maniac -i "$input" -d "$data" -p "$inc" -o "$outputs" ${res:+-r "$res"}
