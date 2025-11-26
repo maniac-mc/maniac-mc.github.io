@@ -63,7 +63,7 @@ contains
         ! Save reciprocal amplitudes A(k)
         !------------------------------------------------------
         do idx = 1, ewald%param%nkvec
-            ewald%recip_amplitude_old(idx) = ewald%recip_amplitude(idx)
+            ewald%Ak_old(idx) = ewald%Ak(idx)
         end do
 
     end subroutine save_single_mol_fourier_terms
@@ -119,7 +119,7 @@ contains
         ! Restore reciprocal amplitudes A(k)
         !------------------------------------------------------
         do idx = 1, ewald%param%nkvec
-            ewald%recip_amplitude(idx) = ewald%recip_amplitude_old(idx)
+            ewald%Ak(idx) = ewald%Ak_old(idx)
         end do
 
     end subroutine restore_single_mol_fourier
@@ -230,9 +230,9 @@ contains
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
             do idim = 1, 3
-                ewald%temp_1d(:) = ewald%temp(idim, :)
-                call compute_phase_factor(ewald%temp_1d(:), local_phase(idim), ewald%param%kmax(idim))
-                ewald%phase%factor(idim, res_type, mol_index, atom_index_1, -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%temp_1d(:)
+                call compute_phase_factor(ewald%phase%axis(:), local_phase(idim), ewald%param%kmax(idim))
+                ewald%phase%factor(idim, res_type, mol_index, atom_index_1, &
+                    -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
             end do
 
         end do

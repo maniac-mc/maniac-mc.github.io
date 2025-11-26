@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="SLIT"
+case="WIDOM"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"
@@ -20,7 +20,6 @@ case "$case" in
     input="$folder/input.maniac"
     data="$folder/topology.data"
     inc="$folder/parameters.inc"
-    res="$base_reservoir/CH4O/topology.data"
     ;;
   "SLIT")
     folder="$base_adsorption/SLIT"

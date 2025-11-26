@@ -54,9 +54,9 @@ contains
         allocate(saved%com(3))
 
         ! Allocate real arrays for coefficients (dimension ewald%param%nkvec)
-        allocate(ewald%recip_constants(1:ewald%param%nkvec))
-        allocate(ewald%recip_amplitude(1:ewald%param%nkvec))
-        allocate(ewald%recip_amplitude_old(1:ewald%param%nkvec))
+        allocate(ewald%kweights(1:ewald%param%nkvec))
+        allocate(ewald%Ak(1:ewald%param%nkvec))
+        allocate(ewald%Ak_old(1:ewald%param%nkvec))
         allocate(ewald%form_factor(ewald%param%nkvec)) ! Note, there is no need for such as large vector
 
         ! Allocate complex arrays for wave vector components
@@ -64,13 +64,11 @@ contains
         allocate(ewald%phase%factor(3, res%number, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max)) ! TOFIX, do not use NB_MAX_MOLECULE systematical ? 
         allocate(ewald%phase%factor_old(3, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
 
-        allocate(ewald%temp_1d(-kmax_max:kmax_max))
-
         ! Allocate temporary arrays once
-        allocate(ewald%temp(3, -kmax_max:kmax_max))
+        allocate(ewald%phase%axis(-kmax_max:kmax_max))
         allocate(ewald%phase%new(nmax%atoms_per_residue))
         allocate(ewald%phase%old(nmax%atoms_per_residue))
-        allocate(ewald%charges(nmax%atoms_per_residue))
+        allocate(ewald%q_buffer(nmax%atoms_per_residue))
 
         ! Allocate kvectors
         allocate(ewald%kvectors(ewald%param%nkvec))

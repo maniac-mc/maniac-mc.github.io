@@ -1471,6 +1471,7 @@ contains
                     end if
 
                     coord%com(:, i, l) = com(:)
+
                     do m = 1, res%atom(i)
                         coord%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                     end do

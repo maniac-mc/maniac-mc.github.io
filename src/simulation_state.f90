@@ -108,7 +108,7 @@ module simulation_state
         real(real64) :: tilt(3)                     ! Tilt factors (xy, xz, yz)
         real(real64) :: determinant                 ! Volume scaling factor of a linear transformation
         real(real64) :: volume                      ! Box volume
-        integer :: shape                            ! To differentiace between triclinic and orthorhombic boc
+        integer :: shape                            ! To differentiace between triclinic and orthorhombic box
     end type type_cell
 
     !---------------------------------------------------------------------------
@@ -257,10 +257,11 @@ module simulation_state
     ! Allocatable array for phase calculation
     !---------------------------------------------------------------------------
     type phase_ewald
-        complex(real64), allocatable :: factor(:,:,:,:,:)       ! Complex exponentials for reciprocal space
-        complex(real64), allocatable :: factor_old(:,:,:)       ! Old complex exponential terms
-        complex(real64), allocatable :: new(:)                  ! Temporary array for new configuration phases
-        complex(real64), allocatable :: old(:)                  ! Temporary array for old configuration phases
+        complex(real64), allocatable :: factor(:,:,:,:,:)  ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
+        complex(real64), allocatable :: factor_old(:,:,:)  ! Previous configuration phase factors used for updating A(k)
+        complex(real64), allocatable :: new(:)             ! Temporary 1D array of phase factors for the new configuration
+        complex(real64), allocatable :: old(:)             ! Temporary 1D array of phase factors for the old configuration
+        complex(real64), allocatable :: axis(:)            ! Scratch buffer of 1D complex phase factors along a single k-axis
     end type phase_ewald
 
     !---------------------------------------------------------------------------
@@ -275,30 +276,15 @@ module simulation_state
         real(real64) :: screen                      ! Real-space screening factor
     end type ewald_parameters
 
-    ! !---------------------------------------------------------------------------
-    ! ! Runtime arrays for Ewald calculations
-    ! !---------------------------------------------------------------------------
-    ! type ewald_runtime
-    !     real(real64), allocatable :: recip_constants(:)      ! Constants for reciprocal space summations
-    !     complex(real64), allocatable :: recip_amplitude(:)   ! Fourier coefficients of charge density or potential
-    !     complex(real64), allocatable :: recip_amplitude_old(:) ! Old Fourier coefficients
-    !     real(real64), allocatable :: form_factor(:)          ! Symmetry factor for k vs -k
-    !     complex(real64), allocatable :: fft2d(:, :)         ! 2D FFT temporary array
-    !     complex(real64), allocatable :: fft1d(:)            ! 1D FFT temporary array
-    !     real(real64), allocatable :: charges(:)             ! Temporary array for atom charges
-    ! end type ewald_runtime
-
     !---------------------------------------------------------------------------
     ! For Ewald calculation
     !---------------------------------------------------------------------------
     type type_ewald
-        real(real64), allocatable :: recip_constants(:) ! Constants for reciprocal space summations
-        complex(real64), allocatable :: recip_amplitude(:) ! Fourier coefficients of charge density or potential
-        complex(real64), allocatable :: recip_amplitude_old(:) ! Old fourier coefficients of charge density or potential
-        real(real64), allocatable :: form_factor(:) ! Factor to account for symmetry (k vs -k)
-        complex(real64), allocatable :: temp(:, :) ! Temporary Fourier array
-        complex(real64), allocatable :: temp_1d(:) ! Temporary Fourier array
-        real(real64), allocatable :: charges(:) ! Temporary array for atom charges    
+        real(real64),    allocatable :: kweights(:)     ! Reciprocal-space weighting factors W(k)
+        complex(real64), allocatable :: Ak(:)           ! Current Fourier coefficients A(k) of the charge density
+        complex(real64), allocatable :: Ak_old(:)       ! Previous Fourier coefficients A(k) of the charge density
+        real(real64), allocatable :: form_factor(:)     ! Symmetry factor for ±k pairs (1 for unique, 2 for paired)
+        real(real64), allocatable :: q_buffer(:)        ! Temporary array for atom charges    
         type(ewald_parameters) :: param
         type(phase_ewald) :: phase
         type(kvector_type), allocatable :: kvectors(:) ! Precomputed reciprocal vectors

@@ -19,10 +19,10 @@ program test_minimum_image_distance
     nres = 2
     natoms = 1
 
-    ! Allocate resid_location
-    if (allocated(resid_location)) deallocate(resid_location)
-    allocate(resid_location(nres))
-    resid_location = TYPE_GUEST
+    ! Allocate res%role
+    if (allocated(res%role)) deallocate(res%role)
+    allocate(res%role(nres))
+    res%role = TYPE_GUEST
 
     allocate(guest%com(3, nres, nmaxmol))
     allocate(guest%offset(3, nres, nmaxmol, natoms))
@@ -35,10 +35,10 @@ program test_minimum_image_distance
     !------------------------------------------------------
     ! 1) Cubic box
     !------------------------------------------------------
-    box%type = 1
-    box%matrix(:,1) = [10.0_real64, 0.0_real64, 0.0_real64]
-    box%matrix(:,2) = [0.0_real64, 10.0_real64, 0.0_real64]
-    box%matrix(:,3) = [0.0_real64, 0.0_real64, 10.0_real64]
+    box%cell%shape = 1
+    box%cell%matrix(:,1) = [10.0_real64, 0.0_real64, 0.0_real64]
+    box%cell%matrix(:,2) = [0.0_real64, 10.0_real64, 0.0_real64]
+    box%cell%matrix(:,3) = [0.0_real64, 0.0_real64, 10.0_real64]
     dist = minimum_image_distance(box,1,1,1,2,1,1)
 
     ! Precomputed with MDAnalysis
@@ -55,10 +55,10 @@ program test_minimum_image_distance
     !------------------------------------------------------
     ! 2) Orthorhombic box
     !------------------------------------------------------
-    box%type = 2
-    box%matrix(:,1) = [12.0_real64, 0.0_real64, 0.0_real64]
-    box%matrix(:,2) = [0.0_real64, 10.0_real64, 0.0_real64]
-    box%matrix(:,3) = [0.0_real64, 0.0_real64, 10.0_real64]
+    box%cell%shape = 1
+    box%cell%matrix(:,1) = [12.0_real64, 0.0_real64, 0.0_real64]
+    box%cell%matrix(:,2) = [0.0_real64, 10.0_real64, 0.0_real64]
+    box%cell%matrix(:,3) = [0.0_real64, 0.0_real64, 10.0_real64]
     dist = minimum_image_distance(box,1,1,1,2,1,1)
 
     ! Precomputed with MDAnalysis
@@ -73,12 +73,12 @@ program test_minimum_image_distance
     end if
 
     !------------------------------------------------------
-    ! 3) Triclinic box
+    ! 3) Triclinic box (commented for now)
     !------------------------------------------------------
-    ! box%type = 3
-    ! box%matrix(:,1) = [12.0_real64, 0.0_real64, 0.0_real64]
-    ! box%matrix(:,2) = [2.0_real64, 10.0_real64, 0.0_real64]
-    ! box%matrix(:,3) = [1.0_real64, 1.0_real64, 10.0_real64]
+    ! box%cell%shape = 3
+    ! box%cell%matrix(:,1) = [12.0_real64, 0.0_real64, 0.0_real64]
+    ! box%cell%matrix(:,2) = [2.0_real64, 10.0_real64, 0.0_real64]
+    ! box%cell%matrix(:,3) = [1.0_real64, 1.0_real64, 10.0_real64]
     ! call ComputeInverse(box)
     ! dist = minimum_image_distance(box,1,1,1,2,1,1)
 
@@ -93,8 +93,7 @@ program test_minimum_image_distance
     !     stop 1
     ! end if
 
-    if (allocated(resid_location)) deallocate(resid_location)
-    if (allocated(nb%atom_in_residue)) deallocate(nb%atom_in_residue)
+    if (allocated(res%role)) deallocate(res%role)
     if (allocated(guest%offset)) deallocate(guest%offset)
 
 end program test_minimum_image_distance
