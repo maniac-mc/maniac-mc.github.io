@@ -18,7 +18,7 @@ for data in good-*.data; do
     $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > log.maniac 2>&1
 
     # === Test: program termination
-    if grep -q "Simulation Completed" log.maniac; then
+    if grep -q "MANIAC-MC simulation completed " log.maniac; then
         echo "✅ [PASS] $data : Simulation terminated normally"
     else
         echo "❌ [FAIL] $data : No termination message found"

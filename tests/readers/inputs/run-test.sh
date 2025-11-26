@@ -18,7 +18,7 @@ for input in good-input-*.maniac; do
     $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > log.maniac 2>&1
     
     # === Test: program termination
-    if grep -q "Simulation Completed" log.maniac; then
+    if grep -q "MANIAC-MC simulation completed " log.maniac; then
         echo "✅ [PASS] $input : Simulation terminated normally"
     else
         echo "❌ [FAIL] $input : No termination message found"
