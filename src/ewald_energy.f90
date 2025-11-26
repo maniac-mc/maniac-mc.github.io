@@ -43,7 +43,7 @@ contains
                 ewald%kvectors(idx)%ky, ewald%kvectors(idx)%kz)
 
             ! Retrieve the precomputed reciprocal-space weight
-            recip_constant = ewald%recip_constants(idx)! Å^2
+            recip_constant = ewald%kweights(idx)! Å^2
 
             ! Compute squared modulus of the structure factor amplitude
             amplitude_sq = amplitude_squared(recip_amplitude) ! e^2
@@ -90,7 +90,7 @@ contains
 
         ! Atom charges in this residue
         natoms = res%atom(res_type)
-        ewald%charges(1:natoms) = primary%atoms%charges(res_type, 1:natoms)
+        ewald%q_buffer(1:natoms) = primary%atoms%charges(res_type, 1:natoms)
 
         ! Loop over all precomputed reciprocal lattice vectors
         do idx = 1, ewald%param%nkvec
@@ -117,34 +117,34 @@ contains
 
                 ! Molecule creation
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) ]
-                ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) + &
-                    sum(ewald%charges(1:natoms) * ewald%phase%new(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) + &
+                    sum(ewald%q_buffer(1:natoms) * ewald%phase%new(1:natoms))
             
             else if (deletion_flag) then
             
                 ! Molecule deletion
                 ! A(k) ← A(k) + Σ q_i [ - e^(i k·r_i,old) ]
-                ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) - &
-                    sum(ewald%charges(1:natoms) * ewald%phase%old(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) - &
+                    sum(ewald%q_buffer(1:natoms) * ewald%phase%old(1:natoms))
             
             else
             
                 ! Standard move (translation, rotation)
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) - e^(i k·r_i,old) ]
-                ewald%recip_amplitude(idx) = ewald%recip_amplitude(idx) + &
-                    sum(ewald%charges(1:natoms) * (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
+                ewald%Ak(idx) = ewald%Ak(idx) + &
+                    sum(ewald%q_buffer(1:natoms) * (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
             
             end if
 
             ! Compute squared modulus of the structure factor amplitude
-            amplitude_sq = amplitude_squared(ewald%recip_amplitude(idx))
+            amplitude_sq = amplitude_squared(ewald%Ak(idx))
 
             !----------------------------------------------
             ! Accumulate reciprocal-space energy:
             ! E_k = form_factor * W(k) * |A(k)|^2
             ! where W(k) is the precomputed reciprocal constant
             !----------------------------------------------
-            u_recipCoulomb_new = u_recipCoulomb_new + form_factor * ewald%recip_constants(idx) * amplitude_sq
+            u_recipCoulomb_new = u_recipCoulomb_new + form_factor * ewald%kweights(idx) * amplitude_sq
 
         end do
 

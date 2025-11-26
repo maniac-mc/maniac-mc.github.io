@@ -142,7 +142,7 @@ contains
 
             ! Compute the reciprocal-space weighting factor for this k-vector
             k_squared_mag = ewald%kvectors(idx)%k_squared_mag
-            ewald%recip_constants(idx) = exp(-k_squared_mag / (four * alpha_squared)) / k_squared_mag
+            ewald%kweights(idx) = exp(-k_squared_mag / (four * alpha_squared)) / k_squared_mag
 
         end do
 
