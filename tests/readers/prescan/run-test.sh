@@ -20,8 +20,6 @@ shopt -u nullglob
 
 # -----------------------------
 # COMPILE & RUN TESTS
-# -----------------------------
-
 for TEST_SRC in test_*.f90; do
     [[ ! -f "$TEST_SRC" ]] && {
         echo "No test_*.f90 files found — nothing to run."
