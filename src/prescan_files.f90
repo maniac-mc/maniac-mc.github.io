@@ -31,6 +31,10 @@ contains
     !---------------------------------------------------------------------------
     subroutine prescan_inputs()
 
+        ! Initialize max number of residue
+        nmax%active_residues = 0
+        nmax%inactive_residues = 0
+
         ! Pre-scan input files
         call prescan_input_file(path%input) ! Detect residue definitions and sizes
         call prescan_topology(path%topology, is_reservoir = .false.) ! Count residues in primary topology
@@ -205,22 +209,22 @@ contains
         integer :: pos_space                    ! Position of first space in line
         integer :: pos                          ! Current parsing position in rest_line
         integer :: len_rest                     ! Length of rest_line
-        integer :: residue_id                   ! Current residue index
+        integer :: res_id                   ! Current residue index
         integer :: val                          ! Temporary value read from line
         logical :: in_residue_block             ! Flag: inside a residue block
 
         if (allocated(res_infos)) deallocate(res_infos)
         allocate(res_infos(res%number))
 
-        do residue_id = 1, res%number
-            res_infos(residue_id)%nb_types = 0
-            res_infos(residue_id)%nb_atoms = 0
-            if (allocated(res_infos(residue_id)%types)) deallocate(res_infos(residue_id)%types)
+        do res_id = 1, res%number
+            res_infos(res_id)%nb_types = 0
+            res_infos(res_id)%nb_atoms = 0
+            if (allocated(res_infos(res_id)%types)) deallocate(res_infos(res_id)%types)
         end do
 
         rewind(infile)
         in_residue_block = .false.
-        residue_id = 0
+        res_id = 0
 
         ! Parse again to extract "types" entries
         do
@@ -232,7 +236,7 @@ contains
             select case (trim(line))
             case ('begin_residue')
                 in_residue_block = .true.
-                residue_id = residue_id + 1
+                res_id = res_id + 1
                 cycle
 
             case ('end_residue')
@@ -263,23 +267,23 @@ contains
                 ! First count how many values
                 pos = 1
                 len_rest = len_trim(rest_line)
-                res_infos(residue_id)%nb_types = 0
+                res_infos(res_id)%nb_types = 0
 
                 do
                     read(rest_line(pos:), *, iostat=ios_val) val
                     if (ios_val /= 0) exit
-                    res_infos(residue_id)%nb_types = res_infos(residue_id)%nb_types + 1
+                    res_infos(res_id)%nb_types = res_infos(res_id)%nb_types + 1
                     pos = pos + index(rest_line(pos:), ' ')
                     if (pos == 0 .or. pos > len_rest) exit
                 end do
 
                 ! Allocate the type array
-                allocate(res_infos(residue_id)%types(res_infos(residue_id)%nb_types))
+                allocate(res_infos(res_id)%types(res_infos(res_id)%nb_types))
 
                 ! Second pass: fill values
                 pos = 1
-                do val = 1, res_infos(residue_id)%nb_types
-                    read(rest_line(pos:), *, iostat=ios_val) res_infos(residue_id)%types(val)
+                do val = 1, res_infos(res_id)%nb_types
+                    read(rest_line(pos:), *, iostat=ios_val) res_infos(res_id)%types(val)
                     if (ios_val /= 0) exit
                     pos = pos + index(rest_line(pos:), ' ')
                     if (pos == 0) exit
@@ -289,14 +293,14 @@ contains
 
             if (trim(token) == 'state') then
                 if (trim(rest_line) == 'actif') then
-                    res_infos(residue_id)%is_active = .true.
+                    res_infos(res_id)%is_active = .true.
                 else
-                    res_infos(residue_id)%is_active = .false.
+                    res_infos(res_id)%is_active = .false.
                 end if
             end if
 
             if (trim(token) == 'nb-atoms') then
-                read(rest_line,*) res_infos(residue_id)%nb_atoms
+                read(rest_line,*) res_infos(res_id)%nb_atoms
             end if
 
         end do
@@ -310,25 +314,26 @@ contains
     subroutine prescan_topology(filename, is_reservoir)
 
         ! Input parameters
-        character(len=*), intent(in) :: filename      ! Name of the topology file
-        logical, intent(in) :: is_reservoir           ! Flag: true if reservoir file
+        character(len=*), intent(in) :: filename        ! Name of the topology file
+        logical, intent(in) :: is_reservoir             ! Flag: true if reservoir file
 
         ! Local variables
-        integer :: unit                                ! Fortran unit number for file
-        integer :: ios                                 ! I/O status
-        character(len=256) :: line                     ! Current line read from file
-        character(len=256) :: token                    ! First word of the line
-        character(len=256) :: rest                     ! Remaining part of the line
-        integer :: pos                                 ! Position of first space in line
-        integer :: atom_id                             ! Atom index from file
-        integer :: atom_type                           ! Atom type from file
-        integer :: mol_id                              ! Molecule index from file
-        integer :: residue_id                          ! Current residue index
-        integer :: type_id                             ! Loop counter
-        integer :: nb_residue                          ! Local variable for number of residue
+        integer :: unit                                 ! Fortran unit number for file
+        integer :: ios                                  ! I/O status
+        character(len=256) :: line                      ! Current line read from file
+        character(len=256) :: token                     ! First word of the line
+        character(len=256) :: rest                      ! Remaining part of the line
+        integer :: pos                                  ! Position of first space in line
+        integer :: atom_id                              ! Atom index from file
+        integer :: atom_type                            ! Atom type from file
+        integer :: mol_id                               ! Molecule index from file
+        real(real64) :: q, x, y, z                      ! Charge and coordinate
+        integer :: res_id                               ! Current residue index
+        integer :: type_id                              ! Loop counter
+        integer :: nb_residue                           ! Local variable for number of residue
+        logical :: found                                ! Logical indicator for atom counting
+        integer, allocatable :: residue_atom_count(:)   ! Temporary dynamic table for residue atom count
 
-        ! Temporary dynamic table for residue atom count
-        integer, allocatable :: residue_atom_count(:)
         allocate(residue_atom_count(res%number))
         residue_atom_count = 0
 
@@ -359,25 +364,22 @@ contains
 
             ! Note, the atome type is expected to be in second position
             ! Read atom-ID, molecule-ID, atom-type
-            read(line,*,iostat=ios) atom_id, mol_id, atom_type
+            read(line,*,iostat=ios) atom_id, mol_id, atom_type, q, x, y, z
             if (ios /= 0) cycle
 
             ! ---------------------------------------------------------
             ! Classify this atom according to which residue type it belongs to
             ! ---------------------------------------------------------
-            do residue_id = 1, res%number
-                do type_id = 1, res_infos(residue_id)%nb_types
-                    if (atom_type == res_infos(residue_id)%types(type_id)) then
-
-                        ! Check for overflow in atom counts
-                        if (residue_atom_count(residue_id) + 1 < residue_atom_count(residue_id)) then
-                            call abort_run("Error: Atom count overflow")
-                        end if
-
-                        residue_atom_count(residue_id) = residue_atom_count(residue_id) + 1
+            found = .false.
+            do res_id = 1, res%number
+                do type_id = 1, res_infos(res_id)%nb_types
+                    if (atom_type == res_infos(res_id)%types(type_id)) then
+                        residue_atom_count(res_id) = residue_atom_count(res_id) + 1
+                        found = .true.
+                        exit  ! stop inner loop
                     end if
-
                 end do
+                if (found) exit  ! stop outer loop
             end do
         end do
 
@@ -386,23 +388,23 @@ contains
         !----------------------------------------------------------
         ! Compute number of residues
         !----------------------------------------------------------
-        do residue_id = 1, res%number
+        do res_id = 1, res%number
 
-            res_infos(residue_id)%nb_res = 0
+            res_infos(res_id)%nb_res = 0
 
-            if (res_infos(residue_id)%nb_atoms <= 0) cycle  ! Skip invalid residue
+            if (res_infos(res_id)%nb_atoms <= 0) cycle  ! Skip invalid residue
 
             ! Compute main/reservoir counts as real then round
             if (is_reservoir) then
-                res_infos(residue_id)%nb_res(2) = nint( real(residue_atom_count(residue_id), kind=real64) &
-                                                    / real(res_infos(residue_id)%nb_atoms, kind=real64) )
+                res_infos(res_id)%nb_res(2) = nint( real(residue_atom_count(res_id), kind=real64) &
+                                                    / real(res_infos(res_id)%nb_atoms, kind=real64) )
             else
-                res_infos(residue_id)%nb_res(1) = nint( real(residue_atom_count(residue_id), kind=real64) &
-                                                    / real(res_infos(residue_id)%nb_atoms, kind=real64) )
+                res_infos(res_id)%nb_res(1) = nint( real(residue_atom_count(res_id), kind=real64) &
+                                                    / real(res_infos(res_id)%nb_atoms, kind=real64) )
             end if
 
             ! Check for anomalous values
-            if (res_infos(residue_id)%nb_res(1) < 0 .or. res_infos(residue_id)%nb_res(2) < 0) then
+            if (res_infos(res_id)%nb_res(1) < 0 .or. res_infos(res_id)%nb_res(2) < 0) then
                 call abort_run("Error: Determinant fell into denormal/underflow range")
             end if
 
@@ -411,12 +413,9 @@ contains
         !----------------------------------------------------------
         ! Determine maximum active and inactive residues
         !----------------------------------------------------------
-        nmax%active_residues = 0
-        nmax%inactive_residues = 0
-
-        do residue_id = 1, res%number
-            nb_residue = res_infos(residue_id)%nb_res(1) + res_infos(residue_id)%nb_res(2)
-            if (res_infos(residue_id)%is_active) then
+        do res_id = 1, res%number
+            nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)
+            if (res_infos(res_id)%is_active) then
                 if (nb_residue > nmax%active_residues) then
                     nmax%active_residues = nb_residue
                 end if

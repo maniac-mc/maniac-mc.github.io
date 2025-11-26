@@ -65,7 +65,7 @@ contains
         allocate(ewald%phase%factor_old(3, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
 
         ! Allocate temporary arrays once
-        allocate(ewald%phase_axis(-kmax_max:kmax_max))
+        allocate(ewald%phase%axis(-kmax_max:kmax_max))
         allocate(ewald%phase%new(nmax%atoms_per_residue))
         allocate(ewald%phase%old(nmax%atoms_per_residue))
         allocate(ewald%q_buffer(nmax%atoms_per_residue))
