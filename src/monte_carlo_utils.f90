@@ -615,7 +615,7 @@ contains
                 ! μ_ideal = k_B * T * ln(ρ * Λ^3)
                 lambda = res%lambda(type_residue)                   ! Thermal de Broglie wavelength (A)
                 N = primary%num%residues(type_residue)              ! Number of molecules
-                volume = primary%cell%volume                             ! Box volume (A^3)
+                volume = primary%cell%volume                        ! Box volume (A^3)
                 rho = real(N, kind=real64) / volume                 ! Number density (molecules/A^3)
                 mu_ideal = KB_kcalmol * temperature * log(rho * lambda**3) ! Ideal chemical potential (kcal/mol)
 
