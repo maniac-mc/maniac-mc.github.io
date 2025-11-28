@@ -40,8 +40,8 @@ contains
         call update_output_files(.false.)   ! Write initial topology
 
         ! Initialize Monte Carlo counters and probabilities
-        status%block = 1
-        status%step  = 1
+        status%block = 0
+        status%step  = 0
         cumul_translation = proba%translation
         cumul_rotation = cumul_translation + proba%rotation
         cumul_swap = cumul_rotation + proba%swap

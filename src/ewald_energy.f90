@@ -67,9 +67,9 @@ contains
     subroutine compute_recip_energy_single_mol(res_type, mol_index, u_recipCoulomb_new, is_creation, is_deletion)
 
         ! Input arguments
-        integer, intent(in) :: res_type    ! Index of the residue type
-        integer, intent(in) :: mol_index  ! Index of the molecule in the system
-        real(real64), intent(out) :: u_recipCoulomb_new  ! Output: reciprocal-space Coulomb energy
+        integer, intent(in) :: res_type         ! Index of the residue type
+        integer, intent(in) :: mol_index        ! Index of the molecule in the system
+        real(real64), intent(out) :: u_recipCoulomb_new ! Output: reciprocal-space Coulomb energy
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
 
@@ -160,7 +160,6 @@ contains
     ! In Ewald summation, each charge interacts with all periodic images
     ! of the system. This includes a spurious interaction of a charge
     ! with itself, which must be subtracted to obtain the correct energy.
-    !
     ! The self-energy for a single charge q_i is :
     !    E_self(i) = - (α / √π) * q_i^2
     ! where α is the Ewald screening parameter. The total self-energy

@@ -19,7 +19,7 @@ contains
         ! Input arguments
         integer, intent(in) :: residue_type       ! Residue type identifier
         integer, intent(in) :: molecule_index     ! Molecule index to save
-        logical, intent(in), optional :: symmetrize_x   ! Whether to save negative kx
+        logical, intent(in), optional :: symmetrize_x ! Whether to save negative kx
 
         ! Local variables
         integer :: atom_index                     ! Atom index within the residue
