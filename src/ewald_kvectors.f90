@@ -142,22 +142,7 @@ contains
 
             ! Compute the reciprocal-space weighting factor for this k-vector
             k_squared_mag = ewald%kvectors(idx)%k_squared_mag
-
-            if (k_squared_mag <= 0.0_real64) then
-                write(*,*) "FATAL: compute_reciprocal_weights: k_squared_mag <= 0 for idx=", idx, &
-                            "  kx,ky,kz=", ewald%kvectors(idx)%kx, &
-                            ewald%kvectors(idx)%ky, ewald%kvectors(idx)%kz
-                call flush(0)
-                stop 1
-            end if
-
-            ! Guard against extremely small k^2 that could cause overflow in 1/k^2
-            if (k_squared_mag < 1.0e-300_real64) then
-                ! Very small: set weight to 0 or a safe finite number
-                ewald%kweights(idx) = 0.0_real64
-            else
-                ewald%kweights(idx) = exp(-k_squared_mag / (four * alpha_squared)) / k_squared_mag
-            end if
+            ewald%kweights(idx) = exp(-k_squared_mag / (four * alpha_squared)) / k_squared_mag
 
         end do
 
