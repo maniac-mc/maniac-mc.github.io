@@ -9,6 +9,7 @@ module output_utils
     use helper_utils
 
     use, intrinsic :: iso_fortran_env, only: real64, output_unit
+    use, intrinsic :: ieee_arithmetic
 
     implicit none
 
@@ -244,6 +245,10 @@ contains
 
         ! Print final combined line
         call log_message(numeric_msg)
+
+        if (ieee_is_nan(e_tot)) then
+            call abort_run( "Detected NaN in total energy computation." // new_line('a') )
+        end if
 
     end subroutine PrintStatus
 

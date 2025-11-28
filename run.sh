@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="WIDOM"
+case="CO2"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"
@@ -15,6 +15,10 @@ case "$case" in
 
   "WIDOM")
     folder="$base_widom/ZIF8-MET"
+    ;;
+
+  "CO2")
+    folder="$base_reservoir/CO2"
     ;;
 
   "SLIT")
