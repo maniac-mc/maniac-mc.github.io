@@ -26,21 +26,28 @@ contains
     subroutine monte_carlo_loop()
 
         ! Local Variables
-        real(real64) :: random_draw     ! Random number used for move selection
-        integer :: residue_type         ! Index of molecule to be moved
-        integer :: molecule_index       ! Index of molecule copy
+        real(real64) :: random_draw         ! Random number used for move selection
+        real(real64) :: cumul_translation   ! Threshold for translation moves
+        real(real64) :: cumul_rotation      ! Threshold for rotation moves
+        real(real64) :: cumul_swap          ! Threshold for swap moves
+        real(real64) :: cumul_total         ! Total probability (including insertion/deletion)
+        integer :: residue_type             ! Index of molecule to be moved
+        integer :: molecule_index           ! Index of molecule copy
+
 
         ! Initialization
-        call LogStartMC()               ! Log starting message
-        call update_output_files(.false.)       ! Write initial topology
+        call LogStartMC()                   ! Log starting message
+        call update_output_files(.false.)   ! Write initial topology
 
-        ! Initialize Monte Carlo counters
+        ! Initialize Monte Carlo counters and probabilities
         status%block = 1
         status%step  = 1
+        cumul_translation = proba%translation
+        cumul_rotation = cumul_translation + proba%rotation
+        cumul_swap = cumul_rotation + proba%swap
+        cumul_total = cumul_swap + proba%insertion_deletion
 
-        !----------------------------------------------
         ! Main Monte Carlo Loop
-        !----------------------------------------------
         do
             ! Pick a molecule type and instance
             residue_type = pick_random_residue_type(thermo%is_active)
@@ -49,25 +56,27 @@ contains
             ! Perform Monte Carlo move
             random_draw = rand_uniform()
 
-            if (random_draw <= proba%translation) then
+            ! Select move type based on random draw
+            if (random_draw <= cumul_translation) then
 
-                ! Small translation move
+                ! Translation move
                 call attempt_translation_move(residue_type, molecule_index)
 
-            else if (random_draw <= proba%rotation + proba%translation) then
+            else if (random_draw <= cumul_rotation) then
 
                 ! Rotation move
                 call attempt_rotation_move(residue_type, molecule_index)
 
-            else if (random_draw <= proba%rotation + proba%translation + proba%swap) then
+            else if (random_draw <= cumul_swap) then
 
                 ! Swap move
                 call attempt_swap_move(residue_type, molecule_index)
 
             else
 
-                ! Insertion/deletion move or Widom
+                ! Insertion/deletion or Widom
                 if (proba%insertion_deletion > 0) then
+
                     if (rand_uniform() <= PROB_CREATE_DELETE) then
 
                         ! Attempt to create a molecule
@@ -75,14 +84,14 @@ contains
                         call attempt_creation_move(residue_type, molecule_index)
 
                     else
-
-                        ! Attempt to delete a molecule
+                        ! Delete a molecule
                         call attempt_deletion_move(residue_type, molecule_index)
 
                     end if
-                else
 
-                    ! Widom trial
+                else if (proba%widom > 0) then
+
+                    ! Attempt a widom test
                     molecule_index = primary%num%residues(residue_type) + 1
                     call widom_trial(residue_type, molecule_index)
 
