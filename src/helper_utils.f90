@@ -91,49 +91,19 @@ contains
 
     end function present_or_false
 
-    !-------------------------------------------------------------------------------
-    ! PURE, safe |z|^2 computation that prevents overflow/underflow by scaling.
-    !-------------------------------------------------------------------------------
-    pure function amplitude_squared(z) result(mag2)
-    
-        use, intrinsic :: iso_fortran_env, only: real64
-        implicit none
+    !--------------------------------------------------------------------
+    ! Computes the squared modulus (magnitude squared) of a complex number.
+    !--------------------------------------------------------------------
+    pure function amplitude_squared(z) result(val)
 
+        ! Input argument
         complex(real64), intent(in) :: z
-        real(real64) :: mag2
-        real(real64) :: ar, ai, abs_ar, abs_ai, m, t
+        ! Output rgument
+        real(real64) :: val
 
-        ar = real(z)
-        ai = aimag(z)
-
-        abs_ar = abs(ar)
-        abs_ai = abs(ai)
-
-        m = max(abs_ar, abs_ai)
-
-        if (m == 0.0_real64) then
-            mag2 = 0.0_real64
-        else
-            ! Compute (ar/m)^2 + (ai/m)^2 safely and rescale
-            t = (ar/m)**2 + (ai/m)**2
-            mag2 = m*m * t
-        end if
+        val = real(z*conjg(z), kind=real64)
 
     end function amplitude_squared
-
-    ! !--------------------------------------------------------------------
-    ! ! Computes the squared modulus (magnitude squared) of a complex number.
-    ! !--------------------------------------------------------------------
-    ! pure function amplitude_squared(z) result(val)
-
-    !     ! Input argument
-    !     complex(real64), intent(in) :: z
-    !     ! Output rgument
-    !     real(real64) :: val
-
-    !     val = real(z*conjg(z), kind=real64)
-
-    ! end function amplitude_squared
 
     !----------------------------------------------------------------------------
     ! Computes the cross product of two 3D vectors a and b.
