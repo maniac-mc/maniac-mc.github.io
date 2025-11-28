@@ -20,13 +20,13 @@ contains
     !---------------------------------------------------------------------------
     ! Close the main output file.
     !---------------------------------------------------------------------------
-    subroutine CloseOutput()
+    subroutine close_output()
 
         call PrintTerminationMessage()
 
         close(out_unit)
 
-    end subroutine CloseOutput
+    end subroutine close_output
 
     !---------------------------------------------------------------------------
     ! Write a custom message to the specified output unit.
@@ -54,7 +54,7 @@ contains
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Message line centered
-        call BoxLine("Started Monte Carlo Loop", BOX_WIDTH)
+        call BoxLine("Starting Monte Carlo Loop", BOX_WIDTH)
 
         ! Bottom border
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
@@ -264,16 +264,22 @@ contains
         e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
                 energy%ewald_self + energy%intra_coulomb
         e_coul = energy%coulomb + energy%intra_coulomb
+
+
+        write (*,*) "energy%recip_coulomb + energy%ewald_self", energy%recip_coulomb, energy%ewald_self
         e_long = energy%recip_coulomb + energy%ewald_self
 
     end subroutine compute_composite_energies
 
     !------------------------------------------------------------------------------
-    ! Subroutine: final_report
+    ! Print the energy
     !------------------------------------------------------------------------------
-    subroutine final_report()
+    subroutine energy_report(final)
 
-        ! Energy components in kcal/mol
+        ! Input varialbe
+        logical final
+
+        ! Local parameters
         real(real64) :: e_tot          ! Total energy for reporting (computed)
         real(real64) :: e_coul         ! Coulombic energy including intra-molecular interactions
         real(real64) :: e_long         ! Long-range Coulombic energy (reciprocal + self)
@@ -289,8 +295,13 @@ contains
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Box title
-        call BoxLine("Final Energy Report", BOX_WIDTH)
-        call BoxLine("", BOX_WIDTH)
+        if (final) then
+            call BoxLine("Final Energy Report", BOX_WIDTH)
+        else
+            call BoxLine("Initial Energy Report", BOX_WIDTH)
+        end if
+
+        call BoxLine("", BOX_WIDTH)   
 
         ! Column headers
         call BoxLine("  Step        TotEng        E_vdwl        E_coul        E_long", BOX_WIDTH)
@@ -305,12 +316,12 @@ contains
         ! Bottom border
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
-        ! Blank line after box
-        call log_message("")
+        if (final) then
+            call log_message("")
+            call close_output() ! Close files and finalize
+        end if
 
-        call CloseOutput()                  ! Close files and finalize
-
-    end subroutine final_report
+    end subroutine energy_report
 
     subroutine log_parameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
 
@@ -337,7 +348,7 @@ contains
 
         ! Log the start of parameter file import
         call log_message("")
-        call log_message("====== Import parameter file ======")
+        call box_header("Import parameter file")
         call log_message("")
         write(formatted_msg, '("Reading file ", A)') trim(input_file_name) ! Format message with input file name
         call log_message(formatted_msg)                                     ! Log the input file name
@@ -391,7 +402,8 @@ contains
 
         ! === Step 9: Logging ===
         call log_message("")
-        call log_message("====== Import data file ======")
+        call box_header("Import data file")
+        call log_message("")
         write(formatted_msg, '("Reading file ", A)') trim(data_file_name)
         call log_message(formatted_msg)
         call log_message("")
@@ -452,12 +464,12 @@ contains
         if ((box%num%bonds > 0) .or. (box%num%angles > 0)) then
 
             call log_message("")
-            call log_message("===== Connectivity summary =====")
+            call box_header("Connectivity summary")
 
             ! --- Bonds ---
-            call log_message("")
             do i = 1, res%number
-                if (box%num%residues(i) > 0) then
+                if (box%num%residues(i) > 0 .and. res%bonds(i) > 0) then
+                    call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " bonds")') &
                         trim(res%names(i)), res%bonds(i)
                     call log_message(formatted_msg)
@@ -479,10 +491,9 @@ contains
             end do
 
             ! --- Angles ---
-            call log_message("")
             do i = 1, res%number
-
-                if (box%num%residues(i) > 0) then
+                if (box%num%residues(i) > 0 .and. res%angles(i) > 0) then
+                    call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " angles")') &
                         trim(res%names(i)), res%angles(i)
                     call log_message(formatted_msg)
@@ -505,10 +516,10 @@ contains
             end do
 
             ! --- Dihedrals ---
-            call log_message("")
+            
             do i = 1, res%number
-
-                if (box%num%residues(i) > 0) then
+                if (box%num%residues(i) > 0 .and. res%dihedrals(i) > 0) then
+                    call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " dihedrals")') &
                         trim(res%names(i)), res%dihedrals(i)
                     call log_message(formatted_msg)
@@ -533,10 +544,9 @@ contains
             end do
 
             ! --- Impropers ---
-            call log_message("")
             do i = 1, res%number
-
-                if (box%num%residues(i) > 0) then
+                if (box%num%residues(i) > 0 .and. res%impropers(i) > 0) then
+                    call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " impropers")') &
                         trim(res%names(i)), res%impropers(i)
                     call log_message(formatted_msg)
@@ -672,14 +682,16 @@ contains
         character(len=200) :: msg, temp
 
         ! ===== HEADER =====
-        call log_message("====== Import input file ======")
+        call box_header("Import input file")
         call log_message("")
         write(msg, '("Reading file ", A)') trim(path%input)
         call log_message(msg)
         call log_message("")
 
         ! ===== GENERIC PARAMETERS =====
-        call log_message("=== Generic parameters")
+        call box_header("Generic parameters")
+        call log_message("")
+
         write(msg, '("Number of blocks: ", I0)') status%desired_block
         call log_message(msg)
         write(msg, '("Number of steps: ", I0)') status%desired_step
@@ -688,16 +700,10 @@ contains
         call log_message(msg)
         call log_message("")
 
-        ! ===== ELECTROSTATIC =====
-        call log_message("=== Electrostatic interactions")
-        write(msg, '("Ewald tolerance: ", F15.8)') ewald%param%tolerance
-        call log_message(msg)
-        write(msg, '("Cutoff (Å): ", F10.2)') mc_input%real_space_cutoff
-        call log_message(msg)
+        ! ===== MONTE CARLO =====
+        call box_header("Monte carlo move")
         call log_message("")
 
-        ! ===== MONTE CARLO =====
-        call log_message("=== Monte carlo move")
         write(msg, '("Translation step (Å): ", F10.2)') mc_input%translation_step
         call log_message(msg)
         write(msg, '("Rotation step angle (radian): ", F10.2)') mc_input%rotation_step_angle
@@ -714,7 +720,7 @@ contains
         call log_message("")
 
         ! ===== RESIDUES =====
-        call log_message("=== Residue information")
+        call box_header("Residue information")
         call log_message("")
         write(msg, '("Number of type of residue found: ", I0)') res%number
         call log_message(msg)
@@ -769,11 +775,46 @@ contains
     end subroutine print_input_summary
 
     !-----------------------------------------------------------
+    ! Creates a single-line header for log messages with a fixed width.
+    ! The header starts with '=== ', followed by the message, a space, and
+    ! then fills the remainder of the line with '=' characters to reach the
+    ! specified total width.
+    !-----------------------------------------------------------
+    subroutine box_header(message)
+
+        ! Input parameter
+        character(len=*), intent(in) :: message
+
+        ! Local variables
+        character(len=BOX_WIDTH) :: line
+        character(len=:), allocatable :: full_message
+        integer :: n_fill
+
+        ! Add the leading '=== ' and a space after the message
+        full_message = "--- " // trim(message) // " "
+
+        ! Calculate number of '=' to fill after the message
+        n_fill = BOX_WIDTH - len_trim(full_message)
+        if (n_fill < 0) n_fill = 0  ! safety in case message is too long
+
+        ! Build the final line
+        line = full_message // repeat_char("-", n_fill)
+
+        ! Log it
+        call log_message(line)
+
+    end subroutine box_header
+
+    !-----------------------------------------------------------
     ! Print Ewald information
     !-----------------------------------------------------------
     subroutine log_ewald_parameters()
 
         character(200) :: formatted_msg
+
+        call log_message("")
+        call box_header("Electrostatic interactions")
+        call log_message("")
 
         write(formatted_msg, '(A, F10.4)') 'Real-space cutoff (Å): ', mc_input%real_space_cutoff
         call log_message(formatted_msg)
@@ -792,5 +833,40 @@ contains
         call log_message(formatted_msg)
 
     end subroutine log_ewald_parameters
+
+    !-----------------------------------------------------------
+    ! Print geometry information
+    !-----------------------------------------------------------
+    subroutine log_geometry_parameters(box)
+
+        ! Input argument
+        type(type_box), intent(inout) :: box
+
+        ! Local variable
+        character(200) :: formatted_msg ! Buffer for formatted output messages
+
+        call box_header("Simulation preparation")
+        call log_message("")
+
+        select case (box%cell%shape)
+            case (1)
+            
+                call log_message("Box symmetry type: Orthorhombic")
+            
+            case (2)
+            
+                call log_message("Box symmetry type: Triclinic")
+            
+            case default
+            
+                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%cell%shape
+                call log_message(formatted_msg)
+        
+        end select
+
+        write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%cell%volume
+        call log_message(formatted_msg)
+
+    end subroutine log_geometry_parameters
 
 end module output_utils

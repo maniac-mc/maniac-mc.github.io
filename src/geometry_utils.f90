@@ -360,39 +360,4 @@ contains
 
     end subroutine determine_box_symmetry
 
-    !-----------------------------------------------------------
-    ! Print geometry information
-    !-----------------------------------------------------------
-    subroutine log_geometry_parameters(box)
-
-        ! Input argument
-        type(type_box), intent(inout) :: box
-
-        ! Local variable
-        character(200) :: formatted_msg ! Buffer for formatted output messages
-
-        call log_message("====== Simulation preparation ======")
-        call log_message("")
-
-        select case (box%cell%shape)
-            case (1)
-            
-                call log_message("Box symmetry type: Orthorhombic")
-            
-            case (2)
-            
-                call log_message("Box symmetry type: Triclinic")
-            
-            case default
-            
-                write(formatted_msg, '(A, I0)') 'Box symmetry type determined: ', box%cell%shape
-                call log_message(formatted_msg)
-        
-        end select
-
-        write(formatted_msg, '(A, F20.4)') 'Cell volume (Å^3): ', box%cell%volume
-        call log_message(formatted_msg)
-
-    end subroutine log_geometry_parameters
-
 end module geometry_utils

@@ -866,7 +866,6 @@ contains
     !-----------------------------------------------------------------------------
     ! Reads dihedral definitions from the "Dihedrals" section of a LAMMPS data file
     ! and stores dihedral IDs, types, and connected atom indices in the corresponding arrays.
-    ! If no dihedrals are expected, the routine returns immediately.
     !-----------------------------------------------------------------------------
     subroutine read_lammps_dihedrals(infile, data_file_name, box)
 
@@ -887,8 +886,6 @@ contains
 
         ! If no dihedral are expected, skip the whole routine
         if (box%num%dihedrals == 0) then
-            write(formatted_msg, '(A, A)') "No dihedrals expected in data file: ", trim(data_file_name)
-            call InfoMessage(trim(formatted_msg))
             return
         end if
 
@@ -968,7 +965,6 @@ contains
     !-----------------------------------------------------------------------------
     ! Reads improper dihedral definitions from the "Impropers" section of a LAMMPS data file
     ! and stores improper IDs, types, and connected atom indices in the corresponding arrays.
-    ! If no impropers are expected, the routine returns immediately.
     !-----------------------------------------------------------------------------
     subroutine read_lammps_impropers(infile, data_file_name, box)
 
@@ -989,8 +985,6 @@ contains
 
         ! If no improper are expected, skip the whole routine
         if (box%num%impropers == 0) then
-            write(formatted_msg, '(A, A)') "No impropers expected in data file: ", trim(data_file_name)
-            call InfoMessage(trim(formatted_msg))
             return
         end if
 

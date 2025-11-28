@@ -84,7 +84,7 @@ contains
                         do l = 1, res%atom(j)
                             type_i = primary%atoms%types(i, k)
                             type_j = primary%atoms%types(j, l)
-                            if ((type_i == val_int1) .AND. (type_j == val_int2)) then
+                            if ((type_i == val_int1) .and. (type_j == val_int2)) then
                                 ! Record parameters
                                 coeff%sigma(i, j, k, l) = sigma
                                 coeff%epsilon(i, j, k, l) = epsilon

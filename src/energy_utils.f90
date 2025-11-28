@@ -32,6 +32,8 @@ contains
         energy%total = energy%recip_coulomb + energy%non_coulomb + energy%coulomb + &
             energy%ewald_self + energy%intra_coulomb ! In kcal/mol
 
+        call energy_report(final=.false.) ! Print energy in log
+
     end subroutine compute_system_energy
 
     !------------------------------------------------------------------------------
@@ -59,7 +61,7 @@ contains
                 do molecule_index_1 = 1, primary%num%residues(residue_type_1)
 
                     ! Compute intra-residue Coulomb energy for this molecule
-                    call compute_intra_residue_real_coulomb_energy_single_mol(residue_type_1, molecule_index_1, e_intra_coulomb)
+                    call compute_intra_real_energy_residue(residue_type_1, molecule_index_1, e_intra_coulomb)
 
                     ! Accumulate into total intra-residue energy
                     energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
@@ -271,7 +273,7 @@ contains
 
         ! Step 3: Compute reciprocal-space electrostatic energy using the structure
         ! factors and the precomputed reciprocal weighting coefficients.
-        call compute_reciprocal_energy(energy%recip_coulomb)
+        call compute_total_recip_energy(energy%recip_coulomb)
 
     end subroutine compute_ewald_recip
 

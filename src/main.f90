@@ -30,6 +30,6 @@ program MANIAC
     call monte_carlo_loop()             ! Main MC loop
 
     ! Step 5 :Final reporting and cleanup
-    call final_report()                 ! Print energy and statistics
+    call energy_report(final=.true.)                 ! Print energy and statistics
 
 end program MANIAC

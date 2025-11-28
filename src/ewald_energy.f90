@@ -17,7 +17,7 @@ contains
     ! where A(k) is the structure factor amplitude, W(k) is the reciprocal-space weight
     ! and the form_factor accounts for k vs -k symmetry
     !--------------------------------------------------------------------
-    subroutine compute_reciprocal_energy(u_recipCoulomb)
+    subroutine compute_total_recip_energy(u_recipCoulomb)
 
         ! Input arguments
         real(real64), intent(out) :: u_recipCoulomb
@@ -58,7 +58,7 @@ contains
         ! Convert accumulated energy to correct units (kcal/mol)
         u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
-    end subroutine compute_reciprocal_energy
+    end subroutine compute_total_recip_energy
 
     !--------------------------------------------------------------------
     ! Computes the reciprocal-space Coulomb energy contribution from a
@@ -85,7 +85,8 @@ contains
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
 
-        ! Initialize energy accumulator
+        ! Initialize energy accumulatormenka
+
         u_recipCoulomb_new = zero
 
         ! Atom charges in this residue
@@ -194,16 +195,11 @@ contains
     end subroutine compute_ewald_self_interaction_single_mol
 
     !------------------------------------------------------------------------------
-    ! Computes the **real-space intramolecular Coulomb energy** for a single
-    ! molecule or residue using the Ewald summation method.
-    ! In Ewald summation, the real-space contribution for a pair of charges
-    ! q_i and q_j separated by distance r_ij is:
+    ! Computes the real-space intramolecular Coulomb energy for a single
+    ! molecule or residue using the Ewald summation method:
     !    E_ij_real = q_i * q_j * (erfc(α * r_ij) / r_ij)
-    ! For intramolecular interactions, a correction term (-q_i*q_j/r_ij) is
-    ! sometimes included to avoid double counting or to remove the singularity at r -> 0:
-    !    E_intra = Σ_{i<j} q_i * q_j * (erfc(α * r_ij) - 1) / r_ij
     !------------------------------------------------------------------------------
-    subroutine compute_intra_residue_real_coulomb_energy_single_mol(res_type, mol_index, u_intraCoulomb)
+    subroutine compute_intra_real_energy_residue(res_type, mol_index, u_intraCoulomb)
 
         ! Input arguments
         integer, intent(in) :: res_type
@@ -241,27 +237,24 @@ contains
 
         u_intraCoulomb = u_intraCoulomb * EPS0_INV_real ! In kcal/mol
 
-    end subroutine compute_intra_residue_real_coulomb_energy_single_mol
+    end subroutine compute_intra_real_energy_residue
 
     !--------------------------------------------------------------------
     ! Computes the reciprocal-space structure factor amplitude A(k) for
-    ! a specified reciprocal lattice vector (kx, ky, kz).
-    !
-    ! Note: The structure factor is obtained by summing over all atoms in all
-    ! molecules of all residue types:
-    !
+    ! a specified reciprocal lattice vector (kx, ky, kz):
     !     A(k) = Σ q_i * exp(i k · r_i)
-    !
     ! where q_i is the atomic charge and the exponential is represented
     ! by precomputed phase factors in x, y, and z directions.
     !--------------------------------------------------------------------
-    pure function compute_recip_amplitude(kx_idx, ky_idx, kz_idx) result(amplitude)
+    pure function compute_recip_amplitude(kx_idx, ky_idx, kz_idx) result(Ak)
 
         ! Input arguments
         integer, intent(in) :: kx_idx, ky_idx, kz_idx       ! Reciprocal lattice vector indices
 
+        ! Output
+        complex(real64) :: Ak                               ! Accumulated structure factor amplitude A(k)
+
         ! Internal variables
-        complex(real64) :: amplitude                        ! Accumulated structure factor amplitude A(k)
         complex(real64) :: product                          ! Phase factor product for a single atom
         real(real64) :: charges                             ! Partial charge of the current atom
         integer :: res_type                                 ! Index of the current residue type
@@ -269,7 +262,7 @@ contains
         integer :: atom_index                               ! Index of the current atom
 
         ! Initialize amplitude to zero (complex)
-        amplitude = (zero, zero)
+        Ak = (zero, zero)
 
         ! Loop over all residue types
         do res_type = 1, res%number
@@ -286,11 +279,12 @@ contains
 
                     ! Accumulate contribution from this atom:
                     ! charge * exp(i k · r) factor in x, y, z directions
-                    amplitude = amplitude + charges * product
+                    Ak = Ak + charges * product
 
                 end do
             end do
         end do
+
     end function compute_recip_amplitude
 
 end module ewald_energy
