@@ -25,8 +25,6 @@ contains
     !------------------------------------------------------------------------------
     subroutine monte_carlo_loop()
 
-        implicit none
-
         ! Local Variables
         real(real64) :: random_draw     ! Random number used for move selection
         integer :: residue_type         ! Index of molecule to be moved
@@ -35,8 +33,10 @@ contains
         ! Initialization
         call LogStartMC()               ! Log starting message
         call update_output_files(.false.)       ! Write initial topology
-        status%block = 1 ! Initialize Monte Carlo counters
-        status%step  = 1 ! Initialize Monte Carlo counters
+
+        ! Initialize Monte Carlo counters
+        status%block = 1
+        status%step  = 1
 
         !----------------------------------------------
         ! Main Monte Carlo Loop
@@ -51,17 +51,17 @@ contains
 
             if (random_draw <= proba%translation) then
 
-                ! Case 1: Small translation move
+                ! Small translation move
                 call attempt_translation_move(residue_type, molecule_index)
 
             else if (random_draw <= proba%rotation + proba%translation) then
 
-                ! Case 2: Rotation move
+                ! Rotation move
                 call attempt_rotation_move(residue_type, molecule_index)
 
             else if (random_draw <= proba%rotation + proba%translation + proba%swap) then
 
-                ! Case 3: Swap move
+                ! Swap move
                 call attempt_swap_move(residue_type, molecule_index)
 
             else
@@ -89,9 +89,7 @@ contains
                 end if
             end if
 
-            !----------------------------------------------
             ! Adjust Monte Carlo step counters
-            !----------------------------------------------
             status%step = status%step + 1
 
             ! Finished all steps in the current block?
@@ -100,9 +98,7 @@ contains
                 status%step  = 1                  ! reset step
                 status%block = status%block + 1   ! move to next block
 
-                !----------------------------------------------
                 ! Adjust step sizes & output status at the end of the block
-                !----------------------------------------------
                 call adjust_move_step_sizes()        ! Adjust MC step sizes
                 call PrintStatus()                ! Print current simulation status
                 call update_output_files(.true.)  ! Update output files
