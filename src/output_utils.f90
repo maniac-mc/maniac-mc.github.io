@@ -258,15 +258,14 @@ contains
     subroutine compute_composite_energies(e_tot, e_coul, e_long)
 
         ! Output parameter
-        real(real64), intent(out) :: e_tot, e_coul, e_long
+        real(real64), intent(out) :: e_tot      ! Total energy
+        real(real64), intent(out) :: e_coul     ! Coulomb contribution
+        real(real64), intent(out) :: e_long     ! Long range contribution
 
         ! Compute composite energies
         e_tot  = energy%non_coulomb + energy%recip_coulomb + energy%coulomb + &
                 energy%ewald_self + energy%intra_coulomb
         e_coul = energy%coulomb + energy%intra_coulomb
-
-
-        write (*,*) "energy%recip_coulomb + energy%ewald_self", energy%recip_coulomb, energy%ewald_self
         e_long = energy%recip_coulomb + energy%ewald_self
 
     end subroutine compute_composite_energies
