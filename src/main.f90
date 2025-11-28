@@ -9,8 +9,13 @@ program MANIAC
     use input_parser
     use data_parser
     use cli_utils
+    use, intrinsic :: ieee_exceptions
 
     implicit none
+
+    call ieee_set_halting_mode(ieee_overflow, .true.)
+    call ieee_set_halting_mode(ieee_divide_by_zero, .true.)
+    call ieee_set_halting_mode(ieee_invalid, .true.)
 
     ! Step 1 : Program initialization
     call parse_command_line_arguments() ! Handle -i, -d, -p, -r, -o options
