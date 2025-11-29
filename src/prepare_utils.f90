@@ -49,6 +49,9 @@ contains
 
         ! Local variable
         integer :: kmax_max
+        integer(kind=8) :: bytes
+        real(8) :: gigabytes
+        character(len=256) :: msg
 
         allocate(saved%offset(3, nmax%atoms_per_residue))
         allocate(saved%com(3))
@@ -58,30 +61,40 @@ contains
         allocate(ewald%Ak(1:ewald%param%nkvec))
         allocate(ewald%Ak_old(1:ewald%param%nkvec))
         allocate(ewald%form_factor(ewald%param%nkvec)) ! Note, there is no need for such as large vector
-        ewald%kweights = zero
-        ewald%Ak = zero
-        ewald%Ak_old = zero
-        ewald%form_factor = zero
 
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%param%kmax)
         allocate(ewald%phase%factor(3, res%number, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max)) ! TOFIX, do not use NB_MAX_MOLECULE systematical ? 
         allocate(ewald%phase%factor_old(3, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
-        ewald%phase%factor = zero
-        ewald%phase%factor_old = zero
+
+        bytes = size(ewald%phase%factor, kind=8) * storage_size(ewald%phase%factor) / 8
+        gigabytes = real(bytes, kind=8) / (1024.0d0**3)
+
+        if (gigabytes > 1.0d0) then
+            write(msg,'(A,I0,A,F6.2,A)') "Large allocation detected: ", bytes, " bytes (", gigabytes, " GB)"
+            call warn_user(trim(msg))
+        end if
 
         ! Allocate temporary arrays once
         allocate(ewald%phase%axis(-kmax_max:kmax_max))
         allocate(ewald%phase%new(nmax%atoms_per_residue))
         allocate(ewald%phase%old(nmax%atoms_per_residue))
         allocate(ewald%q_buffer(nmax%atoms_per_residue))
+
+        ! Allocate kvectors
+        allocate(ewald%kvectors(ewald%param%nkvec))
+
+        ! Initialize to zero
+        ewald%kweights = zero
+        ewald%Ak = zero
+        ewald%Ak_old = zero
+        ewald%form_factor = zero
+        ewald%phase%factor = zero
+        ewald%phase%factor_old = zero
         ewald%phase%axis = zero
         ewald%phase%new = zero
         ewald%phase%old = zero
         ewald%q_buffer = zero
-
-        ! Allocate kvectors
-        allocate(ewald%kvectors(ewald%param%nkvec))
 
         ! Allocate widom
         if (proba%widom > 0) then
@@ -89,8 +102,9 @@ contains
             allocate(statistic%sample(res%number))
             allocate(statistic%mu_ex(res%number))
             allocate(statistic%mu_tot(res%number))
-            statistic%weight(:) = 0
-            statistic%sample(:) = 0
+            ! Initialize to zero
+            statistic%weight(:) = zero
+            statistic%sample(:) = zero
         end if
 
     end subroutine allocate_array
