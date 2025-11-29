@@ -516,6 +516,7 @@ contains
         logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
         real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
         real(real64) :: trial_pos(3)            ! Random numbers for initial molecule position in the box
+        integer :: mol_index
 
         ! Decide whether to place a random COM
         if (present(place_random_com)) then
@@ -537,11 +538,17 @@ contains
             ! Pick a random (and existing) molecule in the reservoir
             call random_number(random_nmb)
 
-            rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1
-                
-            ! Copy site offsets from the chosen molecule
-            guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
-                gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type))
+            if (present(place_random_com)) then
+                rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1  
+                ! Copy site offsets from the chosen molecule
+                guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                    gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type))
+            else
+                mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1  
+                ! Copy site offsets from the chosen molecule
+                guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                    gas%offset(:, residue_type, mol_index, 1:res%atom(residue_type))
+            end if  
 
         else
 
@@ -580,7 +587,7 @@ contains
     ! using Widom particle insertion method, and optionally the ideal chemical
     ! potential (μ_ideal) for reporting purposes.
     !------------------------------------------------------------------------------
-    subroutine CalculateExcessMu()
+    subroutine calculate_excess_mu()
 
         ! Local variables
         integer :: type_residue     ! Residue type index
@@ -618,7 +625,7 @@ contains
             end if
         end do
 
-    end subroutine CalculateExcessMu
+    end subroutine calculate_excess_mu
 
     !---------------------------------------------------------------------------
     ! Physically removes a molecule from the simulation box by replacing it

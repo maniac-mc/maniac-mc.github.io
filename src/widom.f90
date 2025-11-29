@@ -62,6 +62,7 @@ contains
 
         ! Compute Boltzmann weight for Widom insertion
         deltaU = new%total - old%total
+
         call accumulate_widom_weight(residue_type, deltaU)
 
     end subroutine widom_trial

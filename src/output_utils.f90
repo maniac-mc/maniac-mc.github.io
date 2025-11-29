@@ -227,7 +227,7 @@ contains
         end if
 
         if (proba%widom > 0) then
-            write(tmp,'("S(",I0,"/",I0,")")') counter%widom(2), counter%widom(1)
+            write(tmp,'("W(",I0,"/",I0,")")') counter%widom(2), counter%widom(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 

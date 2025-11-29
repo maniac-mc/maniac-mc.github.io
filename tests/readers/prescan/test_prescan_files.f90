@@ -13,9 +13,9 @@ program test_prescan_files
 
     ! Setup paths
     base = "../../../mc-topology/testcase-energy/ZIF8-H2O/"
-    path%input     = trim(base) // "input.maniac"
-    path%topology  = trim(base) // "topology.data"
-    path%parameters= trim(base) // "parameters.inc"
+    path%input = trim(base) // "input.maniac"
+    path%topology = trim(base) // "topology.data"
+    path%parameters = trim(base) // "parameters.inc"
 
     ! Expectation in ZIF8-H2O system
     expected_active = 5000
