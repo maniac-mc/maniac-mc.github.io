@@ -14,11 +14,11 @@ contains
     ! Saves the current Fourier-space phase factors and reciprocal amplitudes
     ! for a specific molecule or residue, enabling rollback after a rejected move.
     !--------------------------------------------------------------------
-    subroutine save_single_mol_fourier_terms(residue_type, molecule_index, symmetrize_x)
+    subroutine save_single_mol_fourier_terms(res_type, mol_index, symmetrize_x)
 
         ! Input arguments
-        integer, intent(in) :: residue_type       ! Residue type identifier
-        integer, intent(in) :: molecule_index     ! Molecule index to save
+        integer, intent(in) :: res_type       ! Residue type identifier
+        integer, intent(in) :: mol_index     ! Molecule index to save
         logical, intent(in), optional :: symmetrize_x ! Whether to save negative kx
 
         ! Local variables
@@ -32,10 +32,13 @@ contains
         do_sym = .false.
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
+        ! Ensure that the routine deals with guest, not host
+        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+
         !----------------------------------------------------------
         ! Save per-atom Fourier phase factors (IKX, IKY, IKZ)
         !----------------------------------------------------------
-        do atom_index = 1, res%atom(residue_type)
+        do atom_index = 1, res%atom(res_type)
 
             do dim = 1, 3
 
@@ -43,13 +46,13 @@ contains
 
                     ! Positive k
                     ewald%phase%factor_old(dim, atom_index, k_idx) = &
-                        ewald%phase%factor(dim, residue_type, molecule_index, atom_index, k_idx)
+                        ewald%phase%factor_guest(dim, res_type, mol_index, atom_index, k_idx)
 
                     ! Negative k (only if non-zero)
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
                             ewald%phase%factor_old(dim, atom_index, -k_idx) = &
-                                ewald%phase%factor(dim, residue_type, molecule_index, atom_index, -k_idx)
+                                ewald%phase%factor_guest(dim, res_type, mol_index, atom_index, -k_idx)
                         end if
                     end if
 
@@ -72,12 +75,12 @@ contains
     ! Restores previously saved Fourier-space phase factors and reciprocal
     ! amplitudes for a molecule or residue after a rejected move.
     !--------------------------------------------------------------------
-    subroutine restore_single_mol_fourier(residue_type, molecule_index, symmetrize_x)
+    subroutine restore_single_mol_fourier(res_type, mol_index, symmetrize_x)
 
         ! Input arguments
-        integer, intent(in) :: residue_type       ! Residue type index
-        integer, intent(in) :: molecule_index     ! Molecule index to restore
-        logical, intent(in), optional :: symmetrize_x ! Restore negative kx if true
+        integer, intent(in) :: res_type                 ! Residue type index
+        integer, intent(in) :: mol_index                ! Molecule index to restore
+        logical, intent(in), optional :: symmetrize_x   ! Restore negative kx if true
 
         ! Local variables
         integer :: atom_index_1                   ! Atom index
@@ -90,23 +93,24 @@ contains
         do_sym = .false.
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
-        !----------------------------------------------------------
+        ! Ensure that the routine deals with guest, not host
+        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+
         ! Restore per-atom Fourier phase factors (IKX, IKY, IKZ)
-        !----------------------------------------------------------
-        do atom_index_1 = 1, res%atom(residue_type)
+        do atom_index_1 = 1, res%atom(res_type)
 
             do dim = 1, 3
 
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Positive k
-                    ewald%phase%factor(dim, residue_type, molecule_index, atom_index_1, k_idx) = &
+                    ewald%phase%factor_guest(dim, res_type, mol_index, atom_index_1, k_idx) = &
                         ewald%phase%factor_old(dim, atom_index_1, k_idx)
 
                     ! Negative k
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
-                            ewald%phase%factor(dim, residue_type, molecule_index, atom_index_1, -k_idx) = &
+                            ewald%phase%factor_guest(dim, res_type, mol_index, atom_index_1, -k_idx) = &
                                 ewald%phase%factor_old(dim, atom_index_1, -k_idx)
                         end if
                     end if
@@ -128,10 +132,10 @@ contains
     ! Replaces the Fourier-space phase factors of one molecule (`index_1`)
     ! with those from another molecule (`index_2`) of the same residue type.
     !--------------------------------------------------------------------
-    subroutine replace_fourier_terms_single_mol(residue_type, index_1, index_2, symmetrize_x)
+    subroutine replace_fourier_terms_single_mol(res_type, index_1, index_2, symmetrize_x)
 
         ! Input arguments
-        integer, intent(in) :: residue_type     ! Residue type index
+        integer, intent(in) :: res_type     ! Residue type index
         integer, intent(in) :: index_1          ! Destination molecule index
         integer, intent(in) :: index_2          ! Source molecule index
         logical, intent(in), optional :: symmetrize_x   ! Copy negative kx if true
@@ -146,22 +150,25 @@ contains
         do_sym = .false.
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
+        ! Ensure that the routine deals with guest, not host
+        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+
         ! Restore IKX, IKY, IKZ from backups
-        do atom_index_1 = 1, res%atom(residue_type)
+        do atom_index_1 = 1, res%atom(res_type)
 
             do dim = 1, 3
 
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Always copy positive (and zero) k
-                    ewald%phase%factor(dim, residue_type, index_1, atom_index_1, k_idx) = &
-                        ewald%phase%factor(dim, residue_type, index_2, atom_index_1, k_idx)
+                    ewald%phase%factor_guest(dim, res_type, index_1, atom_index_1, k_idx) = &
+                        ewald%phase%factor_guest(dim, res_type, index_2, atom_index_1, k_idx)
 
                     ! Copy negative k only when allowed (when d=1, only if symmetrize_x is true, or when d=2,3)
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
-                            ewald%phase%factor(dim, residue_type, index_1, atom_index_1, -k_idx) = &
-                                ewald%phase%factor(dim, residue_type, index_2, atom_index_1, -k_idx)
+                            ewald%phase%factor_guest(dim, res_type, index_1, atom_index_1, -k_idx) = &
+                                ewald%phase%factor_guest(dim, res_type, index_2, atom_index_1, -k_idx)
                         end if
                     end if
 
@@ -178,17 +185,17 @@ contains
     subroutine compute_all_fourier_terms()
 
         ! Local variables
-        integer :: residue_type
-        integer :: molecule_index
+        integer :: res_type
+        integer :: mol_index
 
         ! Loop over all residue types
-        do residue_type = 1, res%number
+        do res_type = 1, res%number
 
             ! Loop over all molecules of this residue type
-            do molecule_index = 1, primary%num%residues(residue_type)
+            do mol_index = 1, primary%num%residues(res_type)
 
                 ! Compute Fourier terms for a single molecule
-                call single_mol_fourier_terms(residue_type, molecule_index)
+                call single_mol_fourier_terms(res_type, mol_index)
 
             end do
         end do
@@ -230,11 +237,18 @@ contains
             ! along each Cartesian direction. These factors will be used repeatedly
             ! in the reciprocal-space sum for the Ewald energy.
             do idim = 1, 3
-                call compute_phase_factor(ewald%phase%axis(:), local_phase(idim), ewald%param%kmax(idim))
-                ewald%phase%factor(idim, res_type, mol_index, atom_index_1, &
-                    -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
-            end do
 
+                call compute_phase_factor(ewald%phase%axis(:), local_phase(idim), ewald%param%kmax(idim))
+
+                ! Differentiate between host and guest
+                if (res%role(res_type) == TYPE_HOST) then                    
+                    ewald%phase%factor_host(idim, res_type, mol_index, atom_index_1, &
+                        -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
+                else if (res%role(res_type) == TYPE_GUEST) then
+                    ewald%phase%factor_guest(idim, res_type, mol_index, atom_index_1, &
+                        -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
+                end if
+            end do
         end do
 
     end subroutine single_mol_fourier_terms

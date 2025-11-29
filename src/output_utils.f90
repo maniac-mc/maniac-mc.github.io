@@ -622,14 +622,14 @@ contains
     !-----------------------------------------------------------------------------
     ! Print a standardized informational message
     !-----------------------------------------------------------------------------
-    subroutine InfoMessage(info_msg)
+    subroutine info_message(info_msg)
 
         character(len=*), intent(in) :: info_msg   ! Information description
 
         call log_message("INFO: " // trim(info_msg))
         call flush(output_unit)
 
-    end subroutine InfoMessage
+    end subroutine info_message
 
     !-----------------------------------------------------------------------------
     ! Validates that the given molecule index does not exceed the maximum allowed

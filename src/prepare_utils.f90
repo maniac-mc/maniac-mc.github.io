@@ -49,9 +49,6 @@ contains
 
         ! Local variable
         integer :: kmax_max
-        integer(kind=8) :: bytes
-        real(8) :: gigabytes
-        character(len=256) :: msg
 
         allocate(saved%offset(3, nmax%atoms_per_residue))
         allocate(saved%com(3))
@@ -62,28 +59,11 @@ contains
         allocate(ewald%Ak_old(1:ewald%param%nkvec))
         allocate(ewald%form_factor(ewald%param%nkvec)) ! Note, there is no need for such as large vector
 
-        write (*,*) "NB_MAX_MOLECULE", NB_MAX_MOLECULE
-        write (*,*) "nmax%active_residues", nmax%active_residues
-        write (*,*) "nmax%inactive_residues", nmax%inactive_residues
-        write (*,*) "nmax%atoms_per_residue", nmax%atoms_per_residue
-        write (*,*) "nmax%atoms_active_residue", nmax%atoms_active_residue
-        write (*,*) "nmax%atoms_inactive_residue", nmax%atoms_inactive_residue
-
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%param%kmax)
         allocate(ewald%phase%factor_host(3, res%number, 0:nmax%inactive_residues, 1:nmax%atoms_inactive_residue, -kmax_max:kmax_max)) ! TOFIX, do not use NB_MAX_MOLECULE systematical ? 
         allocate(ewald%phase%factor_guest(3, res%number, 0:nmax%active_residues, 1:nmax%atoms_active_residue, -kmax_max:kmax_max)) ! TOFIX, do not use NB_MAX_MOLECULE systematical ? 
         allocate(ewald%phase%factor_old(3, 1:nmax%atoms_active_residue, -kmax_max:kmax_max))
-
-        ! #tofix - remove
-        allocate(ewald%phase%factor(3, res%number, 0:nmax%active_residues, 1:nmax%atoms_per_residue, -kmax_max:kmax_max))
-        !allocate(ewald%phase%factor(3, res%number, 0:NB_MAX_MOLECULE, 1:nmax%atoms_per_residue, -kmax_max:kmax_max)) ! TOFIX, do not use NB_MAX_MOLECULE systematical ? 
-
-        bytes = size(ewald%phase%factor, kind=8) * storage_size(ewald%phase%factor) / 8
-        gigabytes = real(bytes, kind=8) / (1024.0d0**3)
-        write(msg,'(A,I0,A,F6.2,A)') "Large allocation detected: ", bytes, " bytes (", gigabytes, " GB)"
-        call warn_user(trim(msg))
-        ! #tofix - remove
 
         ! Allocate temporary arrays once
         allocate(ewald%phase%axis(-kmax_max:kmax_max))
@@ -99,7 +79,6 @@ contains
         ewald%Ak = zero
         ewald%Ak_old = zero
         ewald%form_factor = zero
-        ewald%phase%factor = zero
         ewald%phase%factor_old = zero
         ewald%phase%axis = zero
         ewald%phase%new = zero

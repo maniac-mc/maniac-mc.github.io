@@ -82,6 +82,9 @@ contains
         logical :: creation_flag
         logical :: deletion_flag
 
+        ! Ensure that the routine deals with guest, not host
+        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
 
@@ -108,12 +111,6 @@ contains
             ewald%phase%new(1:natoms) = ewald%phase%factor_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
                 ewald%phase%factor_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
                 ewald%phase%factor_guest(3, res_type, mol_index, 1:natoms, kz_idx)
-
-            ! #to remove
-            ! ewald%phase%new(1:natoms) = ewald%phase%factor(1, res_type, mol_index, 1:natoms, kx_idx) * &
-            !     ewald%phase%factor(2, res_type, mol_index, 1:natoms, ky_idx) * &
-            !     ewald%phase%factor(3, res_type, mol_index, 1:natoms, kz_idx)
-            ! #to remove
 
             ewald%phase%old(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
                 ewald%phase%factor_old(2, 1:natoms, ky_idx) * &
