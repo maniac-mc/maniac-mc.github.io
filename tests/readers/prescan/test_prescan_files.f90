@@ -18,7 +18,7 @@ program test_prescan_files
     path%parameters= trim(base) // "parameters.inc"
 
     ! Expectation in ZIF8-H2O system
-    expected_active = 3
+    expected_active = 5000
     expected_inactive = 1
 
     ! Run prescan
