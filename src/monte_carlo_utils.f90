@@ -534,20 +534,14 @@ contains
         ! Copy geometry from reservoir or rotate if no reservoir
         if (status%reservoir_provided) then
 
-                if (present(rand_mol_index)) then
-                    ! Pick a random (and existing) molecule in the reservoir
-                    call random_number(random_nmb)
-                    rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1
+            ! Pick a random (and existing) molecule in the reservoir
+            call random_number(random_nmb)
 
-                    ! Copy site offsets from the chosen molecule
-                    guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
-                        gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type))
-
-                else
-
-                    ! Error: reservoir exists but no output index provided
-                    call abort_run("Rand mol index must be provided when reservoir exists.", 1)
-                end if
+            rand_mol_index = int(random_nmb * reservoir%num%residues(residue_type)) + 1
+                
+            ! Copy site offsets from the chosen molecule
+            guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+                gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type))
 
         else
 

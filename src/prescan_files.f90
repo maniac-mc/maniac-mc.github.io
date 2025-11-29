@@ -38,7 +38,11 @@ contains
         ! Pre-scan input files
         call prescan_input_file(path%input) ! Detect residue definitions and sizes
         call prescan_topology(path%topology, is_reservoir = .false.) ! Count residues in primary topology
-        if (status%reservoir_provided) call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
+        if (status%reservoir_provided) then
+            call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
+        else
+            nmax%active_residues = NB_MAX_MOLECULE
+        end if
 
     end subroutine prescan_inputs
 
