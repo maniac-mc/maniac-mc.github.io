@@ -26,10 +26,10 @@ program MANIAC
     call setup_simulation_parameters()  ! Set up MC parameters, initial checks
     call compute_system_energy(primary) ! Compute initial total energy for the main box
 
-    ! Step 4 :Monte Carlo simulation
-    call monte_carlo_loop()             ! Main MC loop
+    ! ! Step 4 :Monte Carlo simulation
+    ! call monte_carlo_loop()             ! Main MC loop
 
-    ! Step 5 :Final reporting and cleanup
-    call energy_report(final=.true.)                 ! Print energy and statistics
+    ! ! Step 5 :Final reporting and cleanup
+    ! call energy_report(final=.true.)                 ! Print energy and statistics
 
 end program MANIAC
