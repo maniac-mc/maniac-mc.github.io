@@ -38,9 +38,7 @@ contains
         ! Pre-scan input files
         call prescan_input_file(path%input) ! Detect residue definitions and sizes
         call prescan_topology(path%topology, is_reservoir = .false.) ! Count residues in primary topology
-        if (status%reservoir_provided) then
-            call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
-        end if
+        if (status%reservoir_provided) call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
 
     end subroutine prescan_inputs
 
@@ -107,13 +105,16 @@ contains
             ! Detect start/end of residue block
             select case (trim(line))
             case ('begin_residue')
+
                 in_residue_block = .true.
                 cycle
+            
             case ('end_residue')
+            
                 in_residue_block = .false.
                 res%number = res%number + 1
-
                 cycle
+            
             end select
 
             if (.not. in_residue_block) cycle
@@ -217,6 +218,7 @@ contains
         allocate(res_infos(res%number))
 
         do res_id = 1, res%number
+            res_infos(res_id)%nb_res = 0
             res_infos(res_id)%nb_types = 0
             res_infos(res_id)%nb_atoms = 0
             if (allocated(res_infos(res_id)%types)) deallocate(res_infos(res_id)%types)
@@ -390,8 +392,6 @@ contains
         !----------------------------------------------------------
         do res_id = 1, res%number
 
-            res_infos(res_id)%nb_res = 0
-
             if (res_infos(res_id)%nb_atoms <= 0) cycle  ! Skip invalid residue
 
             ! Compute main/reservoir counts as real then round
@@ -414,7 +414,7 @@ contains
         ! Determine maximum active and inactive residues
         !----------------------------------------------------------
         do res_id = 1, res%number
-            nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)
+            nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)            
             if (res_infos(res_id)%is_active) then
                 if (nb_residue > nmax%active_residues) then
                     nmax%active_residues = nb_residue

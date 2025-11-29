@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="ZIF8-CH4O"
+case="CO2"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"
@@ -20,6 +20,7 @@ case "$case" in
 
   "CO2")
     folder="$base_reservoir/CO2"
+    reservoir="$base_reservoir/CO2"
     ;;
 
   "SLIT")
