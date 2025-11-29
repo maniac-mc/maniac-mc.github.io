@@ -37,7 +37,6 @@ contains
         end do
 
         if (total_mass <= 0.0_real64) then
-            write(mass_str, '(F12.5)') total_mass
             call abort_run("Total mass is zero or negative: " // trim(mass_str), 1)
         end if
 

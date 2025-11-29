@@ -443,7 +443,7 @@ contains
 
         call log_message("")
         call log_message("Atoms masses (g/mol):")
-        do atom_id = 1, primary%num%atomtypes
+        do atom_id = 1, box%num%atomtypes
             write(formatted_msg, '(I5, 2X, F12.6)') atom_id, box%atoms%masses_vec(atom_id)
             call log_message(formatted_msg)
         end do

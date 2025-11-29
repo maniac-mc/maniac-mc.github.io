@@ -70,12 +70,32 @@ contains
     ! Ensure consistency of atomic masses between the primary
     ! simulation system and an external reservoir.
     !------------------------------------------------------------------------------
-    subroutine AssertMassConsistency()
+    subroutine assert_mass_consistency()
 
+        ! Local variables
         integer :: j, k
+        real(real64):: diff
         character(len=128) :: msg
 
         if (status%reservoir_provided) then
+
+            ! Check number of atom types
+            if (primary%num%atomtypes /= reservoir%num%atomtypes) then
+                write(msg,'("ERROR: atom type count mismatch: primary=",I0,", reservoir=",I0)') &
+                    primary%num%atomtypes, reservoir%num%atomtypes
+                call abort_run(msg)
+            end if
+
+            ! Check atomic masses one by one
+            do j = 1, primary%num%atomtypes
+                diff = abs(primary%atoms%masses_vec(j) - reservoir%atoms%masses_vec(j))
+                if (diff > error) then
+                    write(msg,'("ERROR: mass mismatch for atom type ",I0,": primary=",G0,", reservoir=",G0,", diff=",G0)') &
+                        j, primary%atoms%masses_vec(j), reservoir%atoms%masses_vec(j), diff
+                    call abort_run(msg)
+                end if
+            end do
+
             ! Check that system and reservoir atom masses are consistent
             do j = 1, res%number
                 do k = 1, res%types(j)
@@ -98,6 +118,6 @@ contains
             end do
         end if
 
-    end subroutine AssertMassConsistency
+    end subroutine assert_mass_consistency
 
 end module check_utils

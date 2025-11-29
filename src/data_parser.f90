@@ -55,7 +55,7 @@ contains
         else
             status%reservoir_provided = .true.
             call read_lmp_data(path%reservoir, reservoir, is_primary = .false.)
-            call AssertMassConsistency()                ! Ensure masses in reservoir are consistent with primary
+            call assert_mass_consistency() ! Ensure masses in reservoir are consistent with primary
         end if
 
     end subroutine read_system_data
