@@ -44,6 +44,20 @@ contains
             nmax%active_residues = NB_MAX_MOLECULE
         end if
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     end subroutine prescan_inputs
 
     !---------------------------------------------------------------------------
@@ -336,7 +350,6 @@ contains
         real(real64) :: q, x, y, z                      ! Charge and coordinate
         integer :: res_id                               ! Current residue index
         integer :: type_id                              ! Loop counter
-        integer :: nb_residue                           ! Local variable for number of residue
         logical :: found                                ! Logical indicator for atom counting
         integer, allocatable :: residue_atom_count(:)   ! Temporary dynamic table for residue atom count
 
@@ -391,9 +404,24 @@ contains
 
         close(unit)
 
-        !----------------------------------------------------------
+        call compute_max_residue(residue_atom_count, is_reservoir)
+
+    end subroutine prescan_topology
+
+    !-----------------------------------------------------------------------------
+    ! Compute max numbers of residues used for memory allocation.
+    !-----------------------------------------------------------------------------
+    subroutine compute_max_residue(residue_atom_count, is_reservoir)
+
+        ! Input parameters
+        integer, intent(in) :: residue_atom_count(:)    ! Temporary dynamic table for residue atom count
+        logical, intent(in) :: is_reservoir             ! Flag: true if reservoir file
+
+        ! Local variable
+        integer :: res_id                               ! Current residue index
+        integer :: nb_residue                           ! Local variable for number of residue
+
         ! Compute number of residues
-        !----------------------------------------------------------
         do res_id = 1, res%number
 
             if (res_infos(res_id)%nb_atoms <= 0) cycle  ! Skip invalid residue
@@ -414,9 +442,7 @@ contains
 
         end do
 
-        !----------------------------------------------------------
         ! Determine maximum active and inactive residues
-        !----------------------------------------------------------
         do res_id = 1, res%number
             nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)            
             if (res_infos(res_id)%is_active) then
@@ -430,6 +456,6 @@ contains
             end if
         end do
 
-    end subroutine prescan_topology
+    end subroutine compute_max_residue
 
 end module prescan_files
