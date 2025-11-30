@@ -2,13 +2,16 @@ program test_prescan_files
 
     use, intrinsic :: iso_fortran_env, only: real64
     use prescan_files
+
     implicit none
 
-    character(len=LENPATH) :: base_main, base_res
+    character(len=LENPATH) :: base_main
+    character(len=LENPATH) :: base_res
 
     !---------------------------------------------------------------------------
     ! Test 1 : ZIF8-H2O without reservoir
     !---------------------------------------------------------------------------
+
     base_main = "../../../mc-topology/testcase-energy/ZIF8-H2O/"
 
     ! Expected : in absence of reservoir, use NB_MAX_MOLECULE
@@ -17,11 +20,30 @@ program test_prescan_files
     !---------------------------------------------------------------------------
     ! Test 2 : ZIF8-CH4O system with reservoir
     !---------------------------------------------------------------------------
+
     base_main = "../../../mc-topology/testcase-adsorption/ZIF8-CH4O/"
     base_res  = "../../../mc-topology/molecule-reservoir/CH4O-H2O/"
 
     ! Expected : 5 molecules in main, 1500 in reservoir
     call run_test(base_main, base_res, .true., 5+1500, 1)
+
+    !---------------------------------------------------------------------------
+    ! Test 3 : Bulk CO2 system without reservoir
+    !---------------------------------------------------------------------------
+
+    base_main = "../../../mc-topology/molecule-reservoir/CO2/"
+
+    ! Expected : in absence of reservoir, use NB_MAX_MOLECULE
+    call run_test(base_main, "", .false., NB_MAX_MOLECULE, 0)
+
+    !---------------------------------------------------------------------------
+    ! Test 4 : Bulk CO2 system with reservoir
+    !---------------------------------------------------------------------------
+
+    base_main = "../../../mc-topology/molecule-reservoir/CO2/"
+
+    ! Expected : 50 molecules in main, 50 in reservoir
+    call run_test(base_main, base_main, .true., 100, 0)
 
 contains
 
@@ -51,7 +73,7 @@ contains
         call prescan_inputs()
 
         ! Check results
-        pass = (nmax%active_residues   == exp_active)   .and. &
+        pass = (nmax%active_residues == exp_active) .and. &
             (nmax%inactive_residues == exp_inactive)
 
         if (.not. pass) then
