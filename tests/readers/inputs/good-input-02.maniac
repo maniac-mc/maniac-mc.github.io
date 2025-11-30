@@ -1,20 +1,22 @@
-# Input for maniac program with extra space before "translation_proba"
+# Input for maniac program
 
+# Generic parameters
 nb_block 1
 nb_step 1
 temperature	300
 
+# Electrostatic interactions
 ewald_tolerance 1e-5
 real_space_cutoff 17
 
+# Monte carlo move
 translation_step 1
 rotation_step_angle 0.685
 recalibrate_moves true
 
- translation_proba 0.4           # Space before "translation_proba"
+translation_proba 0.4
 rotation_proba 0.4
-big_move_proba 0.0
-insertion_deletion_proba 0.2
+widom_proba 0.2
 
 # Define residues composition and activity
 begin_residue

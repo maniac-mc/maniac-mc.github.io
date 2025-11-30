@@ -5,11 +5,11 @@ set -euo pipefail
 BUILD_DIR="../../../build"
 MODULE_DIR="../../../include"
 
-# Where test executables should go
+# Path to test executables
 BIN_DIR="./build"
 mkdir -p "$BIN_DIR"
 
-# Collect Maniac object files, excluding main.o
+# Collect Maniac object files (excluding main.o)
 shopt -s nullglob
 MANIAC_OBJS=()
 for obj in "$BUILD_DIR"/*.o; do
@@ -18,7 +18,6 @@ for obj in "$BUILD_DIR"/*.o; do
 done
 shopt -u nullglob
 
-# -----------------------------
 # COMPILE & RUN TESTS
 for TEST_SRC in test_*.f90; do
     [[ ! -f "$TEST_SRC" ]] && {

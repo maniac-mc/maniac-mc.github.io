@@ -149,7 +149,7 @@ contains
 
                                     ! Print the "rule enforcement" warning only once globally
                                     if (.not. any(warned)) then
-                                        call InfoMessage("Enforcing the Lorentz-Berthelot rule")
+                                        call info_message("Enforcing the Lorentz-Berthelot rule")
                                         call log_message("typei typej epsilon sigma")
                                     end if
 

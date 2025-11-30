@@ -30,7 +30,7 @@ end_residue
 begin_residue
   name wat
   state actif
-  fugacity 50
+  chemical_potential -4.5
   types 12 13 14
   names OW HW MW
   nb-atoms 4
@@ -39,7 +39,7 @@ end_residue
 begin_residue
   name moh
   state actif
-  fugacity 50
+  chemical_potential -6.0
   types 8 9 10 11
   names HO HC CH OH
   nb-atoms 6

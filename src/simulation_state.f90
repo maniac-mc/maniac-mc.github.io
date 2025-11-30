@@ -257,7 +257,8 @@ module simulation_state
     ! Allocatable array for phase calculation
     !---------------------------------------------------------------------------
     type phase_ewald
-        complex(real64), allocatable :: factor(:,:,:,:,:)  ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
+        complex(real64), allocatable :: factor_host(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
+        complex(real64), allocatable :: factor_guest(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
         complex(real64), allocatable :: factor_old(:,:,:)  ! Previous configuration phase factors used for updating A(k)
         complex(real64), allocatable :: new(:)             ! Temporary 1D array of phase factors for the new configuration
         complex(real64), allocatable :: old(:)             ! Temporary 1D array of phase factors for the old configuration

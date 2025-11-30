@@ -692,7 +692,7 @@ contains
 
         ! If no bonds are expected, skip the whole routine
         if (box%num%bonds == 0) then
-            call InfoMessage("No bonds expected in data file: " // trim(data_file_name))
+            call info_message("No bonds expected in data file: " // trim(data_file_name))
             return
         end if
 
@@ -702,7 +702,7 @@ contains
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No bonds found in data file: ", trim(data_file_name)
-                call InfoMessage(trim(formatted_msg))
+                call info_message(trim(formatted_msg))
             end if
 
             if (ios > 0) then
@@ -790,7 +790,7 @@ contains
         ! If no angles are expected, skip the whole routine
         if (box%num%angles == 0) then
             write(formatted_msg, '(A, A)') "No angles expected in data file: ", trim(data_file_name)
-            call InfoMessage(trim(formatted_msg))
+            call info_message(trim(formatted_msg))
             return
         end if
 
@@ -800,7 +800,7 @@ contains
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No angles found in data file: ", trim(data_file_name)
-                call InfoMessage(trim(formatted_msg))
+                call info_message(trim(formatted_msg))
             end if
 
             if (ios > 0) then
@@ -895,7 +895,7 @@ contains
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No dihedrals found in data file: ", trim(data_file_name)
-                call InfoMessage(trim(formatted_msg))
+                call info_message(trim(formatted_msg))
             end if
 
             if (ios > 0) then
@@ -993,7 +993,7 @@ contains
             read(infile, '(A)', IOSTAT=ios) line
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No impropers found in data file: ", trim(data_file_name)
-                call InfoMessage(trim(formatted_msg))
+                call info_message(trim(formatted_msg))
             end if
             if (ios > 0) then
                 write(formatted_msg, '(A, A)') "I/O error reading data file: ", trim(data_file_name)
@@ -1286,7 +1286,7 @@ contains
         ! Global check: maximum allowed molecules
         if (detected_nb_max_molecule > NB_MAX_MOLECULE) then
             write(formatted_msg, '(A, I0)') "The number of molecules exceeds the maximum allowed = ", NB_MAX_MOLECULE
-            call InfoMessage(trim(formatted_msg))
+            call info_message(trim(formatted_msg))
             write(formatted_msg, '(A, I0)') "Number of molecules found = ", detected_nb_max_molecule
             call abort_run(trim(formatted_msg) // " Please increase 'NB_MAX_MOLECULE' in src/parameters.f90 and recompile.", 11)
         end if

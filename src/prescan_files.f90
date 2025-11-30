@@ -40,6 +40,8 @@ contains
         call prescan_topology(path%topology, is_reservoir = .false.) ! Count residues in primary topology
         if (status%reservoir_provided) then
             call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
+        else
+            nmax%active_residues = NB_MAX_MOLECULE
         end if
 
     end subroutine prescan_inputs
@@ -107,13 +109,16 @@ contains
             ! Detect start/end of residue block
             select case (trim(line))
             case ('begin_residue')
+
                 in_residue_block = .true.
                 cycle
+            
             case ('end_residue')
+            
                 in_residue_block = .false.
                 res%number = res%number + 1
-
                 cycle
+            
             end select
 
             if (.not. in_residue_block) cycle
@@ -217,6 +222,7 @@ contains
         allocate(res_infos(res%number))
 
         do res_id = 1, res%number
+            res_infos(res_id)%nb_res = 0
             res_infos(res_id)%nb_types = 0
             res_infos(res_id)%nb_atoms = 0
             if (allocated(res_infos(res_id)%types)) deallocate(res_infos(res_id)%types)
@@ -330,22 +336,17 @@ contains
         real(real64) :: q, x, y, z                      ! Charge and coordinate
         integer :: res_id                               ! Current residue index
         integer :: type_id                              ! Loop counter
-        integer :: nb_residue                           ! Local variable for number of residue
         logical :: found                                ! Logical indicator for atom counting
         integer, allocatable :: residue_atom_count(:)   ! Temporary dynamic table for residue atom count
 
         allocate(residue_atom_count(res%number))
         residue_atom_count = 0
 
-        ! ---------------------------------------------------------
         ! Open topology file
-        ! ---------------------------------------------------------
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
         call check_IO_status(filename, ios)
 
-        ! ---------------------------------------------------------
         ! Scan file
-        ! ---------------------------------------------------------
         do
             read(unit,'(A)', iostat=ios) line
             if (ios /= 0) exit
@@ -362,35 +363,45 @@ contains
                 cycle
             end if
 
-            ! Note, the atome type is expected to be in second position
-            ! Read atom-ID, molecule-ID, atom-type
+            ! Read line (the atom type is expected to be in second position)
             read(line,*,iostat=ios) atom_id, mol_id, atom_type, q, x, y, z
             if (ios /= 0) cycle
 
-            ! ---------------------------------------------------------
             ! Classify this atom according to which residue type it belongs to
-            ! ---------------------------------------------------------
             found = .false.
             do res_id = 1, res%number
                 do type_id = 1, res_infos(res_id)%nb_types
                     if (atom_type == res_infos(res_id)%types(type_id)) then
                         residue_atom_count(res_id) = residue_atom_count(res_id) + 1
                         found = .true.
-                        exit  ! stop inner loop
+                        exit
                     end if
                 end do
-                if (found) exit  ! stop outer loop
+                if (found) exit
             end do
         end do
 
         close(unit)
 
-        !----------------------------------------------------------
-        ! Compute number of residues
-        !----------------------------------------------------------
-        do res_id = 1, res%number
+        call compute_max_residue(residue_atom_count, is_reservoir)
 
-            res_infos(res_id)%nb_res = 0
+    end subroutine prescan_topology
+
+    !-----------------------------------------------------------------------------
+    ! Compute max numbers of residues used for memory allocation.
+    !-----------------------------------------------------------------------------
+    subroutine compute_max_residue(residue_atom_count, is_reservoir)
+
+        ! Input parameters
+        integer, intent(in) :: residue_atom_count(:)    ! Temporary dynamic table for residue atom count
+        logical, intent(in) :: is_reservoir             ! Flag: true if reservoir file
+
+        ! Local variable
+        integer :: res_id                               ! Current residue index
+        integer :: nb_residue                           ! Local variable for number of residue
+
+        ! Compute number of residues
+        do res_id = 1, res%number
 
             if (res_infos(res_id)%nb_atoms <= 0) cycle  ! Skip invalid residue
 
@@ -410,11 +421,9 @@ contains
 
         end do
 
-        !----------------------------------------------------------
         ! Determine maximum active and inactive residues
-        !----------------------------------------------------------
         do res_id = 1, res%number
-            nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)
+            nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)            
             if (res_infos(res_id)%is_active) then
                 if (nb_residue > nmax%active_residues) then
                     nmax%active_residues = nb_residue
@@ -426,6 +435,6 @@ contains
             end if
         end do
 
-    end subroutine prescan_topology
+    end subroutine compute_max_residue
 
 end module prescan_files

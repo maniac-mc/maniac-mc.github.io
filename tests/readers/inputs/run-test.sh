@@ -15,10 +15,10 @@ for input in good-input-*.maniac; do
     mkdir -p "$outputs"
 
     # Run silently (everything goes into log.maniac)
-    $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > log.maniac 2>&1
+    $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > "log.$input" 2>&1
     
     # === Test: program termination
-    if grep -q "MANIAC-MC simulation completed " log.maniac; then
+    if grep -q "MANIAC-MC simulation completed " "log.$input"; then
         echo "✅ [PASS] $input : Simulation terminated normally"
     else
         echo "❌ [FAIL] $input : No termination message found"
@@ -32,9 +32,9 @@ for input in bad-input-*.maniac; do
     rm -rf "$outputs"
     mkdir -p "$outputs"
 
-    $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > log.maniac 2>&1 || true  # don't exit on error
+    $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > "log.$input" 2>&1 || true  # don't exit on error
 
-    if grep -E -q "(Error|STOP)" log.maniac; then
+    if grep -E -q "(Error|STOP)" "log.$input"; then
         echo "✅ [PASS] $input : Correctly failed with error"
     else
         echo "❌ [FAIL] $input : Unexpectedly succeeded (no error in log)"

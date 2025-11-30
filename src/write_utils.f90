@@ -204,7 +204,7 @@ contains
         if (proba%widom > 0) then
 
             ! Compute excess and total chemical potentials
-            call CalculateExcessMu()
+            call calculate_excess_mu()
 
             ! Loop over residue types
             do type_residue = 1, res%number

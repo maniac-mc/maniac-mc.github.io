@@ -227,7 +227,7 @@ contains
         end if
 
         if (proba%widom > 0) then
-            write(tmp,'("S(",I0,"/",I0,")")') counter%widom(2), counter%widom(1)
+            write(tmp,'("W(",I0,"/",I0,")")') counter%widom(2), counter%widom(1)
             move_msg = trim(move_msg)//" "//trim(tmp)
         end if
 
@@ -622,14 +622,14 @@ contains
     !-----------------------------------------------------------------------------
     ! Print a standardized informational message
     !-----------------------------------------------------------------------------
-    subroutine InfoMessage(info_msg)
+    subroutine info_message(info_msg)
 
         character(len=*), intent(in) :: info_msg   ! Information description
 
         call log_message("INFO: " // trim(info_msg))
         call flush(output_unit)
 
-    end subroutine InfoMessage
+    end subroutine info_message
 
     !-----------------------------------------------------------------------------
     ! Validates that the given molecule index does not exceed the maximum allowed

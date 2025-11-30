@@ -10,7 +10,7 @@ bin/*
 # Ignore produced files
 **/outputs/*
 **/*.dat
-**/log.maniac
+**/log*maniac
 
 # Ignore backup and temporary files (optional but useful)
 *~

@@ -82,6 +82,9 @@ contains
         logical :: creation_flag
         logical :: deletion_flag
 
+        ! Ensure that the routine deals with guest, not host
+        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
 
@@ -105,9 +108,9 @@ contains
             kz_idx = ewald%kvectors(idx)%kz
 
             ! Compute phase factors for the current residue
-            ewald%phase%new(1:natoms) = ewald%phase%factor(1, res_type, mol_index, 1:natoms, kx_idx) * &
-                ewald%phase%factor(2, res_type, mol_index, 1:natoms, ky_idx) * &
-                ewald%phase%factor(3, res_type, mol_index, 1:natoms, kz_idx)
+            ewald%phase%new(1:natoms) = ewald%phase%factor_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
+                ewald%phase%factor_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
+                ewald%phase%factor_guest(3, res_type, mol_index, 1:natoms, kz_idx)
 
             ewald%phase%old(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
                 ewald%phase%factor_old(2, 1:natoms, ky_idx) * &
@@ -265,23 +268,69 @@ contains
 
         ! Loop over all residue types
         do res_type = 1, res%number
-            ! Loop over all molecules of this residue type
-            do mol_index = 1, primary%num%residues(res_type)
-                ! Loop over sites in molecule
-                do atom_index = 1, res%atom(res_type)
 
-                    ! Extract charge and phase product
-                    charges = primary%atoms%charges(res_type, atom_index)
-                    product = ewald%phase%factor(1, res_type, mol_index, atom_index, kx_idx) * &
-                            ewald%phase%factor(2, res_type, mol_index, atom_index, ky_idx) * &
-                            ewald%phase%factor(3, res_type, mol_index, atom_index, kz_idx)
+            ! For host
+            if (res%role(res_type) == TYPE_HOST) then
 
-                    ! Accumulate contribution from this atom:
-                    ! charge * exp(i k · r) factor in x, y, z directions
-                    Ak = Ak + charges * product
+                ! Loop over all molecules of this residue type
+                do mol_index = 1, primary%num%residues(res_type)
+                    ! Loop over sites in molecule
+                    do atom_index = 1, res%atom(res_type)
 
-                end do
-            end do
+                        ! Extract charge and phase product
+                        charges = primary%atoms%charges(res_type, atom_index)
+                        product = ewald%phase%factor_host(1, res_type, mol_index, atom_index, kx_idx) * &
+                                ewald%phase%factor_host(2, res_type, mol_index, atom_index, ky_idx) * &
+                                ewald%phase%factor_host(3, res_type, mol_index, atom_index, kz_idx)
+
+                        ! Accumulate contribution from this atom:
+                        ! charge * exp(i k · r) factor in x, y, z directions
+                        Ak = Ak + charges * product
+
+                    end do
+                end do 
+
+            ! For guest
+            else if (res%role(res_type) == TYPE_GUEST) then
+
+                ! Loop over all molecules of this residue type
+                do mol_index = 1, primary%num%residues(res_type)
+                    ! Loop over sites in molecule
+                    do atom_index = 1, res%atom(res_type)
+
+                        ! Extract charge and phase product
+                        charges = primary%atoms%charges(res_type, atom_index)
+                        product = ewald%phase%factor_guest(1, res_type, mol_index, atom_index, kx_idx) * &
+                                ewald%phase%factor_guest(2, res_type, mol_index, atom_index, ky_idx) * &
+                                ewald%phase%factor_guest(3, res_type, mol_index, atom_index, kz_idx)
+
+                        ! Accumulate contribution from this atom:
+                        ! charge * exp(i k · r) factor in x, y, z directions
+                        Ak = Ak + charges * product
+
+                    end do
+                end do 
+
+            end if
+
+            ! ! Loop over all molecules of this residue type
+            ! do mol_index = 1, primary%num%residues(res_type)
+            !     ! Loop over sites in molecule
+            !     do atom_index = 1, res%atom(res_type)
+
+            !         ! Extract charge and phase product
+            !         charges = primary%atoms%charges(res_type, atom_index)
+            !         product = ewald%phase%factor(1, res_type, mol_index, atom_index, kx_idx) * &
+            !                 ewald%phase%factor(2, res_type, mol_index, atom_index, ky_idx) * &
+            !                 ewald%phase%factor(3, res_type, mol_index, atom_index, kz_idx)
+
+            !         ! Accumulate contribution from this atom:
+            !         ! charge * exp(i k · r) factor in x, y, z directions
+            !         Ak = Ak + charges * product
+
+            !     end do
+            ! end do
+
         end do
 
     end function compute_recip_amplitude
