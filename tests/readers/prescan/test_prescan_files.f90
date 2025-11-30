@@ -5,8 +5,8 @@ program test_prescan_files
 
     implicit none
 
-    character(len=LENPATH) :: base_main
-    character(len=LENPATH) :: base_res
+    character(len=LENPATH) :: base_main     ! Path for main file
+    character(len=LENPATH) :: base_res      ! Path for reservoir file
 
     !---------------------------------------------------------------------------
     ! Test 1 : ZIF8-H2O without reservoir
@@ -59,11 +59,11 @@ contains
         integer, intent(in) :: exp_inactive         ! Expected host residue
 
         ! Local variable
-        logical :: pass
+        logical :: pass                             ! Did the test pass
 
         ! Set paths
-        path%input      = trim(base_main) // "input.maniac"
-        path%topology   = trim(base_main) // "topology.data"
+        path%input = trim(base_main) // "input.maniac"
+        path%topology = trim(base_main) // "topology.data"
         path%parameters = trim(base_main) // "parameters.inc"
 
         status%reservoir_provided = reservoir
