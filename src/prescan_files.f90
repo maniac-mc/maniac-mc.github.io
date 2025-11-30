@@ -44,20 +44,6 @@ contains
             nmax%active_residues = NB_MAX_MOLECULE
         end if
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     end subroutine prescan_inputs
 
     !---------------------------------------------------------------------------
@@ -356,15 +342,11 @@ contains
         allocate(residue_atom_count(res%number))
         residue_atom_count = 0
 
-        ! ---------------------------------------------------------
         ! Open topology file
-        ! ---------------------------------------------------------
         open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
         call check_IO_status(filename, ios)
 
-        ! ---------------------------------------------------------
         ! Scan file
-        ! ---------------------------------------------------------
         do
             read(unit,'(A)', iostat=ios) line
             if (ios /= 0) exit
@@ -381,24 +363,21 @@ contains
                 cycle
             end if
 
-            ! Note, the atome type is expected to be in second position
-            ! Read atom-ID, molecule-ID, atom-type
+            ! Read line (the atom type is expected to be in second position)
             read(line,*,iostat=ios) atom_id, mol_id, atom_type, q, x, y, z
             if (ios /= 0) cycle
 
-            ! ---------------------------------------------------------
             ! Classify this atom according to which residue type it belongs to
-            ! ---------------------------------------------------------
             found = .false.
             do res_id = 1, res%number
                 do type_id = 1, res_infos(res_id)%nb_types
                     if (atom_type == res_infos(res_id)%types(type_id)) then
                         residue_atom_count(res_id) = residue_atom_count(res_id) + 1
                         found = .true.
-                        exit  ! stop inner loop
+                        exit
                     end if
                 end do
-                if (found) exit  ! stop outer loop
+                if (found) exit
             end do
         end do
 
