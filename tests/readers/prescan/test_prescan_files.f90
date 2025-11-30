@@ -13,9 +13,10 @@ program test_prescan_files
     !---------------------------------------------------------------------------
 
     base_main = "../../../mc-topology/testcase-energy/ZIF8-H2O/"
+    base_res = ""
 
     ! Expected : in absence of reservoir, use NB_MAX_MOLECULE
-    call run_test(base_main, "", .false., NB_MAX_MOLECULE, 1)
+    call run_test(base_main, base_res, .false., NB_MAX_MOLECULE, 1)
 
     !---------------------------------------------------------------------------
     ! Test 2 : ZIF8-CH4O system with reservoir
@@ -32,9 +33,10 @@ program test_prescan_files
     !---------------------------------------------------------------------------
 
     base_main = "../../../mc-topology/molecule-reservoir/CO2/"
+    base_res = ""
 
     ! Expected : in absence of reservoir, use NB_MAX_MOLECULE
-    call run_test(base_main, "", .false., NB_MAX_MOLECULE, 0)
+    call run_test(base_main, base_res, .false., NB_MAX_MOLECULE, 0)
 
     !---------------------------------------------------------------------------
     ! Test 4 : Bulk CO2 system with reservoir
@@ -50,10 +52,11 @@ contains
     subroutine run_test(base_main, base_res, reservoir, exp_active, exp_inactive)
 
         ! Input parameters
-        character(len=*), intent(in) :: base_main
-        character(len=*), intent(in) :: base_res
-        logical, intent(in) :: reservoir
-        integer, intent(in) :: exp_active, exp_inactive
+        character(len=*), intent(in) :: base_main   ! Path for main file
+        character(len=*), intent(in) :: base_res    ! Path for reservoir file (if reservoir is present)
+        logical, intent(in) :: reservoir            ! Is reservoir present
+        integer, intent(in) :: exp_active           ! Expected guest residue
+        integer, intent(in) :: exp_inactive         ! Expected host residue
 
         ! Local variable
         logical :: pass
@@ -65,9 +68,7 @@ contains
 
         status%reservoir_provided = reservoir
 
-        if (reservoir) then
-            path%reservoir = trim(base_res) // "topology.data"
-        end if
+        if (reservoir) path%reservoir = trim(base_res) // "topology.data"
 
         ! Run prescan logic
         call prescan_inputs()
@@ -77,12 +78,10 @@ contains
             (nmax%inactive_residues == exp_inactive)
 
         if (.not. pass) then
-
             print *, "Test FAILED"
             print *, " expected active =", exp_active, " got=", nmax%active_residues
             print *, " expected inactive =", exp_inactive, " got=", nmax%inactive_residues
             stop 1
-
         end if
 
     end subroutine run_test
