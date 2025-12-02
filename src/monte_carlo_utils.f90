@@ -648,4 +648,19 @@ contains
 
     end subroutine remove_molecule
 
+    !---------------------------------------------------------------------------
+    ! Updates residue and atom counters with sign = +1 or -1
+    !---------------------------------------------------------------------------
+    subroutine update_counts(box, residue_type, sign)
+
+        ! Input parameters
+        type(type_box), intent(inout) :: box
+        integer, intent(in) :: residue_type
+        integer, intent(in) :: sign
+
+        box%num%residues(residue_type) = box%num%residues(residue_type) + sign
+        box%num%atoms = box%num%atoms + sign * res%atom(residue_type)
+
+    end subroutine update_counts
+
 end module monte_carlo_utils

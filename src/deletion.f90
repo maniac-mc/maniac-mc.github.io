@@ -53,8 +53,24 @@ contains
         call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
         ! Update molecule and atom counts
+
+        write (*,*) "N", primary%num%residues(residue_type), primary%num%atoms, res%atom(residue_type)
+
         primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
         primary%num%atoms = primary%num%atoms - res%atom(residue_type)
+
+        write (*,*) "N", primary%num%residues(residue_type), primary%num%atoms, res%atom(residue_type)
+
+        call update_counts(primary, residue_type, -1)
+
+        write (*,*) "N", primary%num%residues(residue_type), primary%num%atoms, res%atom(residue_type)
+
+        call update_counts(primary, residue_type, +1)
+
+        write (*,*) "N", primary%num%residues(residue_type), primary%num%atoms, res%atom(residue_type)
+
+
+        stop 8878
 
         ! Calculate new energy
         call compute_new_energy(residue_type, molecule_index, is_deletion = .true.)
