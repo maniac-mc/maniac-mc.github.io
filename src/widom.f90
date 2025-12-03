@@ -27,43 +27,43 @@ contains
     ! Computes energy contributions and updates Widom statistics. The move is 
     ! systematically rejected to avoid modifying the system state.
     !---------------------------------------------------------------------------
-    subroutine widom_trial(residue_type, molecule_index)
+    subroutine widom_trial(res_type, mol_index)
 
         ! Input arguments
-        integer, intent(in) :: residue_type     ! Residue type to be inserted
-        integer, intent(in) :: molecule_index   ! Molecule ID
+        integer, intent(in) :: res_type     ! Residue type to be inserted
+        integer, intent(in) :: mol_index   ! Molecule ID
 
         ! Local variables
         real(real64) :: deltaU                  ! Energy difference
 
-        call check_molecule_index(molecule_index)
+        call check_molecule_index(mol_index)
 
         ! Count trial move
         counter%widom(1) = counter%widom(1) + 1
 
         ! Compute old energy
-        call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
+        call compute_old_energy(res_type, mol_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
-        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
-        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
+        primary%num%residues(res_type) = primary%num%residues(res_type) + 1
+        primary%num%atoms = primary%num%atoms + res%atom(res_type)
 
         ! Save current Fourier terms (should be all zeros here)
-        call save_single_mol_fourier_terms(residue_type, molecule_index)
+        call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Generate random insertion position within the simulation box
-        call insert_and_orient_molecule(residue_type, molecule_index)
+        call insert_and_orient_molecule(res_type, mol_index)
 
         ! Compute new energy
-        call compute_new_energy(residue_type, molecule_index, is_creation = .true.)
+        call compute_new_energy(res_type, mol_index, is_creation = .true.)
 
         ! Reject systematically (the system state is preserved)
-        call reject_creation_move(residue_type, molecule_index)
+        call reject_creation_move(res_type, mol_index)
 
         ! Compute Boltzmann weight for Widom insertion
         deltaU = new%total - old%total
 
-        call accumulate_widom_weight(residue_type, deltaU)
+        call accumulate_widom_weight(res_type, deltaU)
 
     end subroutine widom_trial
 
@@ -71,10 +71,10 @@ contains
     ! Computes the Widom Boltzmann weight w = exp(-ΔU / (kB*T)) and updates
     ! accumulated statistics for the given residue type.
     !---------------------------------------------------------------------------
-    subroutine accumulate_widom_weight(residue_type, deltaU)
+    subroutine accumulate_widom_weight(res_type, deltaU)
         
         ! Input parameters
-        integer, intent(in) :: residue_type     ! Residue type to be inserted
+        integer, intent(in) :: res_type     ! Residue type to be inserted
         real(real64), intent(in) :: deltaU      ! Energy difference
 
         ! Local variables
@@ -84,10 +84,10 @@ contains
 
         if (weight > error) then ! Correspond to a success
             counter%widom(2) = counter%widom(2) + 1
-            statistic%weight(residue_type) = statistic%weight(residue_type) + weight
+            statistic%weight(res_type) = statistic%weight(res_type) + weight
         end if
 
-        statistic%sample(residue_type) = statistic%sample(residue_type) + 1
+        statistic%sample(res_type) = statistic%sample(res_type) + 1
 
     end subroutine accumulate_widom_weight
 

@@ -27,10 +27,10 @@ contains
     ! changes, applies the Metropolis criterion, and either accepts or
     ! rejects the creation.
     !---------------------------------------------------------------------------
-    subroutine attempt_creation_move(residue_type, molecule_index)
+    subroutine attempt_creation_move(res_type, molecule_index)
 
         ! Input arguments
-        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: res_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Local variables
@@ -43,29 +43,28 @@ contains
         counter%creations(1) = counter%creations(1) + 1
 
         ! Compute old energy
-        call compute_old_energy(residue_type, molecule_index, is_creation = .true.)
+        call compute_old_energy(res_type, molecule_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
-        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
-        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
+        call update_counts(primary, res_type, +1)
 
         ! Save current Fourier terms (should be all zeros here)
-        call save_single_mol_fourier_terms(residue_type, molecule_index)
+        call save_single_mol_fourier_terms(res_type, molecule_index)
 
         ! Generate random insertion position within the simulation box
-        call insert_and_orient_molecule(residue_type, molecule_index, rand_mol_index)
+        call insert_and_orient_molecule(res_type, molecule_index, rand_mol_index)
 
         ! Compute new energy
-        call compute_new_energy(residue_type, molecule_index, is_creation = .true.)
+        call compute_new_energy(res_type, molecule_index, is_creation = .true.)
 
         ! Compute acceptance probability for the move
-        probability = compute_acceptance_probability(old, new, residue_type, TYPE_CREATION)
+        probability = compute_acceptance_probability(old, new, res_type, TYPE_CREATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
-            call accept_creation_move(residue_type, rand_mol_index)
+            call accept_creation_move(res_type, rand_mol_index)
         else ! Reject move
-            call reject_creation_move(residue_type, molecule_index)
+            call reject_creation_move(res_type, molecule_index)
         end if
 
     end subroutine attempt_creation_move
@@ -74,10 +73,10 @@ contains
     ! Updates system energies and counters when a creation move is accepted.
     ! Optionally removes the inserted molecule from the reservoir.
     !---------------------------------------------------------------------------
-    subroutine accept_creation_move(residue_type, rand_mol_index)
+    subroutine accept_creation_move(res_type, rand_mol_index)
 
         ! Input parameters
-        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: res_type     ! Residue type to be moved
         integer, intent(in) :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
 
         ! Local variable
@@ -98,14 +97,14 @@ contains
         if (status%reservoir_provided) then
 
             ! Replace molecule_index with the last molecule in the list to maintain continuity
-            last_molecule_index = reservoir%num%residues(residue_type)
-            gas%com(:, residue_type, rand_mol_index) = &
-                gas%com(:, residue_type, last_molecule_index)
-            gas%offset(:, residue_type, rand_mol_index, 1:res%atom(residue_type)) = &
-                gas%offset(:, residue_type, last_molecule_index, 1:res%atom(residue_type))
+            last_molecule_index = reservoir%num%residues(res_type)
+            gas%com(:, res_type, rand_mol_index) = &
+                gas%com(:, res_type, last_molecule_index)
+            gas%offset(:, res_type, rand_mol_index, 1:res%atom(res_type)) = &
+                gas%offset(:, res_type, last_molecule_index, 1:res%atom(res_type))
 
-            reservoir%num%residues(residue_type) = reservoir%num%residues(residue_type) - 1
-            reservoir%num%atoms = reservoir%num%atoms - res%atom(residue_type)
+            ! Increase the residue and atom counts
+            call update_counts(reservoir, res_type, -1)
 
         end if
 

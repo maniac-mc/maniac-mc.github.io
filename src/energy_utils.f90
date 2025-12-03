@@ -44,24 +44,24 @@ contains
     subroutine compute_total_intra_residue_coulomb_energy()
 
         ! Local variables
-        integer :: residue_type_1
-        integer :: molecule_index_1
+        integer :: res_type_1
+        integer :: mol_index_1
         real(real64) :: e_intra_coulomb
 
         ! Initialize total intra-residue Coulomb energy
         energy%intra_coulomb = zero ! In kcal/mol
 
         ! Loop over all residue types
-        do residue_type_1 = 1, res%number
+        do res_type_1 = 1, res%number
             
             ! Skip inactive residues
-            if (thermo%is_active(residue_type_1)) then
+            if (thermo%is_active(res_type_1)) then
 
                 ! Loop over all molecules of this residue type
-                do molecule_index_1 = 1, primary%num%residues(residue_type_1)
+                do mol_index_1 = 1, primary%num%residues(res_type_1)
 
                     ! Compute intra-residue Coulomb energy for this molecule
-                    call compute_intra_real_energy_residue(residue_type_1, molecule_index_1, e_intra_coulomb)
+                    call compute_intra_real_energy_residue(res_type_1, mol_index_1, e_intra_coulomb)
 
                     ! Accumulate into total intra-residue energy
                     energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
@@ -80,8 +80,8 @@ contains
         type(type_box), intent(inout) :: box    ! Box (reservoir or primary)
 
         ! Local variables
-        integer :: residue_type_1
-        integer :: molecule_index_1
+        integer :: res_type_1
+        integer :: mol_index_1
         real(real64) :: e_non_coulomb
         real(real64) :: e_coulomb
 
@@ -90,13 +90,13 @@ contains
         energy%coulomb = zero
 
         ! Loop over all residue types
-        do residue_type_1 = 1, res%number
-            ! Loop over all molecule of type "residue_type_1"
-            do molecule_index_1 = 1, box%num%residues(residue_type_1)
+        do res_type_1 = 1, res%number
+            ! Loop over all molecule of type "res_type_1"
+            do mol_index_1 = 1, box%num%residues(res_type_1)
 
                 ! Compute the energy for residue_1, molecule_1
-                call single_mol_pairwise_energy(box, residue_type_1, &
-                    molecule_index_1, e_non_coulomb, e_coulomb)
+                call single_mol_pairwise_energy(box, res_type_1, &
+                    mol_index_1, e_non_coulomb, e_coulomb)
 
                 ! Add residue_1, molecule_1 energy to the total pairwise energy
                 energy%non_coulomb = energy%non_coulomb + e_non_coulomb ! In kcal/mol
@@ -110,19 +110,19 @@ contains
     !------------------------------------------------------------------------------
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
-    subroutine single_mol_pairwise_energy(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
+    subroutine single_mol_pairwise_energy(box, res_type_1, mol_index_1, e_non_coulomb, e_coulomb)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
-        integer, intent(in) :: residue_type_1        ! Residue type to be moved
-        integer, intent(in) :: molecule_index_1      ! Molecule ID
+        integer, intent(in) :: res_type_1        ! Residue type to be moved
+        integer, intent(in) :: mol_index_1      ! Molecule ID
         real(real64), intent(out) :: e_non_coulomb
         real(real64), intent(out) :: e_coulomb
 
         ! Local variables
         integer :: atom_index_1, atom_index_2
-        integer :: molecule_index_2
-        integer :: residue_type_2
+        integer :: mol_index_2
+        integer :: res_type_2
         real(real64) :: distance
         real(real64) :: sigma, epsilon              ! Epsilon and sigma LJ potential calculations
         real(real64) :: charge_1, charge_2          ! Charge for Coulomb interactions
@@ -130,36 +130,36 @@ contains
         e_non_coulomb = zero
         e_coulomb = zero
 
-        ! Loop over sites in molecule residue_type
-        do atom_index_1 = 1, res%atom(residue_type_1)
+        ! Loop over sites in molecule res_type
+        do atom_index_1 = 1, res%atom(res_type_1)
 
             ! Loop over all molecule types 2
-            do residue_type_2 = 1, res%number
+            do res_type_2 = 1, res%number
 
                 ! Loop over all molecule index 2
-                do molecule_index_2 = 1, box%num%residues(residue_type_2)
+                do mol_index_2 = 1, box%num%residues(res_type_2)
 
                     ! Remove intra molecular contribution
-                    if ((molecule_index_1 == molecule_index_2) .and. &
-                        (residue_type_1 == residue_type_2)) cycle
+                    if ((mol_index_1 == mol_index_2) .and. &
+                        (res_type_1 == res_type_2)) cycle
 
                     ! Enforce ordering to avoid double-counting
-                    if ((residue_type_2 < residue_type_1) .or. &
-                        ((residue_type_2 == residue_type_1) .and. &
-                        (molecule_index_2 <= molecule_index_1))) cycle
+                    if ((res_type_2 < res_type_1) .or. &
+                        ((res_type_2 == res_type_1) .and. &
+                        (mol_index_2 <= mol_index_1))) cycle
 
                     ! Loop over all side of the selected molecule 2
-                    do atom_index_2 = 1, res%atom(residue_type_2)
+                    do atom_index_2 = 1, res%atom(res_type_2)
 
                         ! Read pair parameters
-                        sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Angstrom
-                        epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
-                        charge_1 = primary%atoms%charges(residue_type_1, atom_index_1)                   ! In units of e
-                        charge_2 = primary%atoms%charges(residue_type_2, atom_index_2)                   ! In units of e
+                        sigma = coeff%sigma(res_type_1, res_type_2, atom_index_1, atom_index_2) ! In Angstrom
+                        epsilon = coeff%epsilon(res_type_1, res_type_2, atom_index_1, atom_index_2) ! In kcal/mol
+                        charge_1 = primary%atoms%charges(res_type_1, atom_index_1)                   ! In units of e
+                        charge_2 = primary%atoms%charges(res_type_2, atom_index_2)                   ! In units of e
 
                         ! Calculate the distance, accouting for periodic boundary conditions
-                        distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
-                                   residue_type_2, molecule_index_2, atom_index_2)                      ! In Angstrom
+                        distance = minimum_image_distance(box, res_type_1, mol_index_1, atom_index_1, &
+                                   res_type_2, mol_index_2, atom_index_2)                      ! In Angstrom
 
                         ! Update non-Coulomb energy
                         e_non_coulomb = e_non_coulomb + lennard_jones_energy(distance, sigma, epsilon)    ! In kcal/mol
@@ -287,18 +287,18 @@ contains
     subroutine compute_ewald_self()
 
         ! Local variables
-        integer :: residue_type_1
+        integer :: res_type_1
         real(real64) :: e_ewald_self
 
         ! Loop over all residue types
-        do residue_type_1 = 1, res%number
+        do res_type_1 = 1, res%number
 
             ! Compute self-energy for a single molecule of this residue type
             e_ewald_self = zero
-            call single_mol_ewald_self(residue_type_1, e_ewald_self)
+            call single_mol_ewald_self(res_type_1, e_ewald_self)
 
             ! Multiply by the number of molecules of this residue type
-            e_ewald_self = e_ewald_self * primary%num%residues(residue_type_1)
+            e_ewald_self = e_ewald_self * primary%num%residues(res_type_1)
 
             ! Accumulate into total self-energy
             energy%ewald_self = energy%ewald_self + e_ewald_self    ! In kcal/mol
@@ -315,10 +315,10 @@ contains
     ! self-interaction energy that must be subtracted to obtain the correct total
     ! electrostatic energy.
     !------------------------------------------------------------------------------
-    subroutine single_mol_ewald_self(residue_type, self_energy_1)
+    subroutine single_mol_ewald_self(res_type, self_energy_1)
 
         ! Input arguments
-        integer, intent(in) :: residue_type           ! Residue type for the molecule
+        integer, intent(in) :: res_type           ! Residue type for the molecule
         real(real64), intent(out) :: self_energy_1    ! Computed self-energy for this molecule
 
         ! Local variables
@@ -329,9 +329,9 @@ contains
         self_energy_1 = zero
 
         ! Loop over all atoms in the residue
-        do atom_index_1 = 1, res%atom(residue_type)
+        do atom_index_1 = 1, res%atom(res_type)
 
-            charge_1 = primary%atoms%charges(residue_type, atom_index_1)
+            charge_1 = primary%atoms%charges(res_type, atom_index_1)
 
             ! Skip atoms with negligible charge
             if (abs(charge_1) < error) cycle
@@ -349,19 +349,19 @@ contains
     !------------------------------------------------------------------------------
     ! Calculates the non-Coulombian and Coulomb (direct space)
     !------------------------------------------------------------------------------
-    subroutine compute_pair_interaction_energy_singlemol(box, residue_type_1, molecule_index_1, e_non_coulomb, e_coulomb)
+    subroutine compute_pair_interaction_energy_singlemol(box, res_type_1, mol_index_1, e_non_coulomb, e_coulomb)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
-        integer, intent(in) :: residue_type_1        ! Residue type 1
-        integer, intent(in) :: molecule_index_1      ! Molecule ID 1
+        integer, intent(in) :: res_type_1        ! Residue type 1
+        integer, intent(in) :: mol_index_1      ! Molecule ID 1
         real(real64), intent(out) :: e_non_coulomb
         real(real64), intent(out) :: e_coulomb
 
         ! Local variables
         integer :: atom_index_1, atom_index_2       ! Atom index 1 et 2  
-        integer :: molecule_index_2                 ! Molecule ID 2
-        integer :: residue_type_2                   ! Residue type 1
+        integer :: mol_index_2                 ! Molecule ID 2
+        integer :: res_type_2                   ! Residue type 1
         real(real64) :: distance                    ! Distance in Angstrom
         real(real64) :: r6, r12                     ! r^n for LJ potential calculations
         real(real64) :: sigma, epsilon              ! Epsilon and sigma LJ potential calculations
@@ -370,30 +370,30 @@ contains
         e_non_coulomb = zero
         e_coulomb = zero
 
-        ! Loop over sites in molecule residue_type
-        do atom_index_1 = 1, res%atom(residue_type_1)
+        ! Loop over sites in molecule res_type
+        do atom_index_1 = 1, res%atom(res_type_1)
 
             ! Loop over all molecule types 2
-            do residue_type_2 = 1, res%number
+            do res_type_2 = 1, res%number
 
                 ! Loop over all molecule index 2
-                do molecule_index_2 = 1, box%num%residues(residue_type_2)
+                do mol_index_2 = 1, box%num%residues(res_type_2)
 
                     ! Remove intra molecular contribution
-                    if ((molecule_index_1 == molecule_index_2) .and. &
-                        (residue_type_1 == residue_type_2)) cycle
+                    if ((mol_index_1 == mol_index_2) .and. &
+                        (res_type_1 == res_type_2)) cycle
 
                     ! Loop over all side of the selected molecule 2
-                    do atom_index_2 = 1, res%atom(residue_type_2)
+                    do atom_index_2 = 1, res%atom(res_type_2)
 
-                        distance = minimum_image_distance(box, residue_type_1, molecule_index_1, atom_index_1, &
-                                   residue_type_2, molecule_index_2, atom_index_2)
+                        distance = minimum_image_distance(box, res_type_1, mol_index_1, atom_index_1, &
+                                   res_type_2, mol_index_2, atom_index_2)
 
                         if (distance < mc_input%real_space_cutoff) then
 
                             ! LJ potential
-                            sigma = coeff%sigma(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In Å
-                            epsilon = coeff%epsilon(residue_type_1, residue_type_2, atom_index_1, atom_index_2) ! In kcal/mol
+                            sigma = coeff%sigma(res_type_1, res_type_2, atom_index_1, atom_index_2) ! In Å
+                            epsilon = coeff%epsilon(res_type_1, res_type_2, atom_index_1, atom_index_2) ! In kcal/mol
                             r6 = (sigma / distance)**6                                  ! No units
                             r12 = r6 * r6                                               ! No units
                             e_non_coulomb = e_non_coulomb + four * epsilon * (r12 - r6) ! In kcal/mol
@@ -401,8 +401,8 @@ contains
                         end if
 
                         ! Use Coulomb potential
-                        charge_1 = primary%atoms%charges(residue_type_1, atom_index_1)
-                        charge_2 = primary%atoms%charges(residue_type_2, atom_index_2)
+                        charge_1 = primary%atoms%charges(res_type_1, atom_index_1)
+                        charge_2 = primary%atoms%charges(res_type_2, atom_index_2)
 
                         ! Skip calculations if one charge is too small
                         if ((abs(charge_1) < error) .or. (abs(charge_2) < error)) cycle

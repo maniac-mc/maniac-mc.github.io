@@ -18,37 +18,37 @@ contains
     ! Perform a trial translation of a molecule by a random displacement
     ! vector.
     !---------------------------------------------------------------------------
-    subroutine attempt_translation_move(residue_type, molecule_index)
+    subroutine attempt_translation_move(res_type, mol_index)
 
         ! Input arguments
-        integer, intent(in) :: residue_type         ! Residue type to be moved
-        integer, intent(in) :: molecule_index       ! Molecule ID
+        integer, intent(in) :: res_type         ! Residue type to be moved
+        integer, intent(in) :: mol_index       ! Molecule ID
 
         ! Local variables
         real(real64), dimension(3) :: com_old       ! Previous X, Y, Z coordinate of molecule
         real(real64) :: probability                 ! Acceptance probability of move
 
         ! Exit early if molecule index is zero
-        if (molecule_index == 0) return
+        if (mol_index == 0) return
 
         ! Increment trial move counter
         counter%translations(1) = counter%translations(1) + 1
 
         ! Save the current state of the molecule
-        call save_molecule_state(residue_type, molecule_index, com_old = com_old)
+        call save_molecule_state(res_type, mol_index, com_old = com_old)
 
         ! Compute old energy of the molecule/system
-        call compute_old_energy(residue_type, molecule_index)
+        call compute_old_energy(res_type, mol_index)
 
         ! Propose a random translation move
-        call propose_translation_move(residue_type, molecule_index)
+        call propose_translation_move(res_type, mol_index)
 
         ! Compute new energy after the proposed move
-        call compute_new_energy(residue_type, molecule_index)
+        call compute_new_energy(res_type, mol_index)
 
         ! Compute Metropolis acceptance probability
         ! probability = min(1, exp(-(new - old)/kT))
-        probability = compute_acceptance_probability(old, new, residue_type, TYPE_TRANSLATION)
+        probability = compute_acceptance_probability(old, new, res_type, TYPE_TRANSLATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then
@@ -56,7 +56,7 @@ contains
             call accept_molecule_move(old, new, counter%translations)
         else
             ! Reject move: restore previous position
-            call reject_molecule_move(residue_type, molecule_index, com_old = com_old)
+            call reject_molecule_move(res_type, mol_index, com_old = com_old)
         end if
 
     end subroutine attempt_translation_move
