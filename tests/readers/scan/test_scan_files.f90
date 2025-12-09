@@ -33,14 +33,21 @@ contains
         integer :: i, j, k
         character(len=200) :: msg
         real(real64), dimension(3,2) :: expected_bounds
+        integer :: expected_atoms, expected_bonds, expected_angles
+        integer :: expected_dihedrals, expected_impropers
 
-        ! Set expected bounds (row=axis, col=lo/hi)
+        ! Set expected values
         expected_bounds(1,1) = -17.01162d0  ! xlo
         expected_bounds(1,2) =  17.01162d0  ! xhi
         expected_bounds(2,1) = -17.01162d0  ! ylo
         expected_bounds(2,2) =  17.01162d0  ! yhi
         expected_bounds(3,1) = -17.01162d0  ! zlo
         expected_bounds(3,2) =  17.01162d0  ! zhi
+        expected_atoms = 2220
+        expected_bonds = 9
+        expected_angles = 9
+        expected_dihedrals = 0
+        expected_impropers = 0
 
         !-------------------------------------------------------------------
         ! Setup paths
@@ -64,6 +71,11 @@ contains
 
         ! Test Expected values from the LAMMPS data file
         call assert_real_matrix_equal(primary%cell%bounds, expected_bounds, 1.0d-6)
+        call assert_int_equal(primary%num%atoms, expected_atoms, "Number of atoms")
+        call assert_int_equal(primary%num%bonds, expected_bonds, "Number of bonds")
+        call assert_int_equal(primary%num%angles, expected_angles, "Number of angles")
+        call assert_int_equal(primary%num%dihedrals, expected_dihedrals, "Number of dihedrals")
+        call assert_int_equal(primary%num%impropers, expected_impropers, "Number of impropers")
 
     end subroutine run_test_zif8_h2o
 
@@ -84,5 +96,18 @@ contains
             end do
         end do
     end subroutine assert_real_matrix_equal
+
+    subroutine assert_int_equal(actual, expected, msg)
+
+        integer, intent(in) :: actual, expected
+        character(len=*), intent(in) :: msg
+
+        if (actual /= expected) then
+            print *, "ASSERTION FAILED:", trim(msg)
+            print *, "  got     =", actual
+            print *, "  expected=", expected
+            call exit(1)
+        end if
+    end subroutine assert_int_equal
 
 end program test_scan_files

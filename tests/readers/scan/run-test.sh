@@ -39,6 +39,7 @@ for TEST_SRC in test_*.f90; do
     fi
 
     if "$OUT_EXE" &>/dev/null; then
+    #if "$OUT_EXE"; then
         echo "✅ [PASS] $TEST_NAME"
     else
         echo "❌ [FAIL] $TEST_NAME (runtime error)"
