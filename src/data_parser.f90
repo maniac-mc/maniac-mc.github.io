@@ -1310,7 +1310,11 @@ contains
         real(real64) :: dist                      ! Intramoleclar distance for sanity check
 
         ! Allocate temporary arrays for one molecule's atom positions
-        allocate(tmp_xyz(3, maxval(res%atom)))
+        if (.not. allocated(res%atom)) then
+           call  abort_run("res%atom is not allocated")
+        else
+            allocate(tmp_xyz(3, maxval(res%atom)))
+        end if
 
         k = 1  ! Global atom index
 
