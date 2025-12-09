@@ -28,10 +28,17 @@ for TEST_SRC in test_*.f90; do
     TEST_NAME="${TEST_SRC%.f90}"
     OUT_EXE="$BIN_DIR/$TEST_NAME"
 
-    gfortran -O2 -I"$MODULE_DIR" -I"$BUILD_DIR" -c "$TEST_SRC" -o "$TEST_NAME.o"
-    gfortran -O2 -o "$OUT_EXE" "$TEST_NAME.o" "${MANIAC_OBJS[@]}"
+    if ! gfortran -O2 -I"$MODULE_DIR" -I"$BUILD_DIR" -c "$TEST_SRC" -o "$TEST_NAME.o" &>/dev/null; then
+        echo "❌ [FAIL] $TEST_NAME (compilation error)"
+        exit 1
+    fi
 
-    if "$OUT_EXE"; then
+    if ! gfortran -O2 -o "$OUT_EXE" "$TEST_NAME.o" "${MANIAC_OBJS[@]}" &>/dev/null; then
+        echo "❌ [FAIL] $TEST_NAME (linking error)"
+        exit 1
+    fi
+
+    if "$OUT_EXE" &>/dev/null; then
         echo "✅ [PASS] $TEST_NAME"
     else
         echo "❌ [FAIL] $TEST_NAME (runtime error)"
