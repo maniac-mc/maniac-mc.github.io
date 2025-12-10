@@ -31,8 +31,8 @@ contains
         real(real64) :: cumul_rotation      ! Threshold for rotation moves
         real(real64) :: cumul_swap          ! Threshold for swap moves
         real(real64) :: cumul_total         ! Total probability (including insertion/deletion)
-        integer :: residue_type             ! Index of molecule to be moved
-        integer :: molecule_index           ! Index of molecule copy
+        integer :: res_type                 ! Index of molecule to be moved
+        integer :: mol_index                ! Index of molecule copy
 
 
         ! Initialization
@@ -50,8 +50,8 @@ contains
         ! Main Monte Carlo Loop
         do
             ! Pick a molecule type and instance
-            residue_type = pick_random_residue_type(thermo%is_active)
-            molecule_index = pick_random_molecule_index(primary%num%residues(residue_type))
+            res_type = pick_random_residue_type(thermo%is_active)
+            mol_index = pick_random_molecule_index(primary%num%residues(res_type))
 
             ! Perform Monte Carlo move
             random_draw = rand_uniform()
@@ -60,17 +60,17 @@ contains
             if (random_draw <= cumul_translation) then
 
                 ! Translation move
-                call attempt_translation_move(residue_type, molecule_index)
+                call attempt_translation_move(res_type, mol_index)
 
             else if (random_draw <= cumul_rotation) then
 
                 ! Rotation move
-                call attempt_rotation_move(residue_type, molecule_index)
+                call attempt_rotation_move(res_type, mol_index)
 
             else if (random_draw <= cumul_swap) then
 
                 ! Swap move
-                call attempt_swap_move(residue_type, molecule_index)
+                call attempt_swap_move(res_type, mol_index)
 
             else
 
@@ -80,20 +80,20 @@ contains
                     if (rand_uniform() <= PROB_CREATE_DELETE) then
 
                         ! Attempt to create a molecule
-                        molecule_index = primary%num%residues(residue_type) + 1
-                        call attempt_creation_move(residue_type, molecule_index)
+                        mol_index = primary%num%residues(res_type) + 1
+                        call attempt_creation_move(res_type, mol_index)
 
                     else
                         ! Delete a molecule
-                        call attempt_deletion_move(residue_type, molecule_index)
+                        call attempt_deletion_move(res_type, mol_index)
 
                     end if
 
                 else if (proba%widom > 0) then
 
                     ! Attempt a widom test
-                    molecule_index = primary%num%residues(residue_type) + 1
-                    call widom_trial(residue_type, molecule_index)
+                    mol_index = primary%num%residues(res_type) + 1
+                    call widom_trial(res_type, mol_index)
 
                 end if
             end if
@@ -108,9 +108,9 @@ contains
                 status%block = status%block + 1   ! move to next block
 
                 ! Adjust step sizes & output status at the end of the block
-                call adjust_move_step_sizes()        ! Adjust MC step sizes
-                call PrintStatus()                ! Print current simulation status
-                call update_output_files(.true.)  ! Update output files
+                call adjust_move_step_sizes()           ! Adjust MC step sizes
+                call PrintStatus()                      ! Print current simulation status
+                call update_output_files(.true.)        ! Update output files
 
             end if
 
