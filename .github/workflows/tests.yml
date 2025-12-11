@@ -57,7 +57,7 @@ jobs:
       # Run integration tests 2
       - name: Run all integration tests
         run: |
-          cd testdir in tests/integration/gcmc/
+          cd tests/integration/gcmc/
           ./run-test.sh
 
       # Run unit tests
