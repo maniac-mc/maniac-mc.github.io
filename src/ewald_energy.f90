@@ -174,21 +174,21 @@ contains
         real(real64), intent(out) :: self_energy
 
         ! Local variables
-        integer :: atom_index_1
-        real(real64) :: charge_1
+        integer :: atom_index
+        real(real64) :: charge
 
         ! Initialize self-energy accumulator
         self_energy = zero
 
         ! Loop over all atoms in the molecule/residue
-        do atom_index_1 = 1, res%atom(res_type)
-            charge_1 = primary%atoms%charges(res_type, atom_index_1)
+        do atom_index = 1, res%atom(res_type)
+            charge = primary%atoms%charges(res_type, atom_index)
 
             ! Skip atoms with negligible charge
-            if (abs(charge_1) < error) cycle
+            if (abs(charge) < error) cycle
 
             ! Add the individual atomic self-energy contribution
-            self_energy = self_energy - ewald%param%alpha / SQRTPI * charge_1**2
+            self_energy = self_energy - ewald%param%alpha / SQRTPI * charge**2
         end do
 
         self_energy = self_energy * EPS0_INV_real ! In kcal/mol

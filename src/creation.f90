@@ -81,7 +81,7 @@ contains
 
         ! Local variable
         integer :: last_mol_index          ! Index of the last molecule in the reservoir (used when removing a molecule)
-
+        
         ! Update total energies
         energy%recip_coulomb = new%recip_coulomb
         energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb

@@ -290,6 +290,8 @@ contains
         integer :: res_type_1
         real(real64) :: e_ewald_self
 
+        energy%ewald_self = zero ! Initialise ewald_self
+
         ! Loop over all residue types
         do res_type_1 = 1, res%number
 

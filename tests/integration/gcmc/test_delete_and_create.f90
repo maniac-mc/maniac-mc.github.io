@@ -47,15 +47,8 @@ program test_delete_and_create
     ! ---------- Compute initial energy (module-level `energy`) ----------
     call compute_system_energy(primary)
     e_total = energy%total
-
-    ! Compute composite energies
     e_coul = energy%coulomb + energy%intra_coulomb
     e_long = energy%recip_coulomb + energy%ewald_self
-
-    if (abs(e_total - ref_total) > tol) then
-        print *, "FAIL: total energy mismatch"
-        stop 1
-    end if
 
     if (abs(e_coul - ref_ecoul) > tol) then
         print *, "FAIL: Coulomb energy mismatch"
@@ -64,6 +57,11 @@ program test_delete_and_create
 
     if (abs(e_long - ref_elong) > tol) then
         print *, "FAIL: Long-range energy mismatch"
+        stop 1
+    end if
+
+    if (abs(e_total - ref_total) > tol) then
+        print *, "FAIL: total energy mismatch"
         stop 1
     end if
 
@@ -97,6 +95,18 @@ program test_delete_and_create
     ! Recompute energy after creation
     call compute_system_energy(primary)
     e_after_create = energy%total
+    e_coul = energy%coulomb + energy%intra_coulomb
+    e_long = energy%recip_coulomb + energy%ewald_self
+
+    if (abs(e_coul - ref_ecoul) > tol) then
+        print *, "FAIL: Coulomb energy mismatch"
+        stop 1
+    end if
+
+    if (abs(e_long - ref_elong) > tol) then
+        print *, "FAIL: Long-range energy mismatch"
+        stop 1
+    end if
 
     if (abs(e_after_create - ref_total) > tol) then
         print *, "FAIL: total energy mismatch"
