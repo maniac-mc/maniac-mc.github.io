@@ -195,7 +195,7 @@ contains
             do mol_index = 1, primary%num%residues(res_type)
 
                 ! Compute Fourier terms for a single molecule
-                call single_mol_fourier_terms(res_type, mol_index)
+                call precompute_ewald_phase_factors(res_type, mol_index)
 
             end do
         end do
@@ -206,7 +206,7 @@ contains
     ! Computes the per-atom Fourier-space phase factors exp(i * k · r)
     ! for all k-indices along each Cartesian direction for a given molecule.
     !--------------------------------------------------------------------
-    subroutine single_mol_fourier_terms(res_type, mol_index)
+    subroutine precompute_ewald_phase_factors(res_type, mol_index)
 
         ! Input arguments
         integer, intent(in) :: res_type
@@ -251,7 +251,7 @@ contains
             end do
         end do
 
-    end subroutine single_mol_fourier_terms
+    end subroutine precompute_ewald_phase_factors
 
     !--------------------------------------------------------------------
     ! Computes the phase vector (k · r) for a single atom in reciprocal space.
