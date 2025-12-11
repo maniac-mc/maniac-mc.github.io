@@ -46,14 +46,19 @@ jobs:
             (cd "$testdir" && ./run-test.sh)
           done
 
-
-      # Run integration tests
+      # Run integration tests 1
       - name: Run all integration tests
         run: |
           for testdir in tests/integration/energy/*; do
             echo "Running test in $testdir"
             (cd "$testdir" && ./run-test.sh)
           done
+
+      # Run integration tests 2
+      - name: Run all integration tests
+        run: |
+          cd testdir in tests/integration/gcmc/
+          ./run-test.sh
 
       # Run unit tests
       - name: Run all unit tests
