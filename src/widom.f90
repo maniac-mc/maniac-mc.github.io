@@ -45,8 +45,7 @@ contains
         call compute_old_energy(res_type, mol_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
-        primary%num%residues(res_type) = primary%num%residues(res_type) + 1
-        primary%num%atoms = primary%num%atoms + res%atom(res_type)
+        call update_counts(primary, res_type, +1)
 
         ! Save current Fourier terms (should be all zeros here)
         call save_single_mol_fourier_terms(res_type, mol_index)
@@ -57,7 +56,7 @@ contains
         ! Compute new energy
         call compute_new_energy(res_type, mol_index, is_creation = .true.)
 
-        ! Reject systematically (the system state is preserved)
+        ! Reject systematically (the system state is preserved during Widom trial)
         call reject_creation_move(res_type, mol_index)
 
         ! Compute Boltzmann weight for Widom insertion

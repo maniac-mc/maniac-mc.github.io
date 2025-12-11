@@ -27,35 +27,35 @@ contains
     ! changes, applies the Metropolis criterion, and either accepts or
     ! rejects the creation.
     !---------------------------------------------------------------------------
-    subroutine attempt_creation_move(res_type, molecule_index)
+    subroutine attempt_creation_move(res_type, mol_index)
 
         ! Input arguments
         integer, intent(in) :: res_type     ! Residue type to be moved
-        integer, intent(in) :: molecule_index   ! Molecule ID
+        integer, intent(in) :: mol_index   ! Molecule ID
 
         ! Local variables
         integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability             ! Acceptance probability of creation move
 
-        call check_molecule_index(molecule_index)
+        call check_molecule_index(mol_index)
 
         ! Count trial move
         counter%creations(1) = counter%creations(1) + 1
 
         ! Compute old energy
-        call compute_old_energy(res_type, molecule_index, is_creation = .true.)
+        call compute_old_energy(res_type, mol_index, is_creation = .true.)
 
         ! Increase the residue and atom counts
         call update_counts(primary, res_type, +1)
 
         ! Save current Fourier terms (should be all zeros here)
-        call save_single_mol_fourier_terms(res_type, molecule_index)
+        call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Generate random insertion position within the simulation box
-        call insert_and_orient_molecule(res_type, molecule_index, rand_mol_index)
+        call insert_and_orient_molecule(res_type, mol_index, rand_mol_index)
 
         ! Compute new energy
-        call compute_new_energy(res_type, molecule_index, is_creation = .true.)
+        call compute_new_energy(res_type, mol_index, is_creation = .true.)
 
         ! Compute acceptance probability for the move
         probability = compute_acceptance_probability(old, new, res_type, TYPE_CREATION)
@@ -64,7 +64,7 @@ contains
         if (rand_uniform() <= probability) then ! Accept move
             call accept_creation_move(res_type, rand_mol_index)
         else ! Reject move
-            call reject_creation_move(res_type, molecule_index)
+            call reject_creation_move(res_type, mol_index)
         end if
 
     end subroutine attempt_creation_move
@@ -80,7 +80,7 @@ contains
         integer, intent(in) :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
 
         ! Local variable
-        integer :: last_molecule_index          ! Index of the last molecule in the reservoir (used when removing a molecule)
+        integer :: last_mol_index          ! Index of the last molecule in the reservoir (used when removing a molecule)
 
         ! Update total energies
         energy%recip_coulomb = new%recip_coulomb
@@ -96,12 +96,12 @@ contains
         ! Remove molecule from reservoir if present
         if (status%reservoir_provided) then
 
-            ! Replace molecule_index with the last molecule in the list to maintain continuity
-            last_molecule_index = reservoir%num%residues(res_type)
+            ! Replace mol_index with the last molecule in the list to maintain continuity
+            last_mol_index = reservoir%num%residues(res_type)
             gas%com(:, res_type, rand_mol_index) = &
-                gas%com(:, res_type, last_molecule_index)
+                gas%com(:, res_type, last_mol_index)
             gas%offset(:, res_type, rand_mol_index, 1:res%atom(res_type)) = &
-                gas%offset(:, res_type, last_molecule_index, 1:res%atom(res_type))
+                gas%offset(:, res_type, last_mol_index, 1:res%atom(res_type))
 
             ! Increase the residue and atom counts
             call update_counts(reservoir, res_type, -1)
