@@ -1,0 +1,57 @@
+# Methanol (converted from GROMACS topology)
+
+6 atoms
+5 bonds
+7 angles
+3 dihedrals
+
+Coords
+
+1 -1.0318 -0.8446  0.0012   # HO
+2 -0.6935  0.0646 -0.0001   # OH
+3  0.7300 -0.0126 -0.0001   # CH
+4  1.1208 -0.5012  0.9046   # HC
+5  1.1210 -0.5438 -0.8800   # HC
+6  1.1041  1.0150 -0.0238   # HC
+
+Types
+
+1 8  # HO
+2 11  # OH
+3 10  # CH
+4 9  # HC
+5 9  # HC
+6 9  # HC
+
+Charges
+
+1 +0.418  # HO
+2 -0.683  # OH
+3 +0.145  # CH
+4 +0.040  # HC
+5 +0.040  # HC
+6 +0.040  # HC
+
+Bonds
+
+1 10 1 2   # HO-OH
+2 9 2 3   # OH-CH
+3 8 3 4   # CH-HC
+4 8 3 5   # CH-HC
+5 8 3 6   # CH-HC
+
+Angles
+
+1 12 1 2 3   # HO-OH-CH
+2 13 2 3 4   # OH-CH-HC
+3 13 2 3 5   # OH-CH-HC
+4 13 2 3 6   # OH-CH-HC
+5 14 4 3 5   # HC-CH-HC
+6 14 4 3 6   # HC-CH-HC
+7 14 5 3 6   # HC-CH-HC
+
+Dihedrals
+
+1 15 1 2 3 4   # HO-OH-CH-HC
+2 15 1 2 3 5   # HO-OH-CH-HC
+3 15 1 2 3 6   # HO-OH-CH-HC
