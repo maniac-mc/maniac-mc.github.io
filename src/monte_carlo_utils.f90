@@ -314,7 +314,7 @@ contains
         
             ! Note: In creation scenario, compute all energy components
 
-            call single_mol_fourier_terms(res_type, mol_index)
+            call precompute_ewald_phase_factors(res_type, mol_index)
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
@@ -332,7 +332,7 @@ contains
             new%coulomb = 0
             new%ewald_self = 0
             new%intra_coulomb = 0
-            call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = deletion_flag)
+            call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_deletion = deletion_flag)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
@@ -342,7 +342,7 @@ contains
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
 
-            call single_mol_fourier_terms(res_type, mol_index)
+            call precompute_ewald_phase_factors(res_type, mol_index)
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
 

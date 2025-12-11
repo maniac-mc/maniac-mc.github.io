@@ -89,7 +89,6 @@ contains
         deletion_flag = present_or_false(is_deletion)
 
         ! Initialize energy accumulatormenka
-
         u_recipCoulomb_new = zero
 
         ! Atom charges in this residue
