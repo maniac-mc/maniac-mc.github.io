@@ -34,7 +34,6 @@ contains
         integer :: res_type                 ! Index of molecule to be moved
         integer :: mol_index                ! Index of molecule copy
 
-
         ! Initialization
         call LogStartMC()                   ! Log starting message
         call update_output_files(.false.)   ! Write initial topology

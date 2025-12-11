@@ -16,12 +16,12 @@ Coords
 
 Types
 
-1 8  # HO
-2 11  # OH
-3 10  # CH
-4 9  # HC
-5 9  # HC
-6 9  # HC
+1 1  # HO
+2 4  # OH
+3 3  # CH
+4 2  # HC
+5 2  # HC
+6 2  # HC
 
 Charges
 
@@ -34,24 +34,24 @@ Charges
 
 Bonds
 
-1 10 1 2   # HO-OH
-2 9 2 3   # OH-CH
-3 8 3 4   # CH-HC
-4 8 3 5   # CH-HC
-5 8 3 6   # CH-HC
+1 3 1 2   # HO-OH
+2 2 2 3   # OH-CH
+3 1 3 4   # CH-HC
+4 1 3 5   # CH-HC
+5 1 3 6   # CH-HC
 
 Angles
 
-1 12 1 2 3   # HO-OH-CH
-2 13 2 3 4   # OH-CH-HC
-3 13 2 3 5   # OH-CH-HC
-4 13 2 3 6   # OH-CH-HC
-5 14 4 3 5   # HC-CH-HC
-6 14 4 3 6   # HC-CH-HC
-7 14 5 3 6   # HC-CH-HC
+1 1 1 2 3   # HO-OH-CH
+2 2 2 3 4   # OH-CH-HC
+3 2 2 3 5   # OH-CH-HC
+4 2 2 3 6   # OH-CH-HC
+5 3 4 3 5   # HC-CH-HC
+6 3 4 3 6   # HC-CH-HC
+7 3 5 3 6   # HC-CH-HC
 
 Dihedrals
 
-1 15 1 2 3 4   # HO-OH-CH-HC
-2 15 1 2 3 5   # HO-OH-CH-HC
-3 15 1 2 3 6   # HO-OH-CH-HC
+1 1 1 2 3 4   # HO-OH-CH-HC
+2 1 1 2 3 5   # HO-OH-CH-HC
+3 1 1 2 3 6   # HO-OH-CH-HC
