@@ -516,7 +516,6 @@ contains
         logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
         real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
         real(real64) :: trial_pos(3)            ! Random numbers for initial molecule position in the box
-        integer :: mol_index
 
         ! Decide whether to place a random COM
         if (present(place_random_com)) then
@@ -544,10 +543,10 @@ contains
                 guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
                     gas%offset(:, res_type, rand_mol_index, 1:res%atom(res_type))
             else
-                mol_index = int(random_nmb * reservoir%num%residues(res_type)) + 1  
+                rand_mol_index = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-                    gas%offset(:, res_type, mol_index, 1:res%atom(res_type))
+                    gas%offset(:, res_type, rand_mol_index, 1:res%atom(res_type))
             end if  
 
         else

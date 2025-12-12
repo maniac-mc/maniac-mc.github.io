@@ -11,7 +11,7 @@ base_widom="mc-topology/testcase-widom"
 case "$case" in
   "ZIF8-CH4O")
     folder="$base_adsorption/ZIF8-CH4O"
-    # reservoir="$base_reservoir/CH4O-H2O"
+    reservoir="$base_reservoir/CH4O-H2O"
     ;;
 
   "WIDOM")
