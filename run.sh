@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on error
 
-case="SLIT"
+case="ZIF8-CH4O"
 
 base_energy="mc-topology/testcase-energy"
 base_adsorption="mc-topology/testcase-adsorption"
@@ -11,7 +11,7 @@ base_widom="mc-topology/testcase-widom"
 case "$case" in
   "ZIF8-CH4O")
     folder="$base_adsorption/ZIF8-CH4O"
-    reservoir="$base_reservoir/CH4O-H2O"
+    # reservoir="$base_reservoir/CH4O-H2O"
     ;;
 
   "WIDOM")

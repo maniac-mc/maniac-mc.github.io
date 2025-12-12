@@ -380,7 +380,10 @@ contains
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
-            call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+
+            ! #TODO CHECK
+            ! call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+            old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
@@ -391,7 +394,10 @@ contains
             call compute_ewald_self_interaction_single_mol(res_type, old%ewald_self)
             call compute_intra_real_energy_residue(res_type, mol_index, old%intra_coulomb)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
-            call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+            
+            ! #TODO CHECK
+            ! call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+            old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb

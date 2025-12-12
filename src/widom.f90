@@ -47,7 +47,7 @@ contains
         ! Increase the residue and atom counts
         call update_counts(primary, res_type, +1)
 
-        ! Save current Fourier terms (should be all zeros here)
+        ! Save current Fourier terms
         call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Generate random insertion position within the simulation box

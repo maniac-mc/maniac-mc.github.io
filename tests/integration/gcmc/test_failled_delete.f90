@@ -47,6 +47,7 @@ program test_delete_and_create
 
     ! ---------- Compute initial energy (module-level `energy`) ----------
     call compute_system_energy(primary)
+
     e_total = energy%total
     e_coul = energy%coulomb + energy%intra_coulomb
     e_long = energy%recip_coulomb + energy%ewald_self
