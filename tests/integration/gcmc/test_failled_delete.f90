@@ -28,6 +28,7 @@ program test_delete_and_create
     real(real64), parameter :: ref_ecoul = 28.911538        ! Reference Coulomb energy from LAMMPS for validation
     real(real64), parameter :: ref_elong = -28.924421      ! Reference long-range (Ewald) energy from LAMMPS for validation
     real(real64), parameter :: tol = 0.1                    ! Tolerance used for comparing energy values in the test
+    integer :: i
 
     ! Path to folder that contains input.maniac, topology.data, parameters.inc
     path%input = "input.maniac"
@@ -74,42 +75,32 @@ program test_delete_and_create
         stop 1
     end if
 
-    ! ---------- Delete the molecule ----------
-    thermo%chemical_potential = -10 ! Probability of deleting the molecule is 1.0
-    call attempt_deletion_move(res_type, mol_index)
+    ! ---------- Attempt deleting the molecule ----------
+    thermo%chemical_potential = -0.1 ! Probability of deleting the molecule is 0.0
 
-    ! Recompute energy
-    call compute_system_energy(primary)
-    e_after_delete = energy%total
+    do i = 1, 10
+        call attempt_deletion_move(res_type, mol_index)
+    end do
 
-    if (abs(e_after_delete - 0.0) > tol) then
-        print *, "FAIL: total energy mismatch"
+    if (primary%num%residues(res_type) /= 1) then
+        print *, "ERROR: Molecule was deleted"
         stop 1
     end if
 
-    ! ---------- Recreate the molecule ----------
-    mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
-    thermo%chemical_potential = -0.1 ! Probability of creating the molecule is 1.0
-    call attempt_creation_move(res_type, mol_index)
+    ! Energy after deletion
+    e_after_delete = energy%total
 
-    ! Recompute energy after creation
-    call compute_system_energy(primary)
-    e_after_create = energy%total
-    e_coul = energy%coulomb + energy%intra_coulomb
-    e_long = energy%recip_coulomb + energy%ewald_self
-
-    if (abs(e_coul - ref_ecoul) > tol) then
+    if (abs(e_after_delete - ref_total) > tol) then
         print *, "FAIL: Coulomb energy mismatch"
         stop 1
     end if
 
-    if (abs(e_long - ref_elong) > tol) then
-        print *, "FAIL: Long-range energy mismatch"
-        stop 1
-    end if
+    ! Full recomputed energy
+    call compute_system_energy(primary)
+    e_after_delete = energy%total
 
-    if (abs(e_after_create - ref_total) > tol) then
-        print *, "FAIL: total energy mismatch"
+    if (abs(e_after_delete - ref_total) > tol) then
+        print *, "FAIL: Coulomb energy mismatch"
         stop 1
     end if
 
