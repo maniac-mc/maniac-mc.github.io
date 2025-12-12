@@ -30,9 +30,6 @@ if [[ ${#MANIAC_OBJS[@]} -eq 0 ]]; then
     exit 1
 fi
 
-echo "Found ${#MANIAC_OBJS[@]} Maniac object files."
-echo
-
 # ------------------------------------------------------------
 #  Compile & run each test_*.f90 file
 # ------------------------------------------------------------
@@ -51,11 +48,8 @@ for TEST_SRC in test_*.f90; do
     # Link against Maniac core object files
     gfortran -O2 -o "$OUT_EXE" "$TEST_NAME.o" "${MANIAC_OBJS[@]}"
 
-    echo "Running test..."
-    echo
-
     # Run test
-    if "$OUT_EXE"; then
+    if "$OUT_EXE" &>/dev/null; then
         echo "✅ [PASS] $TEST_NAME"
     else
         echo "❌ [FAIL] $TEST_NAME (runtime error)"
@@ -63,7 +57,6 @@ for TEST_SRC in test_*.f90; do
     fi
 
     rm -f "$TEST_NAME.o"
-    echo
 done
 
 if ! $found_tests; then
@@ -71,6 +64,3 @@ if ! $found_tests; then
 fi
 
 rm -f fort.10 2>/dev/null || true
-echo "------------------------------------------------------------"
-echo "All tests finished."
-echo "------------------------------------------------------------"

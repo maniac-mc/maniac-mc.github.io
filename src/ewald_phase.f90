@@ -39,9 +39,7 @@ contains
         ! Save per-atom Fourier phase factors (IKX, IKY, IKZ)
         !----------------------------------------------------------
         do atom_index = 1, res%atom(res_type)
-
             do dim = 1, 3
-
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Positive k
@@ -56,11 +54,9 @@ contains
                         end if
                     end if
 
-                end do  ! k_idx
-
-            end do  ! dim
-
-        end do  ! atom_index
+                end do
+            end do
+        end do
 
         !------------------------------------------------------
         ! Save reciprocal amplitudes A(k)

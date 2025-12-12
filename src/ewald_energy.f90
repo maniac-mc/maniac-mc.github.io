@@ -69,9 +69,11 @@ contains
         ! Input arguments
         integer, intent(in) :: res_type         ! Index of the residue type
         integer, intent(in) :: mol_index        ! Index of the molecule in the system
-        real(real64), intent(out) :: u_recipCoulomb_new ! Output: reciprocal-space Coulomb energy
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
+
+        ! Output artument
+        real(real64), intent(out) :: u_recipCoulomb_new ! Output: reciprocal-space Coulomb energy
 
         ! Local variables
         integer :: kx_idx, ky_idx, kz_idx      ! Components of current reciprocal lattice vector
@@ -120,22 +122,20 @@ contains
 
                 ! Molecule creation
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) ]
-                ewald%Ak(idx) = ewald%Ak(idx) + &
-                    sum(ewald%q_buffer(1:natoms) * ewald%phase%new(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * ewald%phase%new(1:natoms))
             
             else if (deletion_flag) then
             
                 ! Molecule deletion
                 ! A(k) ← A(k) + Σ q_i [ - e^(i k·r_i,old) ]
-                ewald%Ak(idx) = ewald%Ak(idx) - &
-                    sum(ewald%q_buffer(1:natoms) * ewald%phase%old(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) - sum(ewald%q_buffer(1:natoms) * ewald%phase%old(1:natoms))
             
             else
             
                 ! Standard move (translation, rotation)
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) - e^(i k·r_i,old) ]
-                ewald%Ak(idx) = ewald%Ak(idx) + &
-                    sum(ewald%q_buffer(1:natoms) * (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
+                ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * &
+                    (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
             
             end if
 

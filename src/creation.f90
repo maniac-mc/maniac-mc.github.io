@@ -61,10 +61,16 @@ contains
         probability = compute_acceptance_probability(old, new, res_type, TYPE_CREATION)
 
         ! Accept or reject
-        if (rand_uniform() <= probability) then ! Accept move
+        if (rand_uniform() <= probability) then
+        
+            ! Accept move
             call accept_creation_move(res_type, rand_mol_index)
-        else ! Reject move
+
+        else
+        
+            ! Reject move
             call reject_creation_move(res_type, mol_index)
+
         end if
 
     end subroutine attempt_creation_move
@@ -98,8 +104,7 @@ contains
 
             ! Replace mol_index with the last molecule in the list to maintain continuity
             last_mol_index = reservoir%num%residues(res_type)
-            gas%com(:, res_type, rand_mol_index) = &
-                gas%com(:, res_type, last_mol_index)
+            gas%com(:, res_type, rand_mol_index) = gas%com(:, res_type, last_mol_index)
             gas%offset(:, res_type, rand_mol_index, 1:res%atom(res_type)) = &
                 gas%offset(:, res_type, last_mol_index, 1:res%atom(res_type))
 
