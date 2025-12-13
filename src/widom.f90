@@ -35,6 +35,7 @@ contains
 
         ! Local variables
         real(real64) :: deltaU                  ! Energy difference
+        integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
 
         call check_molecule_index(mol_index)
 
@@ -51,7 +52,7 @@ contains
         call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Generate random insertion position within the simulation box
-        call insert_and_orient_molecule(res_type, mol_index)
+        call insert_and_orient_molecule(res_type, mol_index, rand_mol_index)
 
         ! Compute new energy
         call compute_new_energy(res_type, mol_index, is_creation = .true.)
