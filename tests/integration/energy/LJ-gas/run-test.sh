@@ -9,18 +9,18 @@ data=$topology_path"topology.data"
 inc=$topology_path"parameters.inc"
 outputs="outputs/" # optional
 
-$build_path -i $input -d $data -p $inc -o $outputs >> log.maniac
-
 maniac_log=$outputs"log.maniac"
+$build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > "$maniac_log" 2>&1
+
 lammps_log=$topology_path"log.lammps"
 
 # Extract reference TotEng from LAMMPS log (last numeric value in that column)
 ref_energy=$(grep "TotEng" "$lammps_log" -A 1 | tail -n 1 | awk '{print $2}')
 
-tolerance=0.01 # allowed deviation
+tolerance=0.001 # allowed deviation
 
 # Get the last TotEng value from the log
-last_toteng=$(awk '/TotEng/ {getline; gsub(/^[| ]+/,""); print $2}' "$maniac_log")
+last_toteng=$(awk '/TotEng/ {getline; gsub(/^[| ]+/,""); print $2; exit}' "$maniac_log")
 
 if [ -z "$last_toteng" ]; then
     echo "❌ Test failed: 'TotEng' not found in $maniac_log"
