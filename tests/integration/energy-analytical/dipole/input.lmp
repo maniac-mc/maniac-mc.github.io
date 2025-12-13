@@ -1,0 +1,19 @@
+# LAMMPS input file
+
+units real
+boundary p p p
+atom_style full
+bond_style harmonic
+pair_style lj/cut/coul/long 17
+kspace_style ewald 1.0e-10
+kspace_modify kmax/ewald 35 35 35 gewald 0.2543
+
+read_data topology.data
+include parameters.inc
+
+set type 1 charge 0.5
+set type 2 charge -0.5
+
+thermo_style custom step etotal evdwl ecoul elong
+
+run 0
