@@ -8,7 +8,7 @@ data="topology.data"
 inc="parameters.inc"
 outputs="outputs/" # optional
 
-maniac_log=$outputs"log.maniac"
+maniac_log="log.maniac"
 $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > "$maniac_log" 2>&1
 
 # Theoretical energy
