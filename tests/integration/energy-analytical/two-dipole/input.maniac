@@ -1,0 +1,25 @@
+# Input for maniac program
+
+# Generic parameters
+nb_block 0                     # number of MC block
+nb_step 0                     # Number of MC step
+temperature	300                 # Temperature in Kelvin
+
+# Electrostatic interactions
+ewald_tolerance 1e-10            # Tolerange long-range ewald
+real_space_cutoff 17            # Cut-off electrostatic
+
+# Monte carlo move
+translation_step 1              # Translational displacement (angstrom)
+rotation_step_angle 0.685       # Rotational move (radian)
+translation_proba 0.4           # Probability of attempting a translation move
+rotation_proba 0.4              # Probability of attempting a rotation move
+
+# Define residues composition and activity
+begin_residue
+  name AB
+  state actif
+  types 1 2
+  names A B
+  nb-atoms 2
+end_residue

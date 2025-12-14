@@ -1,0 +1,34 @@
+LAMMPS data file via write_data, version 10 Sep 2025, timestep = 0, units = real
+
+4 atoms
+2 atom types
+2 bonds
+1 bond types
+
+-50 50 xlo xhi
+-50 50 ylo yhi
+-50 50 zlo zhi
+
+Masses
+
+1 1
+2 1
+
+Atoms # full
+
+1 0 1 -0.5 -1.5 1.5 0 0 0 0
+2 0 2 0.5 1.5 1.5 0 0 0 0
+3 0 1 0.5 -1.5 -1.5 0 0 0 0
+4 0 2 -0.5 1.5 -1.5 0 0 0 0
+
+Velocities
+
+1 0 0 0
+2 0 0 0
+3 0 0 0
+4 0 0 0
+
+Bonds
+
+1 1 1 2
+2 1 3 4
