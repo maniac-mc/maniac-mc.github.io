@@ -9,7 +9,7 @@ data=$topology_path"topology.data"
 inc=$topology_path"parameters.inc"
 outputs="outputs/" # optional
 
-maniac_log=$outputs"log.maniac"
+maniac_log="log.maniac"
 $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > "$maniac_log" 2>&1
 
 lammps_log=$topology_path"log.lammps"

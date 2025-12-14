@@ -9,7 +9,7 @@ data=$topology_path"topology.data"
 inc=$topology_path"parameters.inc"
 outputs="outputs/" # optional
 
-logfile="$outputs/log.maniac"
+logfile="log.maniac"
 $build_path -i "$input" -d "$data" -p "$inc" -o "$outputs" > "$logfile" 2>&1
 
 ref_energy=-32.822927 # LAMMPS reference value
