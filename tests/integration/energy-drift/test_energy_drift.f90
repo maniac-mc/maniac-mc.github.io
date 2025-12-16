@@ -90,10 +90,21 @@ program test_delete_and_create
 
     ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
 
+    write (*,*) "OLD and NEW ENERGIES"
+    write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
+    write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
+    write (*,*)
+
     ! Create 20 molecules
     do i = 1, 20
         mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
         call attempt_creation_move(res_type, mol_index)
+        
+        write (*,*) "OLD and NEW ENERGIES (AFTER CREATION)"
+        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
+        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
+        write (*,*)
+    
     end do
 
     ! Compute energy
@@ -103,6 +114,12 @@ program test_delete_and_create
     do i = 1, 10
         mol_index = pick_random_molecule_index(primary%num%residues(res_type))
         call attempt_translation_move(res_type, mol_index)
+    
+        write (*,*) "OLD and NEW ENERGIES (AFTER TRANSLATION)"
+        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
+        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
+        write (*,*)
+    
     end do
 
     write (*,*) "energy after a few translation move", energy%total
