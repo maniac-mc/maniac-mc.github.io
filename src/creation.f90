@@ -65,6 +65,7 @@ contains
         
             ! Accept move
             call accept_creation_move(res_type, rand_mol_index)
+            write (*,*) "ACCEPTED CREATION MOVE"
 
         else
         

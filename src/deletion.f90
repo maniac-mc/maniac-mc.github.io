@@ -64,6 +64,9 @@ contains
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
             call accept_deletion_move(res_type, last_molecule_index)
+
+            write (*,*) "ACCEPTED DELETION MOVE"
+
         else ! Reject move
             call reject_deletion_move(res_type, molecule_index, saved%com, saved%offset)
         end if
