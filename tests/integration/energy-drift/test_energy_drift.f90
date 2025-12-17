@@ -17,6 +17,7 @@ program test_delete_and_create
     use monte_carlo_utils
     use random_utils
     use output_utils
+    use write_utils
 
     implicit none
 
@@ -38,6 +39,7 @@ program test_delete_and_create
     path%parameters = "parameters.inc"
     path%reservoir = ""
     status%reservoir_provided = .false.
+    path%outputs = "outputs/"
 
     ! ---------- Load & initialize system ----------
     call prescan_inputs()
@@ -48,27 +50,76 @@ program test_delete_and_create
 
     ! ---------- Compute initial energy (module-level `energy`) ----------
     call compute_system_energy(primary)
-    e_total = energy%total
-    e_coul = energy%coulomb + energy%intra_coulomb
-    e_long = energy%recip_coulomb + energy%ewald_self
+    ! e_total = energy%total
+    ! e_coul = energy%coulomb + energy%intra_coulomb
+    ! e_long = energy%recip_coulomb + energy%ewald_self
 
-    ! if (abs(e_coul - ref_ecoul) > tol) then
-    !     print *, "FAIL: Coulomb energy mismatch"
-    !     stop 1
-    ! end if
-
-    ! if (abs(e_long - ref_elong) > tol) then
-    !     print *, "FAIL: Long-range energy mismatch"
-    !     stop 1
-    ! end if
-
-    ! if (abs(e_total - ref_total) > tol) then
-    !     print *, "FAIL: total energy mismatch"
-    !     stop 1
-    ! end if
-
-    ! ! ---------- Identify the molecule to delete ----------
+    ! ---------- Identify the molecule to delete ----------
     res_type = pick_random_residue_type(thermo%is_active)
+
+    ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
+    ! Create 20 molecules
+    thermo%chemical_potential = -0.1 ! Probability of creating the molecule is 1.0
+    do i = 1, 500
+        mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
+        call attempt_creation_move(res_type, mol_index)
+        
+        ! write (*,*) i, "OLD and NEW ENERGIES (AFTER CREATION)"
+        ! write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
+        ! write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
+        ! write (*,*)
+    
+    end do
+
+    ! Compute energy
+    call compute_system_energy(primary)
+
+    write (*,*)
+    write (*,*) "energy before a few translation move", energy%total
+    write (*,*)
+
+    status%desired_block = 0
+
+    call update_output_files(.false.)
+
+    ! Attemps translation move
+    do i = 1, 5
+
+        status%desired_block = i
+
+        mol_index = pick_random_molecule_index(primary%num%residues(res_type))
+        call attempt_translation_move(res_type, mol_index)
+    
+        ! write (*,*) "OLD and NEW ENERGIES (AFTER TRANSLATION)", i, "/", 5, "mol index", mol_index
+        ! write (*,*) "delta E", new%total - old%total
+        ! write (*,*) "total", energy%total
+        ! write (*,*) "old", old%total, old%non_coulomb, old%recip_coulomb, old%coulomb
+        ! write (*,*) "new", new%total, new%non_coulomb, new%recip_coulomb, new%coulomb
+        ! write (*,*)
+
+        call update_output_files(.true.)
+        
+        e_coul = energy%coulomb + energy%intra_coulomb
+        e_long = energy%recip_coulomb + energy%ewald_self
+
+        write (*,'(A,1X,F12.5,1X,F12.6,1X,F12.6,1X,F12.6)') &
+            "energy after a few translation move", &
+            energy%total, energy%recip_coulomb, energy%ewald_self, e_long
+
+
+    end do
+
+    ! e_coul = energy%coulomb + energy%intra_coulomb
+    ! e_long = energy%recip_coulomb + energy%ewald_self
+    ! write (*,*) "energy after a few translation move", energy%total, e_coul, e_long
+
+    call compute_system_energy(primary)
+
+    ! write (*,*) "energy after recalcualtion", energy%total
+
+
+
+
 
     ! if (primary%num%residues(res_type) /= 1) then
     !     print *, "ERROR: topology must contain exactly 1 molecule"
@@ -87,47 +138,6 @@ program test_delete_and_create
     !     print *, "FAIL: total energy mismatch"
     !     stop 1
     ! end if
-
-    ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
-
-    write (*,*) "OLD and NEW ENERGIES"
-    write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
-    write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
-    write (*,*)
-
-    ! Create 20 molecules
-    do i = 1, 20
-        mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
-        call attempt_creation_move(res_type, mol_index)
-        
-        write (*,*) "OLD and NEW ENERGIES (AFTER CREATION)"
-        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
-        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
-        write (*,*)
-    
-    end do
-
-    ! Compute energy
-    call compute_system_energy(primary)
-
-    ! Attemps translation move
-    do i = 1, 10
-        mol_index = pick_random_molecule_index(primary%num%residues(res_type))
-        call attempt_translation_move(res_type, mol_index)
-    
-        write (*,*) "OLD and NEW ENERGIES (AFTER TRANSLATION)"
-        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
-        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
-        write (*,*)
-    
-    end do
-
-    write (*,*) "energy after a few translation move", energy%total
-
-    call compute_system_energy(primary)
-
-    write (*,*) "energy after recalcualtion", energy%total
-
 
 !         mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
    ! thermo%chemical_potential = -0.1 ! Probability of creating the molecule is 1.0

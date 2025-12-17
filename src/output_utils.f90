@@ -268,6 +268,10 @@ contains
         e_coul = energy%coulomb + energy%intra_coulomb
         e_long = energy%recip_coulomb + energy%ewald_self
 
+        if (abs(e_tot - energy%total) > error) then
+            call abort_run("ENERGY MISMATCH")
+        end if
+
     end subroutine compute_composite_energies
 
     !------------------------------------------------------------------------------
@@ -308,6 +312,7 @@ contains
         ! Energies line
         write(formatted_msg,'(I10,1X,F15.6,1X,F15.6,1X,F15.6,1X,F15.6)') &
             status%block, e_tot, energy%non_coulomb, e_coul, e_long
+
         call BoxLine(trim(formatted_msg), BOX_WIDTH)
 
         call BoxLine("", BOX_WIDTH)  ! blank line inside box

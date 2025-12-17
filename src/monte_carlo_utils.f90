@@ -372,6 +372,7 @@ contains
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
 
+
         if (creation_flag) then
 
             ! Note: Most energy terms in the absence of a molecule are 0
@@ -429,6 +430,7 @@ contains
         energy%recip_coulomb = energy%recip_coulomb + new%recip_coulomb - old%recip_coulomb
         energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb
         energy%coulomb = energy%coulomb + new%coulomb - old%coulomb
+
         energy%total = energy%total + new%total - old%total
         counter_var(2) = counter_var(2) + 1
 
