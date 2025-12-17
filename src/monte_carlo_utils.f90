@@ -314,7 +314,7 @@ contains
         
             ! Note: In creation scenario, compute all energy components
 
-            call precompute_ewald_phase_factors(res_type, mol_index)
+            call compute_ewald_phase_factors(res_type, mol_index)
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
@@ -342,7 +342,7 @@ contains
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
 
-            call precompute_ewald_phase_factors(res_type, mol_index)
+            call compute_ewald_phase_factors(res_type, mol_index)
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
 
@@ -371,7 +371,6 @@ contains
 
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
-
 
         if (creation_flag) then
 
@@ -406,8 +405,9 @@ contains
         else
 
             ! Note, for simple move (translation or rotation), one only needs to
-            ! recompute reciprocal and pairwise interactions
-            call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+            ! recompute pairwise interactions. Current value for the reciprocal
+            ! energy can be used.
+            old%recip_coulomb = energy%recip_coulomb
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
 
             ! Recalculate total energy
@@ -427,7 +427,7 @@ contains
         type(energy_type), intent(in) :: old, new  ! Old and new energy states
         integer, intent(inout) :: counter_var(2)    ! Counter for succesfull move
 
-        energy%recip_coulomb = energy%recip_coulomb + new%recip_coulomb - old%recip_coulomb
+        energy%recip_coulomb = new%recip_coulomb
         energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb
         energy%coulomb = energy%coulomb + new%coulomb - old%coulomb
 
@@ -475,13 +475,13 @@ contains
     subroutine reject_molecule_move(res_type, mol_index, com_old, site_offset_old)
 
         ! Input parameters
-        integer, intent(in) :: res_type       ! Residue type of the molecule
-        integer, intent(in) :: mol_index      ! Index of the molecule
+        integer, intent(in) :: res_type     ! Residue type of the molecule
+        integer, intent(in) :: mol_index    ! Index of the molecule
         real(real64), intent(in), optional :: com_old(3) ! Previous COM (translation)
         real(real64), intent(in), optional :: site_offset_old(:, :) ! Previous site offsets (rotation)
 
         ! Local variable
-        integer :: natoms
+        integer :: natoms                   ! Number of atoms in the residue
 
         ! Restore COM if present (translation)
         if (present(com_old)) then
@@ -491,8 +491,7 @@ contains
         ! Restore site offsets if present (rotation)
         if (present(site_offset_old)) then
             natoms = res%atom(res_type)
-            guest%offset(:, res_type, mol_index, 1:natoms) = &
-                site_offset_old(:, 1:natoms)
+            guest%offset(:, res_type, mol_index, 1:natoms) = site_offset_old(:, 1:natoms)
         end if
 
         ! Restore Fourier states

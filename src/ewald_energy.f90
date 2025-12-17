@@ -13,24 +13,24 @@ contains
     !--------------------------------------------------------------------
     ! Computes the total reciprocal-space Coulomb energy for the system.
     ! Loops over all precomputed k-vectors and evaluates:
-    ! E_k = form_factor * W(k) * |A(k)|^2
+    ! E(k) = form_factor * W(k) * |A(k)|^2
     ! where A(k) is the structure factor amplitude, W(k) is the reciprocal-space weight
     ! and the form_factor accounts for k vs -k symmetry
     !--------------------------------------------------------------------
-    subroutine compute_total_recip_energy(u_recipCoulomb)
+    subroutine compute_total_recip_energy(Ek)
 
         ! Input arguments
-        real(real64), intent(out) :: u_recipCoulomb
+        real(real64), intent(out) :: Ek ! Ewald recip energy Ek
 
         ! Internal variables
-        integer :: idx                   ! Index over precomputed reciprocal vectors
-        real(real64) :: form_factor      ! Factor to account for symmetry (k vs -k)
-        complex(real64) :: recip_amplitude ! Structure factor for the current k-vector
-        real(real64) :: recip_constant   ! Precomputed Ewald reciprocal-space weight
-        real(real64) :: amplitude_sq     ! Squared modulus of the structure factor amplitude
+        integer :: idx                  ! Index over precomputed reciprocal vectors
+        real(real64) :: form_factor     ! Factor to account for symmetry (k vs -k)
+        real(real64) :: Wk              ! Precomputed Ewald reciprocal-space weight
+        complex(real64) :: Ak           ! Amplitude for the current k-vector
+        real(real64) :: Ak_square       ! Squared modulus of the structure factor amplitude
 
         ! Initialize
-        u_recipCoulomb = zero
+        Ek = zero
 
         ! Loop over all precomputed reciprocal lattice vectors
         do idx = 1, ewald%param%nkvec
@@ -39,24 +39,29 @@ contains
             form_factor = ewald%form_factor(idx)
 
             ! Compute the structure factor (complex amplitude) for this k-vector
-            recip_amplitude = compute_recip_amplitude(ewald%kvectors(idx)%kx, &
+            Ak = compute_all_recip_amplitude(ewald%kvectors(idx)%kx, &
                 ewald%kvectors(idx)%ky, ewald%kvectors(idx)%kz)
 
-            ! Retrieve the precomputed reciprocal-space weight
-            recip_constant = ewald%kweights(idx)! Å^2
+            ! #TOCHECK
+            ! Record Ak
+            ! ewald%Ak = Ak
+            ! TOCHECK
 
             ! Compute squared modulus of the structure factor amplitude
-            amplitude_sq = amplitude_squared(recip_amplitude) ! e^2
+            Ak_square = amplitude_squared(Ak) ! e^2
+
+            ! Retrieve the precomputed reciprocal-space weight
+            Wk = ewald%kweights(idx)! Å^2
 
             ! Accumulate reciprocal-space energy:
             ! form_factor * reciprocal constant * |amplitude|^2
-            ! E_k = form_factor * recip_constant * |recip_amplitude|^2
-            u_recipCoulomb = u_recipCoulomb + form_factor * recip_constant * amplitude_sq ! In e^2 x Å^2
+            ! E_k = form_factor * Wk * |Ak|^2
+            Ek = Ek + form_factor * Wk * Ak_square ! In e^2 x Å^2
 
         end do
 
         ! Convert accumulated energy to correct units (kcal/mol)
-        u_recipCoulomb = u_recipCoulomb * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
+        Ek = Ek * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
     end subroutine compute_total_recip_energy
 
@@ -247,13 +252,13 @@ contains
     ! where q_i is the atomic charge and the exponential is represented
     ! by precomputed phase factors in x, y, and z directions.
     !--------------------------------------------------------------------
-    pure function compute_recip_amplitude(kx_idx, ky_idx, kz_idx) result(Ak)
+    pure function compute_all_recip_amplitude(kx_idx, ky_idx, kz_idx) result(Ak)
 
         ! Input arguments
         integer, intent(in) :: kx_idx, ky_idx, kz_idx       ! Reciprocal lattice vector indices
 
         ! Output
-        complex(real64) :: Ak                               ! Accumulated structure factor amplitude A(k)
+        complex(real64) :: Ak                               ! Accumulated amplitude A(k)
 
         ! Internal variables
         complex(real64) :: product                          ! Phase factor product for a single atom
@@ -312,26 +317,8 @@ contains
 
             end if
 
-            ! ! Loop over all molecules of this residue type
-            ! do mol_index = 1, primary%num%residues(res_type)
-            !     ! Loop over sites in molecule
-            !     do atom_index = 1, res%atom(res_type)
-
-            !         ! Extract charge and phase product
-            !         charges = primary%atoms%charges(res_type, atom_index)
-            !         product = ewald%phase%factor(1, res_type, mol_index, atom_index, kx_idx) * &
-            !                 ewald%phase%factor(2, res_type, mol_index, atom_index, ky_idx) * &
-            !                 ewald%phase%factor(3, res_type, mol_index, atom_index, kz_idx)
-
-            !         ! Accumulate contribution from this atom:
-            !         ! charge * exp(i k · r) factor in x, y, z directions
-            !         Ak = Ak + charges * product
-
-            !     end do
-            ! end do
-
         end do
 
-    end function compute_recip_amplitude
+    end function compute_all_recip_amplitude
 
 end module ewald_energy

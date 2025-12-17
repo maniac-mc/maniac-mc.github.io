@@ -60,7 +60,7 @@ program test_delete_and_create
     ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
     ! Create 20 molecules
     thermo%chemical_potential = -0.1 ! Probability of creating the molecule is 1.0
-    do i = 1, 500
+    do i = 1, 50
         mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
         call attempt_creation_move(res_type, mol_index)
         
@@ -102,10 +102,7 @@ program test_delete_and_create
         e_coul = energy%coulomb + energy%intra_coulomb
         e_long = energy%recip_coulomb + energy%ewald_self
 
-        write (*,'(A,1X,F12.5,1X,F12.6,1X,F12.6,1X,F12.6)') &
-            "energy after a few translation move", &
-            energy%total, energy%recip_coulomb, energy%ewald_self, e_long
-
+        write (*,*) "energy%recip_coulomb after a few translation move", "recip_coulomb",   energy%recip_coulomb
 
     end do
 
@@ -113,7 +110,11 @@ program test_delete_and_create
     ! e_long = energy%recip_coulomb + energy%ewald_self
     ! write (*,*) "energy after a few translation move", energy%total, e_coul, e_long
 
+    write (*,*) "recip_coulomb", energy%recip_coulomb
+
     call compute_system_energy(primary)
+
+    write (*,*) "recip_coulomb", energy%recip_coulomb
 
     ! write (*,*) "energy after recalcualtion", energy%total
 

@@ -178,7 +178,7 @@ contains
     ! Computes and stores the Fourier structure factors exp(i * k · r)
     ! for all atoms in all molecules across all residue types.
     !--------------------------------------------------------------------
-    subroutine compute_all_fourier_terms()
+    subroutine compute_all_ewald_phase_factors()
 
         ! Local variables
         integer :: res_type
@@ -191,18 +191,18 @@ contains
             do mol_index = 1, primary%num%residues(res_type)
 
                 ! Compute Fourier terms for a single molecule
-                call precompute_ewald_phase_factors(res_type, mol_index)
+                call compute_ewald_phase_factors(res_type, mol_index)
 
             end do
         end do
 
-    end subroutine compute_all_fourier_terms
+    end subroutine compute_all_ewald_phase_factors
 
     !--------------------------------------------------------------------
     ! Computes the per-atom Fourier-space phase factors exp(i * k · r)
     ! for all k-indices along each Cartesian direction for a given molecule.
     !--------------------------------------------------------------------
-    subroutine precompute_ewald_phase_factors(res_type, mol_index)
+    subroutine compute_ewald_phase_factors(res_type, mol_index)
 
         ! Input arguments
         integer, intent(in) :: res_type
@@ -247,7 +247,7 @@ contains
             end do
         end do
 
-    end subroutine precompute_ewald_phase_factors
+    end subroutine compute_ewald_phase_factors
 
     !--------------------------------------------------------------------
     ! Computes the phase vector (k · r) for a single atom in reciprocal space.
