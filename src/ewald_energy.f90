@@ -61,7 +61,7 @@ contains
     ! Computes the reciprocal-space Coulomb energy contribution from a
     ! single molecule or residue using the Ewald summation method.
     !--------------------------------------------------------------------
-    subroutine update_reciprocal_amplitude_single_mol(res_type, mol_index, u_recipCoulomb_new, is_creation, is_deletion)
+    subroutine update_reciprocal_amplitude_single_mol(res_type, mol_index, is_creation, is_deletion)
 
         ! Input arguments
         integer, intent(in) :: res_type         ! Index of the residue type
@@ -69,14 +69,10 @@ contains
         logical, intent(in), optional :: is_creation
         logical, intent(in), optional :: is_deletion
 
-        ! Output artument
-        real(real64), intent(out) :: u_recipCoulomb_new ! Output: reciprocal-space Coulomb energy
-
         ! Local variables
         integer :: kx_idx, ky_idx, kz_idx      ! Components of current reciprocal lattice vector
         integer :: idx                         ! Loop index over precomputed k-vectors
         integer :: natoms                      ! Number of atoms in this residue type
-        real(real64) :: amplitude_sq           ! Squared modulus of the structure factor amplitude
         real(real64) :: form_factor            ! Symmetry factor: 1 if kx=0, 2 otherwise
         logical :: creation_flag
         logical :: deletion_flag
@@ -86,9 +82,6 @@ contains
 
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
-
-        ! Initialize energy accumulatormenka
-        u_recipCoulomb_new = zero
 
         ! Atom charges in this residue
         natoms = res%atom(res_type)
@@ -136,6 +129,23 @@ contains
             
             end if
 
+        end do
+
+    end subroutine update_reciprocal_amplitude_single_mol
+
+    !--------------------------------------------------------------------
+    ! Compute reciprocal energy from current A(k)
+    !--------------------------------------------------------------------
+    pure function reciprocal_ewald_energy() result(energy)
+
+        real(real64) :: energy
+        integer :: idx
+        real(real64) :: amplitude_sq
+
+        energy = zero
+
+        do idx = 1, ewald%param%nkvec
+
             ! Compute squared modulus of the structure factor amplitude
             amplitude_sq = amplitude_squared(ewald%Ak(idx))
 
@@ -144,14 +154,15 @@ contains
             ! E_k = form_factor * W(k) * |A(k)|^2
             ! where W(k) is the precomputed reciprocal constant
             !----------------------------------------------
-            u_recipCoulomb_new = u_recipCoulomb_new + form_factor * ewald%kweights(idx) * amplitude_sq
-
+            energy = energy + ewald%form_factor(idx) * &
+                    ewald%kweights(idx) * amplitude_sq
         end do
 
-        ! Convert accumulated energy to physical units:
-        u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
+        ! Convert accumulated energy to physical units
+        energy = energy * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
-    end subroutine update_reciprocal_amplitude_single_mol
+    end function reciprocal_ewald_energy
+
 
     !--------------------------------------------------------------------
     ! Computes the self-interaction correction for the reciprocal-space
@@ -164,11 +175,13 @@ contains
     ! where α is the Ewald screening parameter. The total self-energy
     ! for a molecule/residue is the sum over all atoms in that molecule.
     !--------------------------------------------------------------------
-    subroutine compute_ewald_self_interaction_single_mol(res_type, self_energy)
+    pure function ewald_self_energy_single_mol(res_type) result(self_energy)
 
         ! Input arguments
-        integer, intent(in) :: res_type
-        real(real64), intent(out) :: self_energy
+        integer, intent(in) :: res_type        ! Residue type index
+
+        ! Result
+        real(real64) :: self_energy            ! Self-energy (kcal/mol)
 
         ! Local variables
         integer :: atom_index
@@ -190,7 +203,7 @@ contains
 
         self_energy = self_energy * EPS0_INV_real ! In kcal/mol
 
-    end subroutine compute_ewald_self_interaction_single_mol
+    end function ewald_self_energy_single_mol
 
     !------------------------------------------------------------------------------
     ! Computes the real-space intramolecular Coulomb energy for a single
