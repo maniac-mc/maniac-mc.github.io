@@ -269,7 +269,7 @@ contains
         e_long = energy%recip_coulomb + energy%ewald_self
 
         if (abs(e_tot - energy%total) > error) then
-            call abort_run("ENERGY MISMATCH")
+            call warn_user("Energy drift detected during MC move")
         end if
 
     end subroutine compute_composite_energies

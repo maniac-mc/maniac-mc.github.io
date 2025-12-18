@@ -62,13 +62,16 @@ contains
         probability = compute_acceptance_probability(old, new, res_type, TYPE_DELETION)
 
         ! Accept or reject
-        if (rand_uniform() <= probability) then ! Accept move
+        if (rand_uniform() <= probability) then
+        
+            ! Accept move
             call accept_deletion_move(res_type, last_molecule_index)
-
-            write (*,*) "ACCEPTED DELETION MOVE"
-
-        else ! Reject move
+            
+        else
+        
+            ! Reject move
             call reject_deletion_move(res_type, molecule_index, saved%com, saved%offset)
+
         end if
 
     end subroutine attempt_deletion_move

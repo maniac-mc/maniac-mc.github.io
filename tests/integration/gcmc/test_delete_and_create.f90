@@ -45,7 +45,7 @@ program test_delete_and_create
     call setup_simulation_parameters()
 
     ! ---------- Compute initial energy (module-level `energy`) ----------
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
     e_total = energy%total
     e_coul = energy%coulomb + energy%intra_coulomb
     e_long = energy%recip_coulomb + energy%ewald_self
@@ -79,7 +79,7 @@ program test_delete_and_create
     call attempt_deletion_move(res_type, mol_index)
 
     ! Recompute energy
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
     e_after_delete = energy%total
 
     if (abs(e_after_delete - 0.0) > tol) then
@@ -93,7 +93,7 @@ program test_delete_and_create
     call attempt_creation_move(res_type, mol_index)
 
     ! Recompute energy after creation
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
     e_after_create = energy%total
     e_coul = energy%coulomb + energy%intra_coulomb
     e_long = energy%recip_coulomb + energy%ewald_self

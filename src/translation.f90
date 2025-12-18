@@ -55,13 +55,11 @@ contains
 
             ! Accept move: update system state
             call accept_molecule_move(old, new, counter%translations)
-            write (*,*) "ACCEPTED"
         
         else
         
             ! Reject move: restore previous position
             call reject_molecule_move(res_type, mol_index, com_old = com_old)
-            write (*,*) "REJECTED"
 
         end if
 

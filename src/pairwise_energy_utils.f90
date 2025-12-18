@@ -107,7 +107,13 @@ contains
         energy = zero   
 
         ! Return 0 if distance is larger than cutoff and avoid division by zero
-        if (r >= mc_input%real_space_cutoff .or. r < error) return
+        if (r >= mc_input%real_space_cutoff) return
+
+        ! Return large value if overlap
+        if (r < error) then
+            energy = 1.0e20 ! Very large repulsive energy
+            return
+        end if
 
         ! Evaluate r^6 and r^12 either from table or directly
         if (use_table .and. r6_table%initialized .and. r12_table%initialized) then
@@ -145,7 +151,13 @@ contains
         energy = zero
 
         ! Skip negligible charges and avoid division by zero
-        if (abs(q_i) < error .or. abs(q_j) < error .or. r < error) return
+        if (abs(q_i) < error .or. abs(q_j) < error) return
+
+        ! Return large value if overlap
+        if (r < error) then
+            energy = 1.0e20 ! Very large repulsive energy
+            return
+        end if
 
         ! Compute Coulomb energy (tabulated or direct)
         if (use_table .and. erfc_r_table%initialized) then

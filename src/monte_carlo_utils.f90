@@ -316,7 +316,7 @@ contains
             ! Note: In creation scenario, compute all energy components
 
             call compute_ewald_phase_factors(res_type, mol_index)
-            call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
             call pairwise_energy_for_molecule(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
             new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
@@ -333,7 +333,7 @@ contains
             new%coulomb = 0
             new%ewald_self = 0
             new%intra_coulomb = 0
-            call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_deletion = deletion_flag)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb, is_deletion = deletion_flag)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
@@ -344,7 +344,7 @@ contains
             ! recompute reciprocal and pairwise interactions
 
             call compute_ewald_phase_factors(res_type, mol_index)
-            call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb)
             call pairwise_energy_for_molecule(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
 
             ! Recalculate total energy
@@ -383,7 +383,7 @@ contains
             old%intra_coulomb = zero
 
             ! #TODO CHECK
-            ! call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+            ! call update_reciprocal_amplitude_single_mol(res_type, mol_index, old%recip_coulomb)
             old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy
@@ -397,7 +397,7 @@ contains
             call pairwise_energy_for_molecule(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
             
             ! #TODO CHECK
-            ! call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
+            ! call update_reciprocal_amplitude_single_mol(res_type, mol_index, old%recip_coulomb)
             old%recip_coulomb = energy%recip_coulomb
 
             ! Recalculate total energy

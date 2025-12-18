@@ -17,12 +17,10 @@ contains
     ! where A(k) is the structure factor amplitude, W(k) is the reciprocal-space weight
     ! and the form_factor accounts for k vs -k symmetry
     !--------------------------------------------------------------------
-    subroutine compute_total_recip_energy(Ek)
-
-        ! Input arguments
-        real(real64), intent(out) :: Ek ! Ewald recip energy Ek
+    subroutine compute_total_reciprocal_energy()
 
         ! Internal variables
+        real(real64) :: Ek              ! Ewald recip energy Ek in e^2 x Å^2
         integer :: idx                  ! Index over precomputed reciprocal vectors
         real(real64) :: form_factor     ! Factor to account for symmetry (k vs -k)
         real(real64) :: Wk              ! Precomputed Ewald reciprocal-space weight
@@ -61,15 +59,15 @@ contains
         end do
 
         ! Convert accumulated energy to correct units (kcal/mol)
-        Ek = Ek * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
+        energy%recip_coulomb = Ek * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
-    end subroutine compute_total_recip_energy
+    end subroutine compute_total_reciprocal_energy
 
     !--------------------------------------------------------------------
     ! Computes the reciprocal-space Coulomb energy contribution from a
     ! single molecule or residue using the Ewald summation method.
     !--------------------------------------------------------------------
-    subroutine compute_recip_energy_single_mol(res_type, mol_index, u_recipCoulomb_new, is_creation, is_deletion)
+    subroutine update_reciprocal_amplitude_single_mol(res_type, mol_index, u_recipCoulomb_new, is_creation, is_deletion)
 
         ! Input arguments
         integer, intent(in) :: res_type         ! Index of the residue type
@@ -159,7 +157,7 @@ contains
         ! Convert accumulated energy to physical units:
         u_recipCoulomb_new = u_recipCoulomb_new * EPS0_INV_real * TWOPI / primary%cell%volume ! In kcal/mol
 
-    end subroutine compute_recip_energy_single_mol
+    end subroutine update_reciprocal_amplitude_single_mol
 
     !--------------------------------------------------------------------
     ! Computes the self-interaction correction for the reciprocal-space

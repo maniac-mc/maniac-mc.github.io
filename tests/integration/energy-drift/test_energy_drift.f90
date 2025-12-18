@@ -49,7 +49,7 @@ program test_delete_and_create
     call setup_simulation_parameters()
 
     ! ---------- Compute initial energy (module-level `energy`) ----------
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
     ! e_total = energy%total
     ! e_coul = energy%coulomb + energy%intra_coulomb
     ! e_long = energy%recip_coulomb + energy%ewald_self
@@ -64,15 +64,15 @@ program test_delete_and_create
         mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
         call attempt_creation_move(res_type, mol_index)
         
-        ! write (*,*) i, "OLD and NEW ENERGIES (AFTER CREATION)"
-        ! write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb
-        ! write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb
-        ! write (*,*)
+        write (*,*) i, "OLD and NEW ENERGIES (AFTER CREATION)"
+        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb, old%non_coulomb
+        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb, new%non_coulomb
+        write (*,*)
     
     end do
 
     ! Compute energy
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
 
     write (*,*)
     write (*,*) "energy before a few translation move", energy%total
@@ -112,7 +112,7 @@ program test_delete_and_create
 
     write (*,*) "recip_coulomb", energy%recip_coulomb
 
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
 
     write (*,*) "recip_coulomb", energy%recip_coulomb
 

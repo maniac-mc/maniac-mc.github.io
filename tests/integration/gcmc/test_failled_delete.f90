@@ -46,7 +46,7 @@ program test_delete_and_create
     call setup_simulation_parameters()
 
     ! ---------- Compute initial energy (module-level `energy`) ----------
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
 
     e_total = energy%total
     e_coul = energy%coulomb + energy%intra_coulomb
@@ -97,7 +97,7 @@ program test_delete_and_create
     end if
 
     ! Full recomputed energy
-    call compute_system_energy(primary)
+    call update_system_energy(primary)
     e_after_delete = energy%total
 
     if (abs(e_after_delete - ref_total) > tol) then
