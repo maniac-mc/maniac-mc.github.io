@@ -9,6 +9,7 @@ module monte_carlo_utils
     use output_utils
     use energy_utils
     use helper_utils
+    
     use, intrinsic :: iso_fortran_env, only: real64
 
     implicit none
@@ -316,7 +317,7 @@ contains
 
             call compute_ewald_phase_factors(res_type, mol_index)
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
-            call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
             new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
         
@@ -344,7 +345,7 @@ contains
 
             call compute_ewald_phase_factors(res_type, mol_index)
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb)
-            call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
@@ -393,7 +394,7 @@ contains
             ! Note: In deletion scenario, compute all energy components
             call compute_ewald_self_interaction_single_mol(res_type, old%ewald_self)
             old%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
-            call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
             
             ! #TODO CHECK
             ! call compute_recip_energy_single_mol(res_type, mol_index, old%recip_coulomb)
@@ -408,7 +409,7 @@ contains
             ! recompute pairwise interactions. Current value for the reciprocal
             ! energy can be used.
             old%recip_coulomb = energy%recip_coulomb
-            call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb
