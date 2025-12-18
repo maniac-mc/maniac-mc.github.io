@@ -57,12 +57,15 @@ program test_delete_and_create
     ! ---------- Identify the molecule to delete ----------
     res_type = pick_random_residue_type(thermo%is_active)
 
+    call update_output_files(.false.)
+
     ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
     ! Create 20 molecules
     thermo%chemical_potential = -0.1 ! Probability of creating the molecule is 1.0
     do i = 1, 50
         mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
         call attempt_creation_move(res_type, mol_index)
+        call update_output_files(.true.)
         
         write (*,*) i, "OLD and NEW ENERGIES (AFTER CREATION)"
         write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb, old%non_coulomb
@@ -80,7 +83,6 @@ program test_delete_and_create
 
     status%desired_block = 0
 
-    call update_output_files(.false.)
 
     ! Attemps translation move
     do i = 1, 5
@@ -90,12 +92,10 @@ program test_delete_and_create
         mol_index = pick_random_molecule_index(primary%num%residues(res_type))
         call attempt_translation_move(res_type, mol_index)
     
-        ! write (*,*) "OLD and NEW ENERGIES (AFTER TRANSLATION)", i, "/", 5, "mol index", mol_index
-        ! write (*,*) "delta E", new%total - old%total
-        ! write (*,*) "total", energy%total
-        ! write (*,*) "old", old%total, old%non_coulomb, old%recip_coulomb, old%coulomb
-        ! write (*,*) "new", new%total, new%non_coulomb, new%recip_coulomb, new%coulomb
-        ! write (*,*)
+        write (*,*) i, "OLD and NEW ENERGIES (AFTER TRANSLATION)"
+        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb, old%non_coulomb
+        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb, new%non_coulomb
+        write (*,*)
 
         call update_output_files(.true.)
         

@@ -1,5 +1,6 @@
 module monte_carlo_utils
 
+    use pairwise_energy_utils
     use simulation_state
     use random_utils
     use constants
@@ -314,15 +315,18 @@ contains
         if (creation_flag) then
         
             ! Note: In creation scenario, compute all energy components
-
             call compute_ewald_phase_factors(res_type, mol_index)
-            call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
-            call pairwise_energy_for_molecule(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, &
+                new%recip_coulomb, is_creation = creation_flag)            
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, &
+                new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
             call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
             new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
         
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
+
+            write (*,*) new%non_coulomb, new%coulomb, new%recip_coulomb, new%ewald_self, new%intra_coulomb
         
         else if (deletion_flag) then
 
@@ -333,7 +337,8 @@ contains
             new%coulomb = 0
             new%ewald_self = 0
             new%intra_coulomb = 0
-            call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb, is_deletion = deletion_flag)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, &
+                new%recip_coulomb, is_deletion = deletion_flag)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
@@ -345,7 +350,8 @@ contains
 
             call compute_ewald_phase_factors(res_type, mol_index)
             call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb)
-            call pairwise_energy_for_molecule(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, &
+                new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
 
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
@@ -394,8 +400,9 @@ contains
             ! Note: In deletion scenario, compute all energy components
             call compute_ewald_self_interaction_single_mol(res_type, old%ewald_self)
             old%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
-            call pairwise_energy_for_molecule(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
-            
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, &
+                old%non_coulomb, old%coulomb, skip_ordering_check = .true.)
+
             ! #TODO CHECK
             ! call update_reciprocal_amplitude_single_mol(res_type, mol_index, old%recip_coulomb)
             old%recip_coulomb = energy%recip_coulomb
@@ -409,7 +416,8 @@ contains
             ! recompute pairwise interactions. Current value for the reciprocal
             ! energy can be used.
             old%recip_coulomb = energy%recip_coulomb
-            call pairwise_energy_for_molecule(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
+            call pairwise_energy_for_molecule(primary, res_type, mol_index, &
+                old%non_coulomb, old%coulomb, skip_ordering_check = .true.)
 
             ! Recalculate total energy
             old%total = old%non_coulomb + old%coulomb + old%recip_coulomb

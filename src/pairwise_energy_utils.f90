@@ -18,12 +18,13 @@ contains
     ! Calculates the non-Coulombian and Coulomb (direct space) energies
     ! for a given molecule
     !------------------------------------------------------------------------------
-    subroutine pairwise_energy_for_molecule(box, res_i, mol_i, e_non_coulomb, e_coulomb)
+    subroutine pairwise_energy_for_molecule(box, res_i, mol_i, e_non_coulomb, e_coulomb, skip_ordering_check)
 
         ! Input arguments
         type(type_box), intent(inout) :: box        ! Simulation box (primary or reservoir)
         integer, intent(in) :: res_i                ! Residue type index of the current molecule
         integer, intent(in) :: mol_i                ! Molecule index of the current residue
+        logical, intent(in), optional :: skip_ordering_check
 
         ! Output arguments
         real(real64), intent(out) :: e_non_coulomb  ! Accumulated non-Coulomb (LJ) energy for this molecule
@@ -55,8 +56,12 @@ contains
                     ! Remove intra molecular contribution
                     if ((mol_i == mol_j) .and. (res_i == res_j)) cycle
 
-                    ! Enforce ordering to avoid double-counting
-                    if ((res_j < res_i) .or. ((res_j == res_i) .and. (mol_j <= mol_i))) cycle
+                    ! Enforce ordering to avoid double-counting (only when recalculating full system energy)
+                    if (present(skip_ordering_check)) then
+                        if (.not. skip_ordering_check) then
+                            if ((res_j < res_i) .or. ((res_j == res_i) .and. (mol_j <= mol_i))) cycle
+                        end if
+                    end if
 
                     ! Loop over all side of the selected molecule j
                     do atom_j = 1, res%atom(res_j)
