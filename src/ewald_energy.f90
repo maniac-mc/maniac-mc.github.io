@@ -24,7 +24,6 @@ contains
         integer :: idx                  ! Index over precomputed reciprocal vectors
         real(real64) :: form_factor     ! Factor to account for symmetry (k vs -k)
         real(real64) :: Wk              ! Precomputed Ewald reciprocal-space weight
-        complex(real64) :: Ak           ! Amplitude for the current k-vector
         real(real64) :: Ak_square       ! Squared modulus of the structure factor amplitude
 
         ! Initialize
@@ -37,16 +36,11 @@ contains
             form_factor = ewald%form_factor(idx)
 
             ! Compute the structure factor (complex amplitude) for this k-vector
-            Ak = compute_all_recip_amplitude(ewald%kvectors(idx)%kx, &
+            ewald%Ak(idx) = compute_all_recip_amplitude(ewald%kvectors(idx)%kx, &
                 ewald%kvectors(idx)%ky, ewald%kvectors(idx)%kz)
 
-            ! #TOCHECK
-            ! Record Ak
-            ! ewald%Ak = Ak
-            ! TOCHECK
-
             ! Compute squared modulus of the structure factor amplitude
-            Ak_square = amplitude_squared(Ak) ! e^2
+            Ak_square = amplitude_squared(ewald%Ak(idx)) ! e^2
 
             ! Retrieve the precomputed reciprocal-space weight
             Wk = ewald%kweights(idx)! Å^2

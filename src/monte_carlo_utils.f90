@@ -325,8 +325,6 @@ contains
         
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
-
-            write (*,*) new%non_coulomb, new%coulomb, new%recip_coulomb, new%ewald_self, new%intra_coulomb
         
         else if (deletion_flag) then
 
@@ -347,7 +345,6 @@ contains
 
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
-
             call compute_ewald_phase_factors(res_type, mol_index)
             call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb)
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &

@@ -66,13 +66,9 @@ program test_delete_and_create
         mol_index = primary%num%residues(res_type) + 1   ! if deletion removed it, create at new index
         call attempt_creation_move(res_type, mol_index)
         call update_output_files(.true.)
-        
-        write (*,*) i, "OLD and NEW ENERGIES (AFTER CREATION)"
-        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb, old%non_coulomb
-        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb, new%non_coulomb
-        write (*,*)
-    
     end do
+
+    write (*,*) "Inserted", primary%num%residues(res_type), "molecules"
 
     ! Compute energy
     call update_system_energy(primary)
@@ -91,12 +87,6 @@ program test_delete_and_create
 
         mol_index = pick_random_molecule_index(primary%num%residues(res_type))
         call attempt_translation_move(res_type, mol_index)
-    
-        write (*,*) i, "OLD and NEW ENERGIES (AFTER TRANSLATION)"
-        write (*,*) old%total, old%intra_coulomb, old%ewald_self, old%coulomb, old%non_coulomb
-        write (*,*) new%total, new%intra_coulomb, new%ewald_self, new%coulomb, new%non_coulomb
-        write (*,*)
-
         call update_output_files(.true.)
         
         e_coul = energy%coulomb + energy%intra_coulomb
@@ -110,17 +100,11 @@ program test_delete_and_create
     ! e_long = energy%recip_coulomb + energy%ewald_self
     ! write (*,*) "energy after a few translation move", energy%total, e_coul, e_long
 
-    write (*,*) "recip_coulomb", energy%recip_coulomb
-
     call update_system_energy(primary)
 
     write (*,*) "recip_coulomb", energy%recip_coulomb
 
     ! write (*,*) "energy after recalcualtion", energy%total
-
-
-
-
 
     ! if (primary%num%residues(res_type) /= 1) then
     !     print *, "ERROR: topology must contain exactly 1 molecule"
