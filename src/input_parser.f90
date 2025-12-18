@@ -21,7 +21,7 @@ contains
         call allocate_atom_arrays()
         
         ! Parse input file and populate data
-        call ReadFullInputFile(path%input)
+        call read_full_input_file(path%input)
         
         ! Validate and rescale move probabilities
         call rescale_move_probabilities()
@@ -35,7 +35,7 @@ contains
     ! Opens the full MANIAC input file, reads and parses its contents by calling
     ! parse_input_file, then closes the file.
     !---------------------------------------------------------------------------
-    subroutine ReadFullInputFile(filename)
+    subroutine read_full_input_file(filename)
 
         ! Input parameter
         character(len=*), intent(in) :: filename
@@ -49,7 +49,7 @@ contains
             call parse_input_file(unit)
         close(unit)
 
-    end subroutine ReadFullInputFile
+    end subroutine read_full_input_file
 
     !---------------------------------------------------------------------------
     ! Ensures the sum of move probabilities equals 1.0.

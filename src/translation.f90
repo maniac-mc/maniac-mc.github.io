@@ -52,11 +52,15 @@ contains
 
         ! Accept or reject
         if (rand_uniform() <= probability) then
+
             ! Accept move: update system state
             call accept_molecule_move(old, new, counter%translations)
+        
         else
+        
             ! Reject move: restore previous position
             call reject_molecule_move(res_type, mol_index, com_old = com_old)
+
         end if
 
     end subroutine attempt_translation_move

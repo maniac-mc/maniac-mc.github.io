@@ -12,14 +12,17 @@ program test_delete_and_create
 
     use molecule_creation
     use molecule_deletion
+    use molecule_translation
+    use molecule_rotation
     use monte_carlo_utils
     use random_utils
     use output_utils
+    use write_utils
 
     implicit none
 
     character(len=LENPATH) :: base                  ! Base path to the test input folder containing input files
-    real(real64) :: e_total, e_after_delete, e_after_create  ! Total system energies at different stages: initial, after deletion, and after creation
+    real(real64) :: e_total, e_recip_after_move     ! Total system energies at different stages: initial, after deletion, and after creation
     integer :: res_type, mol_index                  ! Residue type and molecule index used for deletion and creation moves
     logical :: passed                               ! Flag indicating whether the test passed
     real(real64) :: e_coul                          ! Coulombic contribution to the system energy
@@ -35,8 +38,8 @@ program test_delete_and_create
     path%topology = "topology.data"
     path%parameters = "parameters.inc"
     path%reservoir = ""
-
     status%reservoir_provided = .false.
+    path%outputs = "outputs/"
 
     ! ---------- Load & initialize system ----------
     call prescan_inputs()
@@ -48,60 +51,60 @@ program test_delete_and_create
     ! ---------- Compute initial energy (module-level `energy`) ----------
     call update_system_energy(primary)
 
-    e_total = energy%total
-    e_coul = energy%coulomb + energy%intra_coulomb
-    e_long = energy%recip_coulomb + energy%ewald_self
-
-    if (abs(e_coul - ref_ecoul) > tol) then
-        print *, "FAIL: Coulomb energy mismatch"
-        stop 1
-    end if
-
-    if (abs(e_long - ref_elong) > tol) then
-        print *, "FAIL: Long-range energy mismatch"
-        stop 1
-    end if
-
-    if (abs(e_total - ref_total) > tol) then
-        print *, "FAIL: total energy mismatch"
-        stop 1
-    end if
-
     ! ---------- Identify the molecule to delete ----------
     res_type = pick_random_residue_type(thermo%is_active)
-    mol_index = 1
 
-    if (primary%num%residues(res_type) /= 1) then
-        print *, "ERROR: topology must contain exactly 1 molecule"
-        stop 1
-    end if
+    call update_output_files(.false.)
 
-    ! ---------- Attempt deleting the molecule ----------
-    thermo%chemical_potential = -0.1 ! Probability of deleting the molecule is 0.0
+    ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
 
-    do i = 1, 10
-        call attempt_deletion_move(res_type, mol_index)
+    ! Attempt 40 molecule creation
+    thermo%chemical_potential = -0.1 ! Probability of creating the molecule is 1.0
+    do i = 1, 40
+        status%desired_block = i
+        mol_index = primary%num%residues(res_type) + 1
+        call attempt_creation_move(res_type, mol_index)
+        call update_output_files(.true.)
     end do
 
-    if (primary%num%residues(res_type) /= 1) then
-        print *, "ERROR: Molecule was deleted"
-        stop 1
-    end if
+    write (*,*) "Number of residue after creation :", primary%num%residues(res_type)
 
-    ! Energy after deletion
-    e_after_delete = energy%total
+    ! Attempt 10 molecule deletion
+    thermo%chemical_potential = -10.0 ! Probability of deleting the molecule is 1.0
+    do i = 41, 50
+        status%desired_block = i
+        mol_index = pick_random_molecule_index(primary%num%residues(res_type))
+        call attempt_deletion_move(res_type, mol_index)
+        call update_output_files(.true.)
+    end do
 
-    if (abs(e_after_delete - ref_total) > tol) then
-        print *, "FAIL: Coulomb energy mismatch"
-        stop 1
-    end if
+    write (*,*) "Number of residue after deletion :", primary%num%residues(res_type)
 
-    ! Full recomputed energy
+    ! Attemps 50 translation move
+    do i = 51, 100
+        status%desired_block = i
+        mol_index = pick_random_molecule_index(primary%num%residues(res_type))
+        call attempt_translation_move(res_type, mol_index)
+        call update_output_files(.true.)
+    end do
+
+    ! Attemps 50 rotation move
+    do i = 101, 150
+        status%desired_block = i
+        mol_index = pick_random_molecule_index(primary%num%residues(res_type))
+        call attempt_rotation_move(res_type, mol_index)
+        call update_output_files(.true.)
+    end do
+
+    e_recip_after_move = energy%recip_coulomb
+
+    ! Full recalculation of energy
     call update_system_energy(primary)
-    e_after_delete = energy%total
 
-    if (abs(e_after_delete - ref_total) > tol) then
-        print *, "FAIL: Coulomb energy mismatch"
+    if (abs(energy%recip_coulomb - e_recip_after_move) > tol) then
+        write (*,*) "FAIL: energy drift during monte carlo move"
+        write (*,*) "energy%recip_coulomb", energy%recip_coulomb
+        write (*,*) "e_recip_after_move", e_recip_after_move
         stop 1
     end if
 
