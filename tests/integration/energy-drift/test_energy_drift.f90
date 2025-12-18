@@ -54,7 +54,6 @@ program test_delete_and_create
     ! ---------- Identify the molecule to delete ----------
     res_type = pick_random_residue_type(thermo%is_active)
 
-    call update_output_files(.false.)
 
     ! ---------- ENERGY CONSERVATION DURING TRANSLATION ----------
 
@@ -64,7 +63,6 @@ program test_delete_and_create
         status%desired_block = i
         mol_index = primary%num%residues(res_type) + 1
         call attempt_creation_move(res_type, mol_index)
-        call update_output_files(.true.)
     end do
 
     write (*,*) "Number of residue after creation :", primary%num%residues(res_type)
@@ -75,7 +73,6 @@ program test_delete_and_create
         status%desired_block = i
         mol_index = pick_random_molecule_index(primary%num%residues(res_type))
         call attempt_deletion_move(res_type, mol_index)
-        call update_output_files(.true.)
     end do
 
     write (*,*) "Number of residue after deletion :", primary%num%residues(res_type)
@@ -85,7 +82,6 @@ program test_delete_and_create
         status%desired_block = i
         mol_index = pick_random_molecule_index(primary%num%residues(res_type))
         call attempt_translation_move(res_type, mol_index)
-        call update_output_files(.true.)
     end do
 
     ! Attemps 50 rotation move
@@ -93,7 +89,6 @@ program test_delete_and_create
         status%desired_block = i
         mol_index = pick_random_molecule_index(primary%num%residues(res_type))
         call attempt_rotation_move(res_type, mol_index)
-        call update_output_files(.true.)
     end do
 
     e_recip_after_move = energy%recip_coulomb
