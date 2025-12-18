@@ -17,7 +17,7 @@ contains
     !------------------------------------------------------------------------------
     ! Compute the total energy of the system
     !------------------------------------------------------------------------------
-    subroutine compute_system_energy(box)
+    subroutine update_system_energy(box)
 
         ! Input arguments
         type(type_box), intent(inout) :: box
@@ -26,7 +26,7 @@ contains
         call compute_pairwise_energy(box)
         call compute_ewald_self()
         call compute_ewald_recip()
-        call compute_total_intra_residue_coulomb_energy()
+        call update_intra_real_coulomb_energy(box)
 
         ! Calculate total energy
         energy%total = energy%recip_coulomb + energy%non_coulomb + energy%coulomb + &
@@ -34,45 +34,43 @@ contains
 
         call energy_report(final=.false.) ! Print energy in log
 
-    end subroutine compute_system_energy
+    end subroutine update_system_energy
 
     !------------------------------------------------------------------------------
     ! Loops over all active residue types and their molecules, computes the
     ! intra-residue Coulomb energy for each molecule, and accumulates it into
     ! the total intra-residue energy in the simulation.
     !------------------------------------------------------------------------------
-    subroutine compute_total_intra_residue_coulomb_energy()
+    subroutine update_intra_real_coulomb_energy(box)
+
+        ! Input arguments
+        type(type_box), intent(inout) :: box    ! Box (reservoir or primary)
 
         ! Local variables
-        integer :: res_type_1
-        integer :: mol_index_1
-        real(real64) :: e_intra_coulomb
+        integer :: res_type                     ! Type of residue
+        integer :: mol_index                    ! Index of the molecule
 
         ! Initialize total intra-residue Coulomb energy
         energy%intra_coulomb = zero ! In kcal/mol
 
         ! Loop over all residue types
-        do res_type_1 = 1, res%number
+        do res_type = 1, res%number
             
             ! Skip inactive residues
-            if (thermo%is_active(res_type_1)) then
+            if (.not. thermo%is_active(res_type)) cycle
 
-                ! Loop over all molecules of this residue type
-                do mol_index_1 = 1, primary%num%residues(res_type_1)
+            ! Loop over all molecules of this residue type
+            do mol_index = 1, box%num%residues(res_type)
 
-                    ! Compute intra-residue Coulomb energy for this molecule
-                    call compute_intra_real_energy_residue(res_type_1, mol_index_1, e_intra_coulomb)
+                ! Compute intra-residue Coulomb energy for this molecule
+                ! and accumulate it into total intra-residue energy
+                energy%intra_coulomb = energy%intra_coulomb + &
+                    intra_res_real_coulomb_energy(res_type, mol_index) ! In kcal/mol
 
-                    ! Accumulate into total intra-residue energy
-                    energy%intra_coulomb = energy%intra_coulomb + e_intra_coulomb ! In kcal/mol
-
-                end do
-
-            end if
-
+            end do
         end do
 
-    end subroutine compute_total_intra_residue_coulomb_energy
+    end subroutine update_intra_real_coulomb_energy
 
     subroutine compute_pairwise_energy(box)
 

@@ -24,7 +24,7 @@ program MANIAC
 
     ! Step 3 : Simulation preparation
     call setup_simulation_parameters()  ! Set up MC parameters, initial checks
-    call compute_system_energy(primary) ! Compute initial total energy for the main box
+    call update_system_energy(primary)  ! Compute initial total energy for the main box
 
     ! Step 4 :Monte Carlo simulation
     call monte_carlo_loop()             ! Main MC loop

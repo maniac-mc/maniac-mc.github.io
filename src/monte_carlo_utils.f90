@@ -318,7 +318,7 @@ contains
             call compute_recip_energy_single_mol(res_type, mol_index, new%recip_coulomb, is_creation = creation_flag)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, new%non_coulomb, new%coulomb)
             call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
-            call compute_intra_real_energy_residue(res_type, mol_index, new%intra_coulomb)
+            new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
         
             ! Recalculate total energy
             new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
@@ -392,7 +392,7 @@ contains
 
             ! Note: In deletion scenario, compute all energy components
             call compute_ewald_self_interaction_single_mol(res_type, old%ewald_self)
-            call compute_intra_real_energy_residue(res_type, mol_index, old%intra_coulomb)
+            old%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
             call compute_pair_interaction_energy_singlemol(primary, res_type, mol_index, old%non_coulomb, old%coulomb)
             
             ! #TODO CHECK

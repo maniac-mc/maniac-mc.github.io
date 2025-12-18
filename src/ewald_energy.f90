@@ -205,12 +205,14 @@ contains
     ! molecule or residue using the Ewald summation method:
     !    E_ij_real = q_i * q_j * (erfc(α * r_ij) / r_ij)
     !------------------------------------------------------------------------------
-    subroutine compute_intra_real_energy_residue(res_type, mol_index, u_intraCoulomb)
-
+    function intra_res_real_coulomb_energy(res_type, mol_index) result(u_intraCoulomb)
+        
+        ! Return value
+        real(real64) :: u_intraCoulomb
+        
         ! Input arguments
         integer, intent(in) :: res_type
         integer, intent(in) :: mol_index
-        real(real64), intent(out) :: u_intraCoulomb
 
         ! Local variables
         integer :: atom_index_1, atom_index_2
@@ -232,18 +234,18 @@ contains
                             res_type, mol_index, atom_index_2)
 
                 ! Skip extremely small distances to avoid singularity
-                if (distance > error) then
-                    ! Add the real-space intramolecular contribution (erfc(α * r) - 1) / r
-                    u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * &
-                        (erfc(ewald%param%alpha * distance) - one) / distance
-                end if
+                if (distance < error) cycle
+
+                ! Add the real-space intramolecular contribution (erfc(α * r) - 1) / r
+                u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * &
+                    (erfc(ewald%param%alpha * distance) - one) / distance
 
             end do
         end do
 
         u_intraCoulomb = u_intraCoulomb * EPS0_INV_real ! In kcal/mol
 
-    end subroutine compute_intra_real_energy_residue
+    end function intra_res_real_coulomb_energy
 
     !--------------------------------------------------------------------
     ! Computes the reciprocal-space structure factor amplitude A(k) for
