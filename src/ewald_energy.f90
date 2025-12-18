@@ -163,7 +163,6 @@ contains
 
     end function reciprocal_ewald_energy
 
-
     !--------------------------------------------------------------------
     ! Computes the self-interaction correction for the reciprocal-space
     ! Coulomb energy of a single molecule/residue in the Ewald summation.

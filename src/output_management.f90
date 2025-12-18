@@ -101,10 +101,10 @@ contains
         call log_message("+" // repeat_char("-", box_width-2) // "+")
 
         ! Version info lines
-        call BoxLine("MANIAC-MC - Version " // version, box_width)
+        call box_line("MANIAC-MC - Version " // version, box_width)
 
         ! Credits (optional, you can also keep them in version_module if desired)
-        call BoxLine("Code written and maintained by Simon Gravelle, LIPhy, CNRS", box_width)
+        call box_line("Code written and maintained by Simon Gravelle, LIPhy, CNRS", box_width)
 
         ! Bottom border
         call log_message("+" // repeat_char("-", box_width-2) // "+")

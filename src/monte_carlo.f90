@@ -35,7 +35,7 @@ contains
         integer :: mol_index                ! Index of molecule copy
 
         ! Initialization
-        call LogStartMC()                   ! Log starting message
+        call log_starting_msg()                   ! Log starting message
         call update_output_files(.false.)   ! Write initial topology
 
         ! Initialize Monte Carlo counters and probabilities
@@ -109,7 +109,7 @@ contains
 
                 ! Adjust step sizes & output status at the end of the block
                 call adjust_move_step_sizes()           ! Adjust MC step sizes
-                call PrintStatus()                      ! Print current simulation status
+                call print_status()                      ! Print current simulation status
                 call update_output_files(.true.)        ! Update output files
 
             end if

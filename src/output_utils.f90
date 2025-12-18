@@ -22,7 +22,7 @@ contains
     !---------------------------------------------------------------------------
     subroutine close_output()
 
-        call PrintTerminationMessage()
+        call print_termination_message()
 
         close(out_unit)
 
@@ -45,7 +45,7 @@ contains
     !---------------------------------------------------------------------------
     !  Log the start of the Monte Carlo loop with a modern ASCII style
     !---------------------------------------------------------------------------
-    subroutine LogStartMC()
+    subroutine log_starting_msg()
 
         ! Blank line before message
         call log_message("")
@@ -54,7 +54,7 @@ contains
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Message line centered
-        call BoxLine("Starting Monte Carlo Loop", BOX_WIDTH)
+        call box_line("Starting Monte Carlo Loop", BOX_WIDTH)
 
         ! Bottom border
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
@@ -62,13 +62,13 @@ contains
         ! Blank line after message
         call log_message("")
 
-    end subroutine LogStartMC
+    end subroutine log_starting_msg
 
     !-----------------------------------------------------------------------
-    ! Helper: BoxLine
+    ! Helper: box_line
     ! Writes a line inside the ASCII box, padded to box_width
     !-----------------------------------------------------------------------
-    subroutine BoxLine(text, width)
+    subroutine box_line(text, width)
 
         ! Input variables
         character(len=*), intent(in) :: text
@@ -84,12 +84,12 @@ contains
 
         call log_message("| " // padded(1:width-4) // " |")
 
-    end subroutine BoxLine
+    end subroutine box_line
 
     !---------------------------------------------------------------------------
     ! Print a formatted termination footer with Monte Carlo summary
     !---------------------------------------------------------------------------
-    subroutine PrintTerminationMessage()
+    subroutine print_termination_message()
 
         integer :: type_residue
         character(len=256) :: line
@@ -101,55 +101,55 @@ contains
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
 
         ! Title
-        call BoxLine("MANIAC-MC simulation completed", BOX_WIDTH)
-        call BoxLine("", BOX_WIDTH)  ! blank line inside box
+        call box_line("MANIAC-MC simulation completed", BOX_WIDTH)
+        call box_line("", BOX_WIDTH)  ! blank line inside box
 
         ! Output path information
-        call BoxLine("All output files have been written to:", BOX_WIDTH)
-        call BoxLine(trim(path%outputs), BOX_WIDTH)
+        call box_line("All output files have been written to:", BOX_WIDTH)
+        call box_line(trim(path%outputs), BOX_WIDTH)
 
         ! Summary statistics (Trial / Accepted moves)
         if (proba%translation > 0) then
             write(line,'(A,I8,A,I8)') "  Translations (Trial/Accepted): ", &
                 counter%translations(1), " / ", counter%translations(2)
-            call BoxLine(trim(line), BOX_WIDTH)
+            call box_line(trim(line), BOX_WIDTH)
         end if
 
         if (proba%rotation > 0) then
             write(line,'(A,I8,A,I8)') "  Rotations    (Trial/Accepted): ", &
                 counter%rotations(1), " / ", counter%rotations(2)
-            call BoxLine(trim(line), BOX_WIDTH)
+            call box_line(trim(line), BOX_WIDTH)
         end if
 
         if (proba%insertion_deletion > 0) then
             write(line,'(A,I8,A,I8)') "  Creations    (Trial/Accepted): ", &
                 counter%creations(1), " / ", counter%creations(2)
-            call BoxLine(trim(line), BOX_WIDTH)
+            call box_line(trim(line), BOX_WIDTH)
             write(line,'(A,I8,A,I8)') "  Deletions    (Trial/Accepted): ", &
                 counter%deletions(1), " / ", counter%deletions(2)
-            call BoxLine(trim(line), BOX_WIDTH)
+            call box_line(trim(line), BOX_WIDTH)
         end if
 
         if (proba%swap > 0) then
             write(line,'(A,I8,A,I8)') "  Swap         (Trial/Accepted): ", &
                 counter%swaps(1), " / ", counter%swaps(2)
-            call BoxLine(trim(line), BOX_WIDTH)
+            call box_line(trim(line), BOX_WIDTH)
         end if
 
         if (proba%widom > 0) then
             do type_residue = 1, res%number
                 if (statistic%sample(type_residue) > 0) then
                     write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", statistic%sample(type_residue)
-                    call BoxLine(trim(line), BOX_WIDTH)
+                    call box_line(trim(line), BOX_WIDTH)
                     write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", statistic%mu_ex(type_residue)
-                    call BoxLine(trim(line), BOX_WIDTH)
+                    call box_line(trim(line), BOX_WIDTH)
                     write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", statistic%mu_tot(type_residue)
-                    call BoxLine(trim(line), BOX_WIDTH)
+                    call box_line(trim(line), BOX_WIDTH)
                 end if
             end do
         end if
 
-        call BoxLine("", BOX_WIDTH)  ! blank line inside box
+        call box_line("", BOX_WIDTH)  ! blank line inside box
 
         ! Bottom border
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
@@ -157,9 +157,9 @@ contains
         ! Blank line after footer
         call log_message("")
 
-    end subroutine PrintTerminationMessage
+    end subroutine print_termination_message
 
-    subroutine PrintStatus()
+    subroutine print_status()
 
         ! Local variables
         integer :: nb_type_residue
@@ -250,7 +250,7 @@ contains
             call abort_run( "Detected NaN in total energy computation." // new_line('a') )
         end if
 
-    end subroutine PrintStatus
+    end subroutine print_status
 
     !----------------------------------------------------------------------
     ! Computes composite energies from the energy components in 'energy'.
@@ -299,23 +299,23 @@ contains
 
         ! Box title
         if (final) then
-            call BoxLine("Final Energy Report", BOX_WIDTH)
+            call box_line("Final Energy Report", BOX_WIDTH)
         else
-            call BoxLine("Initial Energy Report", BOX_WIDTH)
+            call box_line("Initial Energy Report", BOX_WIDTH)
         end if
 
-        call BoxLine("", BOX_WIDTH)   
+        call box_line("", BOX_WIDTH)   
 
         ! Column headers
-        call BoxLine("  Step        TotEng        E_vdwl        E_coul        E_long", BOX_WIDTH)
+        call box_line("  Step        TotEng        E_vdwl        E_coul        E_long", BOX_WIDTH)
 
         ! Energies line
         write(formatted_msg,'(I10,1X,F15.6,1X,F15.6,1X,F15.6,1X,F15.6)') &
             status%block, e_tot, energy%non_coulomb, e_coul, e_long
 
-        call BoxLine(trim(formatted_msg), BOX_WIDTH)
+        call box_line(trim(formatted_msg), BOX_WIDTH)
 
-        call BoxLine("", BOX_WIDTH)  ! blank line inside box
+        call box_line("", BOX_WIDTH)  ! blank line inside box
 
         ! Bottom border
         call log_message("+" // repeat_char("-", BOX_WIDTH-2) // "+")
