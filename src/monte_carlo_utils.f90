@@ -316,11 +316,11 @@ contains
         
             ! Note: In creation scenario, compute all energy components
             call compute_ewald_phase_factors(res_type, mol_index)
-            call update_reciprocal_amplitude_single_mol(res_type, mol_index, &
-                new%recip_coulomb, is_creation = creation_flag)            
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, is_creation = creation_flag)            
+            new%recip_coulomb = reciprocal_ewald_energy()
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
                 new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
-            call compute_ewald_self_interaction_single_mol(res_type, new%ewald_self)
+            new%ewald_self =  ewald_self_energy_single_mol(res_type)
             new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
         
             ! Recalculate total energy
@@ -335,18 +335,18 @@ contains
             new%coulomb = 0
             new%ewald_self = 0
             new%intra_coulomb = 0
-            call update_reciprocal_amplitude_single_mol(res_type, mol_index, &
-                new%recip_coulomb, is_deletion = deletion_flag)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index, is_deletion = deletion_flag)
+            new%recip_coulomb = reciprocal_ewald_energy()
 
-            ! Recalculate total energy
-            new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
-        
         else
 
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
+            new%ewald_self = 0
+            new%intra_coulomb = 0
             call compute_ewald_phase_factors(res_type, mol_index)
-            call update_reciprocal_amplitude_single_mol(res_type, mol_index, new%recip_coulomb)
+            call update_reciprocal_amplitude_single_mol(res_type, mol_index)
+            new%recip_coulomb = reciprocal_ewald_energy()
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
                 new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
 
@@ -355,6 +355,9 @@ contains
 
         end if
 
+        ! Recalculate total energy
+        new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
+    
     end subroutine compute_new_energy
 
     !---------------------------------------------------------------------------
@@ -378,48 +381,44 @@ contains
 
         if (creation_flag) then
 
+            ! Creation scenario
             ! Note: Most energy terms in the absence of a molecule are 0
-            ! --> One must only recalculate energy%recip_coulomb
+            ! (Appart from energy%recip_coulomb)
+
             old%non_coulomb = zero
             old%coulomb = zero
             old%ewald_self = zero
             old%intra_coulomb = zero
-
-            ! #TODO CHECK
-            ! call update_reciprocal_amplitude_single_mol(res_type, mol_index, old%recip_coulomb)
             old%recip_coulomb = energy%recip_coulomb
-
-            ! Recalculate total energy
-            old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
 
         else if (deletion_flag) then
 
-            ! Note: In deletion scenario, compute all energy components
-            call compute_ewald_self_interaction_single_mol(res_type, old%ewald_self)
+            ! Deletion scenario
+            ! Note: In deletion scenario, recompute all energy components
+
+            old%ewald_self = ewald_self_energy_single_mol(res_type)
             old%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
                 old%non_coulomb, old%coulomb, skip_ordering_check = .true.)
-
-            ! #TODO CHECK
-            ! call update_reciprocal_amplitude_single_mol(res_type, mol_index, old%recip_coulomb)
             old%recip_coulomb = energy%recip_coulomb
-
-            ! Recalculate total energy
-            old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
 
         else
 
+            ! Translation or rotation scenario
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute pairwise interactions. Current value for the reciprocal
-            ! energy can be used.
+            ! energy is used.
+
+            old%ewald_self = zero
+            old%intra_coulomb = zero
             old%recip_coulomb = energy%recip_coulomb
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
                 old%non_coulomb, old%coulomb, skip_ordering_check = .true.)
 
-            ! Recalculate total energy
-            old%total = old%non_coulomb + old%coulomb + old%recip_coulomb
-
         end if
+
+        ! Recalculate total energy
+        old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
 
     end subroutine compute_old_energy
 
