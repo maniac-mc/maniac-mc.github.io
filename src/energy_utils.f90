@@ -96,7 +96,7 @@ contains
             do mol_index = 1, box%num%residues(res_type)
 
                 ! Compute the energy for the molecule
-                call pairwise_energy_for_molecule(box, res_type, mol_index, e_non_coulomb, e_coulomb)
+                call pairwise_energy_for_molecule(box, res_type, mol_index, e_non_coulomb, e_coulomb, skip_ordering_check = .false.)
 
                 ! Add the molecule energy to the total pairwise energy
                 energy%non_coulomb = energy%non_coulomb + e_non_coulomb ! In kcal/mol

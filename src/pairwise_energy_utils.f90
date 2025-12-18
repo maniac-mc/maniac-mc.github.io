@@ -24,7 +24,7 @@ contains
         type(type_box), intent(inout) :: box        ! Simulation box (primary or reservoir)
         integer, intent(in) :: res_i                ! Residue type index of the current molecule
         integer, intent(in) :: mol_i                ! Molecule index of the current residue
-        logical, intent(in), optional :: skip_ordering_check
+        logical, intent(in) :: skip_ordering_check  ! To skip ordering check and remove doublon
 
         ! Output arguments
         real(real64), intent(out) :: e_non_coulomb  ! Accumulated non-Coulomb (LJ) energy for this molecule
@@ -57,10 +57,8 @@ contains
                     if ((mol_i == mol_j) .and. (res_i == res_j)) cycle
 
                     ! Enforce ordering to avoid double-counting (only when recalculating full system energy)
-                    if (present(skip_ordering_check)) then
-                        if (.not. skip_ordering_check) then
-                            if ((res_j < res_i) .or. ((res_j == res_i) .and. (mol_j <= mol_i))) cycle
-                        end if
+                    if (.not. skip_ordering_check) then
+                        if ((res_j < res_i) .or. ((res_j == res_i) .and. (mol_j <= mol_i))) cycle
                     end if
 
                     ! Loop over all side of the selected molecule j
