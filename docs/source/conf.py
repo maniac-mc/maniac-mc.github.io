@@ -1,15 +1,9 @@
 # Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'MANIAC-MC'
 copyright = '2025, Simon Gravelle'
 author = 'Simon Gravelle'
-release = 'v0.3.0-beta'
+release = 'v0.4.0'
 
 # -- General configuration ---------------------------------------------------
 extensions = [
