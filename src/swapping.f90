@@ -49,9 +49,8 @@ contains
 
         ! If no valid different residue type was found, skip this move
         if (residue_type_bis == -1) return
-
-        ! Check that there is at least one molecule of the selected type to swap
-        if (primary%num%residues(residue_type_bis)==0) return ! #todo : Is this really necessary ?
+        ! Check that there is at least one molecule of the type to be deleted
+        if (primary%num%residues(residue_type) == 0) return
 
         ! Count trial move
         counter%swaps(1) = counter%swaps(1) + 1
