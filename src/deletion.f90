@@ -137,7 +137,6 @@ contains
         ! Restore previous residue/atom numbers
         call update_counts(primary, res_type, +1)
 
-
         ! Restore previous positions and orientation
         guest%com(:, res_type, molecule_index) = mol_com_old(:)
         guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &

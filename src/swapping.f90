@@ -34,12 +34,12 @@ contains
     subroutine attempt_swap_move(residue_type, molecule_index)
 
         ! Input arguments
-        integer, intent(in) :: residue_type     ! Residue type to be moved
+        integer, intent(in) :: residue_type     ! Residue type to be swapped
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Local variables
-        integer :: residue_type_bis     ! Residue type to be swapped
-        integer :: molecule_index_bis   ! Index of molecule to be swapped
+        integer :: residue_type_bis     ! Second residue type to be swapped
+        integer :: molecule_index_bis   ! Index of second molecule to be swapped
         integer :: rand_mol_index       ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability     ! Acceptance probability of creation move
         integer :: last_molecule_index  ! Index of the last molecule in the primary box
@@ -49,16 +49,17 @@ contains
 
         ! If no valid different residue type was found, skip this move
         if (residue_type_bis == -1) return
-        ! Check that there is at least one molecule of the type to be deleted
+
+        ! A swap requires at least one molecule from "residue_type"
         if (primary%num%residues(residue_type) == 0) return
+        ! A molecule of type "residue_type_bis" can be created from nothing
 
         ! Count trial move
         counter%swaps(1) = counter%swaps(1) + 1
-
-        ! Pick a molecule ID for the second type
-        molecule_index_bis = primary%num%residues(residue_type_bis) + 1
         
-        ! STEP 1 - Delete a molecule
+        !---------------------------------------------------------------------------
+        ! STEP 1 - Delete the molecule "residue_type, molecule_index"
+        !---------------------------------------------------------------------------
 
         ! Energy of the previous configuration
         call compute_old_energy(residue_type, molecule_index, is_deletion = .true.)
@@ -67,20 +68,24 @@ contains
         ! Record the index of the last molecule of type "residue_type"
         last_molecule_index = primary%num%residues(residue_type)
 
-        ! Delete molecule
+        ! Delete molecule "residue_type, molecule_index"
+        ! Place the last molecule "last_molecule_index" into "molecule_index"
         call remove_molecule(residue_type, molecule_index, last_molecule_index)
 
-        ! Update molecule and atom counts
-        primary%num%residues(residue_type) = primary%num%residues(residue_type) - 1
-        primary%num%atoms = primary%num%atoms - res%atom(residue_type)
+        ! Update molecule and atom counts for residue_type
+        call update_counts(primary, residue_type, -1)
 
-        ! STEP 2 - Place a new molecule at the same location
+        !---------------------------------------------------------------------------
+        ! STEP 2 - Place a new molecule "residue_type_bis, molecule_index_bis" at the same location
+        !---------------------------------------------------------------------------
 
-        ! Update molecule and atom counts (second time)
-        primary%num%residues(residue_type_bis) = primary%num%residues(residue_type_bis) + 1
-        primary%num%atoms = primary%num%atoms + res%atom(residue_type_bis)
+        ! Update molecule and atom counts for residue_type_bis
+        call update_counts(primary, residue_type_bis, +1)
 
-        ! Use the CoM of the deleted molecule
+        ! Use the molecule ID as just updated by update_counts
+        molecule_index_bis = primary%num%residues(residue_type_bis)
+
+        ! Use the CoM "saved%com" of the deleted molecule "residue_type" for the created molecule "residue_type_bis"
         guest%com(:, residue_type_bis, molecule_index_bis) = saved%com
 
         ! Generate or pick orientation for the new molecule
@@ -118,11 +123,8 @@ contains
         real(real64), dimension(:, :) :: site_offset_old
 
         ! Restore previous residue/atom numbers
-        primary%num%atoms = primary%num%atoms + res%atom(residue_type)
-        primary%num%residues(residue_type) = primary%num%residues(residue_type) + 1
-
-        primary%num%atoms = primary%num%atoms - res%atom(residue_type_bis)
-        primary%num%residues(residue_type_bis) = primary%num%residues(residue_type_bis) - 1
+        call update_counts(primary, residue_type, +1)
+        call update_counts(primary, residue_type_bis, -1)
 
         ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)
