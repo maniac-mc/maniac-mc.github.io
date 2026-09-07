@@ -261,37 +261,58 @@ contains
     ! molecule of type_old with one of type_new in a grand-canonical or
     ! semi-grand Monte Carlo simulation.
     !---------------------------------------------------------------------- 
-    function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
 
-        ! Arguments
-        type(energy_type), intent(in) :: old   ! Energy of system with old molecule
-        type(energy_type), intent(in) :: new   ! Energy of system with new molecule
-        integer, intent(in) :: type_old         ! Residue type being removed
-        integer, intent(in) :: type_new         ! Residue type being inserted
+    function swap_acceptance_probability(old, new, type_old, type_new, N_old, N_new) result(probability)
 
-        ! Local variables
-        real(real64) :: deltaU                  ! Energy difference
-        real(real64) :: mu_old, mu_new          ! Chemical potentials (kcal/mol)
-        real(real64) :: N_old, N_new            ! Number of molecules per type
-        real(real64) :: Nplus1
+        type(energy_type), intent(in) :: old, new
+        integer, intent(in) :: type_old, type_new
+        real(real64), intent(in) :: N_old, N_new   ! pre-move counts of type_old (A) and type_new (B)
 
-        ! Return value
-        real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
+        real(real64) :: deltaU, mu_old, mu_new, probability
 
-        N_new = real(primary%num%residues(type_new), real64)
-        N_old = real(primary%num%residues(type_old), real64)
-        Nplus1 = N_new + 1.0_real64
+        mu_old = thermo%chemical_potential(type_old)
+        mu_new = thermo%chemical_potential(type_new)
+        deltaU = new%total - old%total
 
-        ! Chemical potentials
-        mu_old = thermo%chemical_potential(type_old) ! kcal/mol
-        mu_new = thermo%chemical_potential(type_new) ! kcal/mol
-        deltaU = new%total - old%total         ! kcal/mol
-
-        ! Swap acceptance probability:
-        ! P_acc = min[1, (N_old / (N_new + 1)) * exp(-β (ΔE + μ_new - μ_old))]
-        probability = min(1.0_real64, (N_old / Nplus1) * exp(-beta * (deltaU + mu_new - mu_old)))
+        ! P_acc = min[1, (N_A/(N_B+1)) * (Λ_A^3/Λ_B^3) * exp(-β(ΔU + μ_A - μ_B))]
+        probability = min(1.0_real64, &
+            (N_old / (N_new + 1.0_real64)) * &
+            (res%lambda(type_old)**3 / res%lambda(type_new)**3) * &
+            exp(-beta * (deltaU + mu_old - mu_new)))
 
     end function swap_acceptance_probability
+
+    ! function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
+
+    !     ! Arguments
+    !     type(energy_type), intent(in) :: old   ! Energy of system with old molecule
+    !     type(energy_type), intent(in) :: new   ! Energy of system with new molecule
+    !     integer, intent(in) :: type_old         ! Residue type being removed
+    !     integer, intent(in) :: type_new         ! Residue type being inserted
+
+    !     ! Local variables
+    !     real(real64) :: deltaU                  ! Energy difference
+    !     real(real64) :: mu_old, mu_new          ! Chemical potentials (kcal/mol)
+    !     real(real64) :: N_old, N_new            ! Number of molecules per type
+    !     real(real64) :: Nplus1
+
+    !     ! Return value
+    !     real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
+
+    !     N_new = real(primary%num%residues(type_new), real64)
+    !     N_old = real(primary%num%residues(type_old), real64)
+    !     Nplus1 = N_new + 1.0_real64
+
+    !     ! Chemical potentials
+    !     mu_old = thermo%chemical_potential(type_old) ! kcal/mol
+    !     mu_new = thermo%chemical_potential(type_new) ! kcal/mol
+    !     deltaU = new%total - old%total         ! kcal/mol
+
+    !     ! Swap acceptance probability:
+    !     ! P_acc = min[1, (N_old / (N_new + 1)) * exp(-β (ΔE + μ_new - μ_old))]
+    !     probability = min(1.0_real64, (N_old / Nplus1) * exp(-beta * (deltaU + mu_new - mu_old)))
+
+    ! end function swap_acceptance_probability
 
     !---------------------------------------------------------------------------
     ! Compute the updated energy of a single molecule after a trial move

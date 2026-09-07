@@ -43,6 +43,10 @@ contains
         integer :: rand_mol_index       ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability     ! Acceptance probability of creation move
         integer :: last_molecule_index  ! Index of the last molecule in the primary box
+        
+        ! TO CHECK. Why real ?
+        real(real64) :: N_old_premove, N_new_premove
+
 
         ! Pick randomly a second residue type
         residue_type_bis = pick_different_residue_type(residue_type)
@@ -56,7 +60,12 @@ contains
 
         ! Count trial move
         counter%swaps(1) = counter%swaps(1) + 1
-        
+            
+        ! TO CHECK
+        ! Save pre-move counts for the acceptance formula, before anything is mutated
+        N_old_premove = real(primary%num%residues(residue_type), real64)
+        N_new_premove = real(primary%num%residues(residue_type_bis), real64)
+
         !---------------------------------------------------------------------------
         ! STEP 1 - Delete the molecule "residue_type, molecule_index"
         !---------------------------------------------------------------------------
@@ -75,6 +84,10 @@ contains
         ! Update molecule and atom counts for residue_type
         call update_counts(primary, residue_type, -1)
 
+        ! TO CHECK
+        ! *** FIX: purge the deleted molecule's contribution from k-space sums
+        call compute_new_energy(residue_type, molecule_index, is_deletion = .true.)
+
         !---------------------------------------------------------------------------
         ! STEP 2 - Place a new molecule "residue_type_bis, molecule_index_bis" at the same location
         !---------------------------------------------------------------------------
@@ -88,6 +101,10 @@ contains
         ! Use the CoM "saved%com" of the deleted molecule "residue_type" for the created molecule "residue_type_bis"
         guest%com(:, residue_type_bis, molecule_index_bis) = saved%com
 
+        ! TO CHECK
+        ! *** FIX: save pre-insertion Fourier state so it can be rolled back
+        call save_single_mol_fourier_terms(residue_type_bis, molecule_index_bis)
+
         ! Generate or pick orientation for the new molecule
         call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_mol_index, place_random_com = .false.)
 
@@ -97,13 +114,17 @@ contains
         ! STEP 3 - Accept or reject move
 
         ! Compute acceptance probability for the move
-        probability = swap_acceptance_probability(old, new, residue_type, residue_type_bis)
+        !probability = swap_acceptance_probability(old, new, residue_type, residue_type_bis)
+        ! TO CHECK
+        probability = swap_acceptance_probability(old, new, residue_type, residue_type_bis, N_old_premove, N_new_premove)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
             call accept_swap_move()
         else ! Reject move
-            call reject_swap_move(residue_type, molecule_index, residue_type_bis, saved%com, saved%offset)
+            ! TO CHECK
+            call reject_swap_move(residue_type, molecule_index, residue_type_bis, molecule_index_bis, saved%com, saved%offset)
+            ! call reject_swap_move(residue_type, molecule_index, residue_type_bis, saved%com, saved%offset)
         end if
 
     end subroutine attempt_swap_move
@@ -114,27 +135,48 @@ contains
     ! molecule’s center-of-mass and internal geometry, and rebuilds the associated
     ! Fourier (reciprocal-space) contributions.
     !---------------------------------------------------------------------------
-    subroutine reject_swap_move(residue_type, molecule_index, residue_type_bis, mol_com_old, site_offset_old)
 
-        ! Input parameters
-        integer, intent(in) :: residue_type, residue_type_bis       ! Residue type to be moved
-        integer, intent(in) :: molecule_index   ! Molecule ID
-        real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
+    subroutine reject_swap_move(residue_type, molecule_index, residue_type_bis, molecule_index_bis, mol_com_old, site_offset_old)
+
+        integer, intent(in) :: residue_type, residue_type_bis
+        integer, intent(in) :: molecule_index, molecule_index_bis
+        real(real64), dimension(3) :: mol_com_old
         real(real64), dimension(:, :) :: site_offset_old
 
-        ! Restore previous residue/atom numbers
         call update_counts(primary, residue_type, +1)
         call update_counts(primary, residue_type_bis, -1)
 
-        ! Restore previous positions and orientation
         guest%com(:, residue_type, molecule_index) = mol_com_old(:)
         guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
             site_offset_old(:, 1:res%atom(residue_type))
 
-        ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
+        ! *** FIX: restore BOTH sides — the removal mutation and the insertion mutation
         call restore_single_mol_fourier(residue_type, molecule_index)
+        call restore_single_mol_fourier(residue_type_bis, molecule_index_bis)
 
     end subroutine reject_swap_move
+
+    ! subroutine reject_swap_move(residue_type, molecule_index, residue_type_bis, mol_com_old, site_offset_old)
+
+    !     ! Input parameters
+    !     integer, intent(in) :: residue_type, residue_type_bis       ! Residue type to be moved
+    !     integer, intent(in) :: molecule_index   ! Molecule ID
+    !     real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
+    !     real(real64), dimension(:, :) :: site_offset_old
+
+    !     ! Restore previous residue/atom numbers
+    !     call update_counts(primary, residue_type, +1)
+    !     call update_counts(primary, residue_type_bis, -1)
+
+    !     ! Restore previous positions and orientation
+    !     guest%com(:, residue_type, molecule_index) = mol_com_old(:)
+    !     guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+    !         site_offset_old(:, 1:res%atom(residue_type))
+
+    !     ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
+    !     call restore_single_mol_fourier(residue_type, molecule_index)
+
+    ! end subroutine reject_swap_move
 
     !---------------------------------------------------------------------------
     ! Commits an accepted swap move by updating global energy components with the
