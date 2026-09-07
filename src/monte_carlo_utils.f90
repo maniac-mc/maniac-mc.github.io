@@ -323,9 +323,6 @@ contains
             new%ewald_self =  ewald_self_energy_single_mol(res_type)
             new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
         
-            ! Recalculate total energy
-            new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
-        
         else if (deletion_flag) then
 
             ! Note: Most energy terms in the absence of a molecule are 0
@@ -349,9 +346,6 @@ contains
             new%recip_coulomb = reciprocal_ewald_energy()
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
                 new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
-
-            ! Recalculate total energy
-            new%total = new%non_coulomb + new%coulomb + new%recip_coulomb
 
         end if
 
