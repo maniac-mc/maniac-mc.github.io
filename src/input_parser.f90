@@ -386,6 +386,11 @@ contains
                 in_residue_block = .false.
                 res%number = res%number + 1
                 cycle
+
+            case default
+                if (.not. in_residue_block) &
+                    call abort_run("Unknown keyword in input: " // trim(keyword), 1)
+
             end select
 
             ! Residue parsing (types, names, fugacity, chemical potential nb-atoms)
