@@ -140,6 +140,8 @@ contains
 
         call write_dat_number(status%block, file_status)
 
+        call write_dat_histogram(status%block)
+
         call write_dat_mcmove(status%block, file_status)
 
         call write_dat_widom(status%block, file_status)
@@ -182,6 +184,67 @@ contains
         close(UNIT_ENERGY)
 
     end subroutine write_dat_energy
+
+    !------------------------------------------------------------------------------
+    ! Write histogram_RESNAME.dat for each active residue: cumulative particle-
+    ! number distribution, sampled every "histogram_every" steps. The file is
+    ! rewritten at every block so that it always reflects the current cumulative
+    ! histogram.
+    !------------------------------------------------------------------------------
+    subroutine write_dat_histogram(nb_block)
+
+        ! Input arguments
+        integer, intent(in) :: nb_block
+
+        ! Local variables
+        integer :: resi, n                       ! Loop indices
+        integer :: n_min, n_max                  ! Observed range of N
+        real(real64) :: proba_n                  ! Normalized probability p(N)
+        character(len=256) :: filename           ! Output file name
+        character(len=256) :: line, header       ! Formatted lines
+        integer :: UNIT_HIST = 22
+
+        ! Histogram only allocated when insertion/deletion moves are enabled
+        if (.not. allocated(hist%count)) return
+
+        do resi = 1, res%number
+
+            if (.not. thermo%is_active(resi)) cycle
+
+            ! Find the observed range of particle numbers
+            n_min = -1
+            n_max = -1
+            do n = 0, ubound(hist%count, 2)
+                if (hist%count(resi, n) > 0) then
+                    if (n_min == -1) n_min = n
+                    n_max = n
+                end if
+            end do
+            if (n_min == -1) cycle
+
+            ! Construct the filename for this residue
+            filename = trim(path%outputs) // 'histogram_' // trim(res%names(resi)) // '.dat'
+
+            ! Rewrite the file each block (cumulative histogram)
+            open(unit=UNIT_HIST, file=filename, status='REPLACE', action='write')
+
+            ! Header
+            write(header, '(A,I10)') '# Cumulative particle-number histogram up to block ', nb_block
+            write(UNIT_HIST, '(A)') trim(header)
+            write(UNIT_HIST, '(A)') '#    N        count    probability'
+
+            ! One line per observed N
+            do n = n_min, n_max
+                proba_n = real(hist%count(resi, n), real64) / real(hist%nb_samples, real64)
+                write(line, '(I10,1X,I12,1X,F12.8)') n, hist%count(resi, n), proba_n
+                write(UNIT_HIST, '(A)') trim(line)
+            end do
+
+            close(UNIT_HIST)
+
+        end do
+
+    end subroutine write_dat_histogram
 
     !------------------------------------------------------------------------------
     ! Write widom_RESNAME.dat for active residues if Widom sampling is enabled.
@@ -239,6 +302,31 @@ contains
         end if
 
     end subroutine write_dat_widom
+
+    !------------------------------------------------------------------------------
+    ! Accumulate the particle-number histogram: takes one sample of N for each
+    ! active residue. Called every "histogram_every" steps from the MC loop,
+    ! and once for the initial configuration. The histogram file itself is
+    ! written only at block boundaries (see write_dat_histogram).
+    !------------------------------------------------------------------------------
+    subroutine accumulate_histogram()
+
+        ! Local variables
+        integer :: resi
+
+        ! Histogram only allocated when insertion/deletion moves are enabled
+        if (.not. allocated(hist%count)) return
+
+        do resi = 1, res%number
+            if (.not. thermo%is_active(resi)) cycle
+            hist%count(resi, primary%num%residues(resi)) = &
+                hist%count(resi, primary%num%residues(resi)) + 1
+        end do
+
+        ! One sample per call
+        hist%nb_samples = hist%nb_samples + 1
+
+    end subroutine accumulate_histogram
 
     !------------------------------------------------------------------------------
     ! Write number_RESNAME.dat for each active residue. Tracks block number

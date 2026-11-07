@@ -33,10 +33,14 @@ contains
         real(real64) :: cumul_total         ! Total probability (including insertion/deletion)
         integer :: res_type                 ! Index of molecule to be moved
         integer :: mol_index                ! Index of molecule copy
+        integer :: hist_step_counter        ! Steps since last histogram sample
 
         ! Initialization
         call log_starting_msg()                   ! Log starting message
         call update_output_files(.false.)   ! Write initial topology
+
+        ! Sample the initial configuration in the particle-number histogram
+        if (allocated(hist%count)) call accumulate_histogram()
 
         ! Initialize Monte Carlo counters and probabilities
         status%block = 0
@@ -100,6 +104,15 @@ contains
 
             ! Adjust Monte Carlo step counters
             status%step = status%step + 1
+
+            ! Accumulate the particle-number histogram at the requested sampling rate.
+            ! Note: the mod() is inside a nested if on purpose. Fortran does not
+            ! guarantee short-circuit evaluation of .and., and histogram_every must
+            ! never be used as a divisor when it could be zero.
+            hist_step_counter = hist_step_counter + 1
+            if (allocated(hist%count)) then
+                if (mod(hist_step_counter, mc_input%histogram_every) == 0) call accumulate_histogram()
+            end if
 
             ! Finished all steps in the current block?
             if (status%step > status%desired_step) then

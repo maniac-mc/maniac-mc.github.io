@@ -100,6 +100,14 @@ contains
             statistic%sample(:) = zero
         end if
 
+        ! Allocate particle-number histogram (only meaningful when
+        ! insertion/deletion moves are enabled)
+        if (proba%insertion_deletion > 0) then
+            allocate(hist%count(res%number, 0:nmax%active_residues))
+            hist%count = 0
+            hist%nb_samples = 0
+        end if
+
     end subroutine allocate_array
 
     !--------------------------------------------------------------------
