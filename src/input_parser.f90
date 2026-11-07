@@ -533,8 +533,10 @@ contains
 
         ! Non mandatoray parameters
         if (.not. has_recalibrate) mc_input%recalibrate_moves = .false.
-        ! Default: sample the histogram once per block (same as number_*.dat)
-        if (.not. has_histogram_every) mc_input%histogram_every = status%desired_step
+        ! Default: sample the histogram once per block. The max(...,1) guard is essential:
+        ! nb_step can legitimately be 0 (e.g. energy test cases), and a zero sampling
+        ! interval would cause an integer division by zero in the MC loop.
+        if (.not. has_histogram_every) mc_input%histogram_every = max(status%desired_step, 1)
         ! === Ensure only enabled moves are counted ===
         if (.not. has_insertdel_proba) proba%insertion_deletion = zero
         if (.not. has_rotation_proba) proba%rotation = zero

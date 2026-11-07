@@ -105,10 +105,13 @@ contains
             ! Adjust Monte Carlo step counters
             status%step = status%step + 1
 
-            ! Accumulate the particle-number histogram every "histogram_every" steps
+            ! Accumulate the particle-number histogram at the requested sampling rate.
+            ! Note: the mod() is inside a nested if on purpose. Fortran does not
+            ! guarantee short-circuit evaluation of .and., and histogram_every must
+            ! never be used as a divisor when it could be zero.
             hist_step_counter = hist_step_counter + 1
-            if (allocated(hist%count) .and. mod(hist_step_counter, mc_input%histogram_every) == 0) then
-                call accumulate_histogram()
+            if (allocated(hist%count)) then
+                if (mod(hist_step_counter, mc_input%histogram_every) == 0) call accumulate_histogram()
             end if
 
             ! Finished all steps in the current block?
