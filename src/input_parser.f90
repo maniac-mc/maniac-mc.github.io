@@ -236,6 +236,7 @@ contains
         logical :: has_nb_block, has_nb_step, has_temp, has_seed
         logical :: has_cutoff, has_tolerance
         logical :: has_translation_step, has_rotation_step, has_recalibrate
+        logical :: has_histogram_every
         logical :: has_translation_proba, has_rotation_proba
         logical :: has_insertdel_proba, has_swap_proba, has_widom_proba
         logical :: has_fugacity, has_chemical_potential
@@ -249,6 +250,7 @@ contains
         has_translation_step = .false.
         has_rotation_step = .false.
         has_recalibrate = .false.
+        has_histogram_every = .false.
         has_translation_proba = .false.
         has_rotation_proba = .false.
         has_insertdel_proba = .false.
@@ -337,6 +339,13 @@ contains
                 if (ios /= 0) error stop "Error reading recalibrate_moves"
                 mc_input%recalibrate_moves = val_bool
                 has_recalibrate = .true.
+
+            case ("histogram_every")
+                read(rest_line, *, iostat=ios) val_int
+                if (ios /= 0) error stop "Error reading histogram_every"
+                if (val_int < 1) error stop "Invalid histogram_every: must be >= 1"
+                mc_input%histogram_every = val_int
+                has_histogram_every = .true.
 
             case ("translation_proba")
                 read(rest_line, *, iostat=ios) val_real
@@ -524,6 +533,8 @@ contains
 
         ! Non mandatoray parameters
         if (.not. has_recalibrate) mc_input%recalibrate_moves = .false.
+        ! Default: sample the histogram once per block (same as number_*.dat)
+        if (.not. has_histogram_every) mc_input%histogram_every = status%desired_step
         ! === Ensure only enabled moves are counted ===
         if (.not. has_insertdel_proba) proba%insertion_deletion = zero
         if (.not. has_rotation_proba) proba%rotation = zero

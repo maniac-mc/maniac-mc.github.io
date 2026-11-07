@@ -91,7 +91,8 @@ contains
     !---------------------------------------------------------------------------
     subroutine print_termination_message()
 
-        integer :: type_residue
+        integer :: type_residue, n
+        real(real64) :: mean_n, var_n, sd_n
         character(len=256) :: line
 
         ! Blank line before footer
@@ -144,6 +145,32 @@ contains
                     write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", statistic%mu_ex(type_residue)
                     call box_line(trim(line), BOX_WIDTH)
                     write(line,'(A,F12.5)') "    Total chemical potential (kcal/mol): ", statistic%mu_tot(type_residue)
+                    call box_line(trim(line), BOX_WIDTH)
+                end if
+            end do
+        end if
+
+        ! Particle-number histogram summary (GCMC only)
+        if (proba%insertion_deletion > 0 .and. allocated(hist%count)) then
+            do type_residue = 1, res%number
+                if (thermo%is_active(type_residue) .and. hist%nb_samples > 0) then
+                    ! Mean <N>
+                    mean_n = 0.0_real64
+                    do n = 0, ubound(hist%count, 2)
+                        mean_n = mean_n + real(n, real64) * hist%count(type_residue, n)
+                    end do
+                    mean_n = mean_n / real(hist%nb_samples, real64)
+                    ! Variance and standard deviation
+                    var_n = 0.0_real64
+                    do n = 0, ubound(hist%count, 2)
+                        var_n = var_n + (real(n, real64) - mean_n)**2 * hist%count(type_residue, n)
+                    end do
+                    var_n = var_n / real(hist%nb_samples, real64)
+                    sd_n = sqrt(var_n)
+                    write(line,'(A,A,A,F10.3,A,F10.3,A,I10,A)') &
+                        "  Histogram ", trim(res%names(type_residue)), &
+                        ": <N> = ", mean_n, ", sigma(N) = ", sd_n, &
+                        " (", hist%nb_samples, " samples)"
                     call box_line(trim(line), BOX_WIDTH)
                 end if
             end do
@@ -711,6 +738,9 @@ contains
         write(msg, '("Translation step (Å): ", F10.2)') mc_input%translation_step
         call log_message(msg)
         write(msg, '("Rotation step angle (radian): ", F10.2)') mc_input%rotation_step_angle
+        call log_message(msg)
+
+        write(msg, '("Histogram sampling every (steps): ", I0)') mc_input%histogram_every
         call log_message(msg)
 
         write(msg, '("Translation proba: ", F10.2)') proba%translation

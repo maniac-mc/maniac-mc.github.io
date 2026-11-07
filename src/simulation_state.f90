@@ -175,6 +175,15 @@ module simulation_state
     type(mc_stat_type) :: statistic
 
     !---------------------------------------------------------------------------
+    ! Histogram of particle numbers per residue type
+    !---------------------------------------------------------------------------
+    type histogram_type
+        integer, dimension(:, :), allocatable :: count     ! count(res_type, N), N = 0..max
+        integer :: nb_samples                              ! Number of blocks sampled
+    end type histogram_type
+    type(histogram_type) :: hist
+
+    !---------------------------------------------------------------------------
     ! Interaction arrays
     !---------------------------------------------------------------------------
     type type_coeff
@@ -239,6 +248,7 @@ module simulation_state
         real(real64) :: real_space_cutoff           ! Cutoff radius - maximum interaction distance in real space
         logical :: recalibrate_moves                ! Enable automatic recalibration of move steps (true/false)
         integer :: seed                             ! Initial seed for the random number generator
+        integer :: histogram_every                  ! Sample particle-number histogram every N steps
     end type input_type
     type(input_type) :: mc_input
 
