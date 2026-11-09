@@ -769,15 +769,17 @@ contains
             call log_message(msg)
 
             if (thermo%is_active(i)) then
-                if (thermo%fugacity(i) > 0) then
+                if (thermo%fugacity_set(i)) then
                     write(msg, '("  Fugacity (atm): ", F10.2)') thermo%fugacity(i)
                     call log_message(msg)
                 end if
             end if
 
             if (thermo%is_active(i)) then
-                write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') thermo%chemical_potential(i)
-                call log_message(msg)
+                if (thermo%mu_set(i)) then
+                    write(msg, '("  Chemical potential (kcal/mol): ", F10.2)') thermo%chemical_potential(i)
+                    call log_message(msg)
+                end if
             end if
 
             write(msg, '("  Number of atoms in residue: ", I0)') res%atom(i)

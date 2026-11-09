@@ -591,7 +591,7 @@ contains
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
         integer, allocatable :: tmp_atom_in_residue(:), tmp_types_per_residue(:)
-        logical, allocatable :: tmp_is_active(:)
+        logical, allocatable :: tmp_is_active(:), tmp_fugacity_set(:), tmp_mu_set(:)
         real(real64), allocatable :: tmp_fugacity(:), tmp_chemical_potential(:)
         integer, allocatable :: tmp_types_2d(:,:)
         character(len=10), allocatable :: tmp_names_2d(:,:)
@@ -603,6 +603,8 @@ contains
         allocate(keys(n), order(n))
         allocate(tmp_names_1d(n))
         allocate(tmp_is_active(n))
+        allocate(tmp_fugacity_set(n))
+        allocate(tmp_mu_set(n))
         allocate(tmp_fugacity(n))
         allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
@@ -634,6 +636,8 @@ contains
             k = order(i)
             tmp_names_1d(i) = res%names(k)
             tmp_is_active(i) = thermo%is_active(k)
+            tmp_fugacity_set(i) = thermo%fugacity_set(k)
+            tmp_mu_set(i) = thermo%mu_set(k)
             tmp_fugacity(i) = thermo%fugacity(k)
             tmp_chemical_potential(i) = thermo%chemical_potential(k)
             tmp_atom_in_residue(i) = res%atom(k)
@@ -645,6 +649,8 @@ contains
         ! Copy temporary arrays back into original arrays
         res%names = tmp_names_1d
         thermo%is_active = tmp_is_active
+        thermo%fugacity_set = tmp_fugacity_set
+        thermo%mu_set = tmp_mu_set
         thermo%fugacity = tmp_fugacity
         thermo%chemical_potential = tmp_chemical_potential
         res%atom = tmp_atom_in_residue
@@ -653,8 +659,9 @@ contains
         res%site_names = tmp_names_2d
 
         ! Deallocate temporary arrays
-        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &
-                tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
+        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity_set, tmp_mu_set, &
+                tmp_fugacity, tmp_chemical_potential, tmp_atom_in_residue, &
+                tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
     end subroutine sort_residues
 
