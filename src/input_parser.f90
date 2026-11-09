@@ -137,6 +137,8 @@ contains
         allocate(thermo%fugacity(nb_type_res))
         allocate(thermo%chemical_potential(nb_type_res))
         allocate(thermo%is_active(nb_type_res))
+        allocate(thermo%fugacity_set(nb_type_res))
+        allocate(thermo%mu_set(nb_type_res))
 
         ! Allocate system bookkeeping arrays
         allocate(res%types(nb_type_res))
@@ -265,6 +267,9 @@ contains
         thermo%fugacity(:) = -one
         ! Initialize all chemical_potential to 0.0 (indicating unset)
         thermo%chemical_potential(:) = zero
+        ! No fugacity / chemical potential provided yet
+        thermo%fugacity_set(:) = .false.
+        thermo%mu_set(:) = .false.
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -446,12 +451,16 @@ contains
                 ! Check if the line specifies the fugacity
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
+                    if (ios /= 0) call abort_run("Error reading fugacity")
                     thermo%fugacity(res%number + 1) = val_real
+                    thermo%fugacity_set(res%number + 1) = .true.
 
                 ! Check if the line specifies the chemical potential
                 else if (trim(token) == 'chemical_potential') then
                     read(rest_line, *, iostat=ios) val_real
+                    if (ios /= 0) call abort_run("Error reading chemical potential")
                     thermo%chemical_potential(res%number + 1) = val_real
+                    thermo%mu_set(res%number + 1) = .true.
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
@@ -505,8 +514,8 @@ contains
 
             if (.not. thermo%is_active(val_int)) cycle
 
-            has_fugacity = (thermo%fugacity(val_int) >= zero)
-            has_chemical_potential = (thermo%chemical_potential(val_int) < zero)
+            has_fugacity = thermo%fugacity_set(val_int)
+            has_chemical_potential = thermo%mu_set(val_int)
 
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential) .and. proba%insertion_deletion > 0) then
@@ -517,6 +526,11 @@ contains
             ! Rule 2: cannot both be provided
             if (has_fugacity .and. has_chemical_potential) then
                 call abort_run("Both fugacity and chemical potential were specified for active residue: " // &
+                            trim(res%names(val_int)))
+            end if
+
+            if (has_fugacity .and. thermo%fugacity(val_int) <= zero) then
+                call abort_run("Invalid fugacity (must be > 0) for residue " // &
                             trim(res%names(val_int)))
             end if
 

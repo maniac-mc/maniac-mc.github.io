@@ -76,6 +76,8 @@ module simulation_state
         real(real64), allocatable :: fugacity(:)        ! Species fugacity for GCMC reservoir (dimensionless)
         real(real64), allocatable :: chemical_potential(:) ! Species chemical potential of reservoir (kcal/mol)
         logical, allocatable :: is_active(:)            ! Activity flag: 1 = species active, 0 = inactive
+        logical, allocatable :: fugacity_set(:)         ! .true. if fugacity was explicitly provided in the input file
+        logical, allocatable :: mu_set(:)               ! .true. if chemical_potential was explicitly provided in the input file
     end type input_thermo_type
     type(input_thermo_type) :: thermo
 
