@@ -137,6 +137,8 @@ contains
         allocate(thermo%fugacity(nb_type_res))
         allocate(thermo%chemical_potential(nb_type_res))
         allocate(thermo%is_active(nb_type_res))
+        allocate(thermo%fugacity_set(nb_type_res))
+        allocate(thermo%mu_set(nb_type_res))
 
         ! Allocate system bookkeeping arrays
         allocate(res%types(nb_type_res))
@@ -265,6 +267,9 @@ contains
         thermo%fugacity(:) = -one
         ! Initialize all chemical_potential to 0.0 (indicating unset)
         thermo%chemical_potential(:) = zero
+        ! No fugacity / chemical potential provided yet
+        thermo%fugacity_set(:) = .false.
+        thermo%mu_set(:) = .false.
 
         do
             read(INFILE, '(A)', IOSTAT=ios) line
@@ -446,12 +451,16 @@ contains
                 ! Check if the line specifies the fugacity
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
+                    if (ios /= 0) call abort_run("Error reading fugacity")
                     thermo%fugacity(res%number + 1) = val_real
+                    thermo%fugacity_set(res%number + 1) = .true.
 
                 ! Check if the line specifies the chemical potential
                 else if (trim(token) == 'chemical_potential') then
                     read(rest_line, *, iostat=ios) val_real
+                    if (ios /= 0) call abort_run("Error reading chemical potential")
                     thermo%chemical_potential(res%number + 1) = val_real
+                    thermo%mu_set(res%number + 1) = .true.
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
@@ -505,8 +514,8 @@ contains
 
             if (.not. thermo%is_active(val_int)) cycle
 
-            has_fugacity = (thermo%fugacity(val_int) >= zero)
-            has_chemical_potential = (thermo%chemical_potential(val_int) < zero)
+            has_fugacity = thermo%fugacity_set(val_int)
+            has_chemical_potential = thermo%mu_set(val_int)
 
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential) .and. proba%insertion_deletion > 0) then
@@ -517,6 +526,11 @@ contains
             ! Rule 2: cannot both be provided
             if (has_fugacity .and. has_chemical_potential) then
                 call abort_run("Both fugacity and chemical potential were specified for active residue: " // &
+                            trim(res%names(val_int)))
+            end if
+
+            if (has_fugacity .and. thermo%fugacity(val_int) <= zero) then
+                call abort_run("Invalid fugacity (must be > 0) for residue " // &
                             trim(res%names(val_int)))
             end if
 
@@ -577,7 +591,7 @@ contains
         integer, allocatable :: keys(:), order(:)
         character(len=10), allocatable :: tmp_names_1d(:)
         integer, allocatable :: tmp_atom_in_residue(:), tmp_types_per_residue(:)
-        logical, allocatable :: tmp_is_active(:)
+        logical, allocatable :: tmp_is_active(:), tmp_fugacity_set(:), tmp_mu_set(:)
         real(real64), allocatable :: tmp_fugacity(:), tmp_chemical_potential(:)
         integer, allocatable :: tmp_types_2d(:,:)
         character(len=10), allocatable :: tmp_names_2d(:,:)
@@ -589,6 +603,8 @@ contains
         allocate(keys(n), order(n))
         allocate(tmp_names_1d(n))
         allocate(tmp_is_active(n))
+        allocate(tmp_fugacity_set(n))
+        allocate(tmp_mu_set(n))
         allocate(tmp_fugacity(n))
         allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
@@ -620,6 +636,8 @@ contains
             k = order(i)
             tmp_names_1d(i) = res%names(k)
             tmp_is_active(i) = thermo%is_active(k)
+            tmp_fugacity_set(i) = thermo%fugacity_set(k)
+            tmp_mu_set(i) = thermo%mu_set(k)
             tmp_fugacity(i) = thermo%fugacity(k)
             tmp_chemical_potential(i) = thermo%chemical_potential(k)
             tmp_atom_in_residue(i) = res%atom(k)
@@ -631,6 +649,8 @@ contains
         ! Copy temporary arrays back into original arrays
         res%names = tmp_names_1d
         thermo%is_active = tmp_is_active
+        thermo%fugacity_set = tmp_fugacity_set
+        thermo%mu_set = tmp_mu_set
         thermo%fugacity = tmp_fugacity
         thermo%chemical_potential = tmp_chemical_potential
         res%atom = tmp_atom_in_residue
@@ -639,8 +659,9 @@ contains
         res%site_names = tmp_names_2d
 
         ! Deallocate temporary arrays
-        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity, tmp_chemical_potential, &
-                tmp_atom_in_residue, tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
+        deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity_set, tmp_mu_set, &
+                tmp_fugacity, tmp_chemical_potential, tmp_atom_in_residue, &
+                tmp_types_per_residue, tmp_types_2d, tmp_names_2d)
 
     end subroutine sort_residues
 

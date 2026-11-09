@@ -249,7 +249,10 @@ contains
 
             if (.not. thermo%is_active(val_int)) cycle
 
-            if (thermo%fugacity(val_int) >= zero) then
+            ! If a fugacity was explicitly provided, derive the chemical potential from it:
+            ! mu = kT * ln(f). Use the provided-flag (not the sign of f) so that any
+            ! explicitly given fugacity is honored; the parser guarantees f > 0.
+            if (thermo%fugacity_set(val_int)) then
                 thermo%chemical_potential(val_int) = log(thermo%fugacity(val_int)) / beta
             end if
 
