@@ -193,7 +193,7 @@ contains
         energy%total            = energy%total          + new%total         - old%total 
 
         ! Count successful move
-        counter%swaps = counter%swaps + 1
+        counter%swaps(2) = counter%swaps(2) + 1
 
     end subroutine accept_swap_move
 

@@ -97,7 +97,7 @@ contains
         energy%total = energy%total + new%total - old%total
 
         ! Count successful move
-        counter%creations = counter%creations + 1
+        counter%creations(2) = counter%creations(2) + 1
 
         ! Remove molecule from reservoir if present
         if (status%reservoir_provided) then
