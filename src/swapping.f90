@@ -40,7 +40,7 @@ contains
         ! Local variables
         integer :: residue_type_bis     ! Second residue type to be swapped
         integer :: molecule_index_bis   ! Index of second molecule to be swapped
-        integer :: rand_mol_index       ! Randomly selected molecule index from the reservoir for copying geometry
+        integer :: rand_idx_reservoir   ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability     ! Acceptance probability of creation move
         integer :: last_molecule_index  ! Index of the last molecule in the primary box
         
@@ -106,7 +106,7 @@ contains
         call save_single_mol_fourier_terms(residue_type_bis, molecule_index_bis)
 
         ! Generate or pick orientation for the new molecule
-        call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_mol_index, place_random_com = .false.)
+        call insert_and_orient_molecule(residue_type_bis, molecule_index_bis, rand_idx_reservoir, place_random_com = .false.)
 
         ! Compute new energy
         call compute_new_energy(residue_type_bis, molecule_index_bis, is_creation = .true.)

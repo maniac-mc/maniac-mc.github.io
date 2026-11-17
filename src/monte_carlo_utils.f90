@@ -524,12 +524,12 @@ contains
     ! its atomic geometry. Can take geometry from a reservoir or apply
     ! a random rotation if no reservoir exists.
     !---------------------------------------------------------------------------
-    subroutine insert_and_orient_molecule(res_type, molecule_index, reservoir_index, place_random_com)
+    subroutine insert_and_orient_molecule(res_type, molecule_index, rand_idx_reservoir, place_random_com)
 
         ! Input arguments
         integer, intent(in) :: res_type     ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
-        integer, intent(out) :: reservoir_index ! Randomly selected molecule index from the reservoir
+        integer, intent(out) :: rand_idx_reservoir ! Randomly selected molecule index from the reservoir
         logical, intent(in), optional :: place_random_com ! To control if the COM must be picked
 
         ! Local variables
@@ -559,21 +559,21 @@ contains
             call random_number(random_nmb)
 
             if (present(place_random_com)) then
-                reservoir_index = int(random_nmb * reservoir%num%residues(res_type)) + 1  
+                rand_idx_reservoir = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-                    reservoir_coord%offset(:, res_type, reservoir_index, 1:res%atom(res_type))
+                    reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type))
             else
-                reservoir_index = int(random_nmb * reservoir%num%residues(res_type)) + 1  
+                rand_idx_reservoir = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-                    reservoir_coord%offset(:, res_type, reservoir_index, 1:res%atom(res_type))
+                    reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type))
             end if  
 
         else
 
             ! No reservoir provided
-            reservoir_index = 0
+            rand_idx_reservoir = 0
 
             ! Copy site offsets from the first molecule
             guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &

@@ -29,12 +29,12 @@ contains
     subroutine attempt_deletion_move(res_type, molecule_index)
 
         ! Input arguments
-        integer, intent(in) :: res_type     ! Residue type to be moved
+        integer, intent(in) :: res_type         ! Residue type to be moved
         integer, intent(in) :: molecule_index   ! Molecule ID
 
         ! Local variables
         real(real64) :: probability             ! Acceptance probability of deletion move
-        integer :: last_molecule_index          ! Index of the last molecule in the primary box
+        integer :: last_mol_idx_primary         ! Index of the last molecule in the primary box
 
         ! Return immediately if no molecules of type res_type exist
         if (primary%num%residues(res_type)==0) return
@@ -47,10 +47,10 @@ contains
         call save_molecule_state(res_type, molecule_index, com_old = saved%com, offset_old = saved%offset)
 
         ! Record the index of the last molecule
-        last_molecule_index = primary%num%residues(res_type)
+        last_mol_idx_primary = primary%num%residues(res_type)
 
         ! Delete molecule
-        call remove_molecule(res_type, molecule_index, last_molecule_index)
+        call remove_molecule(res_type, molecule_index, last_mol_idx_primary)
 
         ! Update molecule and atom counts
         call update_counts(primary, res_type, -1)

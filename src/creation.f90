@@ -34,7 +34,7 @@ contains
         integer, intent(in) :: mol_index   ! Molecule ID
 
         ! Local variables
-        integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
+        integer :: rand_idx_reservoir               ! Randomly selected molecule index from the reservoir for copying geometry
         real(real64) :: probability             ! Acceptance probability of creation move
 
         call check_molecule_index(mol_index)
@@ -52,7 +52,7 @@ contains
         call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Generate random insertion position within the simulation box
-        call insert_and_orient_molecule(res_type, mol_index, rand_mol_index)
+        call insert_and_orient_molecule(res_type, mol_index, rand_idx_reservoir)
 
         ! Compute new energy
         call compute_new_energy(res_type, mol_index, is_creation = .true.)
@@ -64,7 +64,7 @@ contains
         if (rand_uniform() <= probability) then
         
             ! Accept move
-            call accept_creation_move(res_type, rand_mol_index)
+            call accept_creation_move(res_type, rand_idx_reservoir)
 
         else
         
@@ -79,14 +79,14 @@ contains
     ! Updates system energies and counters when a creation move is accepted.
     ! Optionally removes the inserted molecule from the reservoir.
     !---------------------------------------------------------------------------
-    subroutine accept_creation_move(res_type, rand_mol_index)
+    subroutine accept_creation_move(res_type, rand_idx_reservoir)
 
         ! Input parameters
         integer, intent(in) :: res_type     ! Residue type to be moved
-        integer, intent(in) :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
+        integer, intent(in) :: rand_idx_reservoir ! Randomly selected molecule index from the reservoir for copying geometry
 
         ! Local variable
-        integer :: last_mol_index          ! Index of the last molecule in the reservoir (used when removing a molecule)
+        integer :: last_mol_idx_reservoir    ! Index of the last molecule in the reservoir (used when removing a molecule)
         
         ! Update total energies
         energy%recip_coulomb = new%recip_coulomb
@@ -103,10 +103,10 @@ contains
         if (status%reservoir_provided) then
 
             ! Replace mol_index with the last molecule in the list to maintain continuity
-            last_mol_index = reservoir%num%residues(res_type)
-            reservoir_coord%com(:, res_type, rand_mol_index) = reservoir_coord%com(:, res_type, last_mol_index)
-            reservoir_coord%offset(:, res_type, rand_mol_index, 1:res%atom(res_type)) = &
-                reservoir_coord%offset(:, res_type, last_mol_index, 1:res%atom(res_type))
+            last_mol_idx_reservoir = reservoir%num%residues(res_type)
+            reservoir_coord%com(:, res_type, rand_idx_reservoir) = reservoir_coord%com(:, res_type, last_mol_idx_reservoir)
+            reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type)) = &
+                reservoir_coord%offset(:, res_type, last_mol_idx_reservoir, 1:res%atom(res_type))
 
             ! Increase the residue and atom counts
             call update_counts(reservoir, res_type, -1)
