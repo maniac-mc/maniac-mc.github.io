@@ -102,7 +102,7 @@ contains
     !  - Cubic/Orthorhombic: [-L/2, L/2]
     !  - Triclinic (fractional space): [-0.5, 0.5)
     !-----------------------------------------------------------
-    subroutine wrap_into_box(pos, box)
+    subroutine wrap_centered(pos, box)
 
         ! Input parameters
         real(real64), dimension(3), intent(inout) :: pos   ! Cartesian position to wrap into box
@@ -137,7 +137,7 @@ contains
 
         end if
 
-    end subroutine wrap_into_box
+    end subroutine wrap_centered
 
     !----------------------------------------------------------------------------
     ! Computes the inverse and determinant of a 3x3 box matrix.

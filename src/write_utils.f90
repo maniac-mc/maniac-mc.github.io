@@ -94,7 +94,7 @@ contains
 
                 ! Wrap CoM into box for active molecules
                 if (thermo%is_active(res_type)) then
-                    call wrap_into_box(com, box)
+                    call wrap_centered(com, box)
                 end if
 
                 do atom_index = 1, res%atom(res_type)
@@ -106,7 +106,7 @@ contains
                     
                     ! Wrap position for inactive structure
                     if (.not. thermo%is_active(res_type)) then
-                        call wrap_into_box(pos, box)
+                        call wrap_centered(pos, box)
                     end if
 
                     write(UNIT_LMP, '(I6,1X,I4,3(1X,F12.7))') atom_id, atom_type, pos(1), pos(2), pos(3)
@@ -624,7 +624,7 @@ contains
 
                     ! Only wrap atom of inative species (i.e. leave active molecules continuous at the pbc)
                     if (.not. thermo%is_active(i)) then
-                        call wrap_into_box(pos, box)
+                        call wrap_centered(pos, box)
                     end if
 
                     write(unit_data, '(I6,1X,I6,1X,I4,1X,F12.8,3(1X,F12.7))') &
