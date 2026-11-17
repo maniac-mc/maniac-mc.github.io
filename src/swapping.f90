@@ -116,7 +116,8 @@ contains
         ! Compute acceptance probability for the move
         !probability = swap_acceptance_probability(old, new, residue_type, residue_type_bis)
         ! TO CHECK
-        probability = swap_acceptance_probability(old, new, residue_type, residue_type_bis, N_old_premove, N_new_premove)
+        probability = swap_acceptance_probability(energy_old, energy_new, residue_type, &
+            residue_type_bis, N_old_premove, N_new_premove)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then ! Accept move
@@ -156,28 +157,6 @@ contains
 
     end subroutine reject_swap_move
 
-    ! subroutine reject_swap_move(residue_type, molecule_index, residue_type_bis, mol_com_old, site_offset_old)
-
-    !     ! Input parameters
-    !     integer, intent(in) :: residue_type, residue_type_bis       ! Residue type to be moved
-    !     integer, intent(in) :: molecule_index   ! Molecule ID
-    !     real(real64), dimension(3) :: mol_com_old ! For storing old molecule center-of-mass
-    !     real(real64), dimension(:, :) :: site_offset_old
-
-    !     ! Restore previous residue/atom numbers
-    !     call update_counts(primary, residue_type, +1)
-    !     call update_counts(primary, residue_type_bis, -1)
-
-    !     ! Restore previous positions and orientation
-    !     guest%com(:, residue_type, molecule_index) = mol_com_old(:)
-    !     guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
-    !         site_offset_old(:, 1:res%atom(residue_type))
-
-    !     ! Restore Fourier states (ik_alloc and dk_alloc, all zeros)
-    !     call restore_single_mol_fourier(residue_type, molecule_index)
-
-    ! end subroutine reject_swap_move
-
     !---------------------------------------------------------------------------
     ! Commits an accepted swap move by updating global energy components with the
     ! differences between the new and old configurations, and increments the
@@ -185,12 +164,12 @@ contains
     !---------------------------------------------------------------------------
     subroutine accept_swap_move()
 
-        energy%recip_coulomb    = new%recip_coulomb
-        energy%non_coulomb      = energy%non_coulomb    + new%non_coulomb   - old%non_coulomb
-        energy%coulomb          = energy%coulomb        + new%coulomb       - old%coulomb
-        energy%ewald_self       = energy%ewald_self     + new%ewald_self    - old%ewald_self
-        energy%intra_coulomb    = energy%intra_coulomb  + new%intra_coulomb - old%intra_coulomb
-        energy%total            = energy%total          + new%total         - old%total 
+        energy%recip_coulomb    = energy_new%recip_coulomb
+        energy%non_coulomb      = energy%non_coulomb    + energy_new%non_coulomb   - energy_old%non_coulomb
+        energy%coulomb          = energy%coulomb        + energy_new%coulomb       - energy_old%coulomb
+        energy%ewald_self       = energy%ewald_self     + energy_new%ewald_self    - energy_old%ewald_self
+        energy%intra_coulomb    = energy%intra_coulomb  + energy_new%intra_coulomb - energy_old%intra_coulomb
+        energy%total            = energy%total          + energy_new%total         - energy_old%total 
 
         ! Count successful move
         counter%swaps(2) = counter%swaps(2) + 1

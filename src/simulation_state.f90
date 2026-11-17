@@ -66,7 +66,7 @@ module simulation_state
         real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy
         real(real64) :: total                       ! Total energies
     end type energy_type
-    type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
+    type(energy_type) :: energy, energy_old, energy_new           ! Note: old and new are used during Monte Carlo move
 
     !---------------------------------------------------------------------------
     ! Thermodynamic input parameters
@@ -103,7 +103,7 @@ module simulation_state
     ! Simulation cell geometrical properties
     !---------------------------------------------------------------------------
     type type_cell
-        real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
+        real(real64) :: inv_matrix(3,3)             ! Reciprocal box matrix
         real(real64) :: matrix(3,3)                 ! Simulation box matrix
         real(real64) :: bounds(3,2)                 ! Box dimensions (lo, hi)
         real(real64) :: metrics(9)                  ! Misc. box properties (e.g., lengths, cosines of angles)

@@ -59,7 +59,7 @@ contains
         call compute_new_energy(res_type, molecule_index, is_deletion = .true.)
 
         ! Compute acceptance probability for the move
-        probability = compute_acceptance_probability(old, new, res_type, TYPE_DELETION)
+        probability = compute_acceptance_probability(energy_old, energy_new, res_type, TYPE_DELETION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then
@@ -90,12 +90,12 @@ contains
         real(real64) :: trial_pos(3)                ! Random numbers for initial molecule position in the box
 
         ! Update total energies
-        energy%recip_coulomb    = new%recip_coulomb
-        energy%non_coulomb      = energy%non_coulomb    + new%non_coulomb   - old%non_coulomb
-        energy%coulomb          = energy%coulomb        + new%coulomb       - old%coulomb
-        energy%ewald_self       = energy%ewald_self     + new%ewald_self    - old%ewald_self
-        energy%intra_coulomb    = energy%intra_coulomb  + new%intra_coulomb - old%intra_coulomb
-        energy%total            = energy%total          + new%total         - old%total
+        energy%recip_coulomb    = energy_new%recip_coulomb
+        energy%non_coulomb      = energy%non_coulomb    + energy_new%non_coulomb   - energy_old%non_coulomb
+        energy%coulomb          = energy%coulomb        + energy_new%coulomb       - energy_old%coulomb
+        energy%ewald_self       = energy%ewald_self     + energy_new%ewald_self    - energy_old%ewald_self
+        energy%intra_coulomb    = energy%intra_coulomb  + energy_new%intra_coulomb - energy_old%intra_coulomb
+        energy%total            = energy%total          + energy_new%total         - energy_old%total
 
         ! Count succesful move
         counter%deletions(2) = counter%deletions(2) + 1

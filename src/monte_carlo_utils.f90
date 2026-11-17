@@ -201,11 +201,11 @@ contains
     !----------------------------------------------------------------------
     ! Compute the Metropolis acceptance probability for a Monte Carlo move.
     !----------------------------------------------------------------------
-    function compute_acceptance_probability(old, new, res_type, move_type) result(probability)
+    function compute_acceptance_probability(energy_old, energy_new, res_type, move_type) result(probability)
 
         ! Input arguments
-        type(energy_type), intent(in) :: old   ! Old energy states
-        type(energy_type), intent(in) :: new   ! New energy states
+        type(energy_type), intent(in) :: energy_old   ! Old energy states
+        type(energy_type), intent(in) :: energy_new   ! New energy states
         integer, intent(in) :: move_type        ! MC move type (TYPE_CREATION, TYPE_DELETION, TYPE_TRANSLATION, or TYPE_ROTATION)
         integer, intent(in) :: res_type     ! Index of the residue type
 
@@ -221,7 +221,7 @@ contains
 
         N = real(primary%num%residues(res_type), real64)
         Nplus1 = N + 1.0_real64
-        deltaU = new%total - old%total                  ! kcal/mol
+        deltaU = energy_new%total - energy_old%total                  ! kcal/mol
         mu = thermo%chemical_potential(res_type)     ! kcal/mol
 
         ! Compute factor based on move type
@@ -262,9 +262,9 @@ contains
     ! semi-grand Monte Carlo simulation.
     !---------------------------------------------------------------------- 
 
-    function swap_acceptance_probability(old, new, type_old, type_new, N_old, N_new) result(probability)
+    function swap_acceptance_probability(energy_old, energy_new, type_old, type_new, N_old, N_new) result(probability)
 
-        type(energy_type), intent(in) :: old, new
+        type(energy_type), intent(in) :: energy_old, energy_new
         integer, intent(in) :: type_old, type_new
         real(real64), intent(in) :: N_old, N_new   ! pre-move counts of type_old (A) and type_new (B)
 
@@ -272,7 +272,7 @@ contains
 
         mu_old = thermo%chemical_potential(type_old)
         mu_new = thermo%chemical_potential(type_new)
-        deltaU = new%total - old%total
+        deltaU = energy_new%total - energy_old%total
 
         ! P_acc = min[1, (N_A/(N_B+1)) * (Λ_A^3/Λ_B^3) * exp(-β(ΔU + μ_A - μ_B))]
         probability = min(1.0_real64, &
@@ -281,38 +281,6 @@ contains
             exp(-beta * (deltaU + mu_old - mu_new)))
 
     end function swap_acceptance_probability
-
-    ! function swap_acceptance_probability(old, new, type_old, type_new) result(probability)
-
-    !     ! Arguments
-    !     type(energy_type), intent(in) :: old   ! Energy of system with old molecule
-    !     type(energy_type), intent(in) :: new   ! Energy of system with new molecule
-    !     integer, intent(in) :: type_old         ! Residue type being removed
-    !     integer, intent(in) :: type_new         ! Residue type being inserted
-
-    !     ! Local variables
-    !     real(real64) :: deltaU                  ! Energy difference
-    !     real(real64) :: mu_old, mu_new          ! Chemical potentials (kcal/mol)
-    !     real(real64) :: N_old, N_new            ! Number of molecules per type
-    !     real(real64) :: Nplus1
-
-    !     ! Return value
-    !     real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
-
-    !     N_new = real(primary%num%residues(type_new), real64)
-    !     N_old = real(primary%num%residues(type_old), real64)
-    !     Nplus1 = N_new + 1.0_real64
-
-    !     ! Chemical potentials
-    !     mu_old = thermo%chemical_potential(type_old) ! kcal/mol
-    !     mu_new = thermo%chemical_potential(type_new) ! kcal/mol
-    !     deltaU = new%total - old%total         ! kcal/mol
-
-    !     ! Swap acceptance probability:
-    !     ! P_acc = min[1, (N_old / (N_new + 1)) * exp(-β (ΔE + μ_new - μ_old))]
-    !     probability = min(1.0_real64, (N_old / Nplus1) * exp(-beta * (deltaU + mu_new - mu_old)))
-
-    ! end function swap_acceptance_probability
 
     !---------------------------------------------------------------------------
     ! Compute the updated energy of a single molecule after a trial move
@@ -338,40 +306,41 @@ contains
             ! Note: In creation scenario, compute all energy components
             call compute_ewald_phase_factors(res_type, mol_index)
             call update_reciprocal_amplitude_single_mol(res_type, mol_index, is_creation = creation_flag)            
-            new%recip_coulomb = reciprocal_ewald_energy()
+            energy_new%recip_coulomb = reciprocal_ewald_energy()
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
-                new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
-            new%ewald_self =  ewald_self_energy_single_mol(res_type)
-            new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
+                energy_new%non_coulomb, energy_new%coulomb, skip_ordering_check = .true.)
+            energy_new%ewald_self =  ewald_self_energy_single_mol(res_type)
+            energy_new%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
         
         else if (deletion_flag) then
 
             ! Note: Most energy terms in the absence of a molecule are 0
             ! --> One must only recalculate energy%recip_coulomb
 
-            new%non_coulomb = 0
-            new%coulomb = 0
-            new%ewald_self = 0
-            new%intra_coulomb = 0
+            energy_new%non_coulomb = 0
+            energy_new%coulomb = 0
+            energy_new%ewald_self = 0
+            energy_new%intra_coulomb = 0
             call update_reciprocal_amplitude_single_mol(res_type, mol_index, is_deletion = deletion_flag)
-            new%recip_coulomb = reciprocal_ewald_energy()
+            energy_new%recip_coulomb = reciprocal_ewald_energy()
 
         else
 
             ! Note, for simple move (translation or rotation), one only needs to
             ! recompute reciprocal and pairwise interactions
-            new%ewald_self = 0
-            new%intra_coulomb = 0
+            energy_new%ewald_self = 0
+            energy_new%intra_coulomb = 0
             call compute_ewald_phase_factors(res_type, mol_index)
             call update_reciprocal_amplitude_single_mol(res_type, mol_index)
-            new%recip_coulomb = reciprocal_ewald_energy()
+            energy_new%recip_coulomb = reciprocal_ewald_energy()
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
-                new%non_coulomb, new%coulomb, skip_ordering_check = .true.)
+                energy_new%non_coulomb, energy_new%coulomb, skip_ordering_check = .true.)
 
         end if
 
         ! Recalculate total energy
-        new%total = new%non_coulomb + new%coulomb + new%recip_coulomb + new%ewald_self + new%intra_coulomb
+        energy_new%total = energy_new%non_coulomb + energy_new%coulomb + energy_new%recip_coulomb + &
+            energy_new%ewald_self + energy_new%intra_coulomb
     
     end subroutine compute_new_energy
 
@@ -400,22 +369,22 @@ contains
             ! Note: Most energy terms in the absence of a molecule are 0
             ! (Appart from energy%recip_coulomb)
 
-            old%non_coulomb = zero
-            old%coulomb = zero
-            old%ewald_self = zero
-            old%intra_coulomb = zero
-            old%recip_coulomb = energy%recip_coulomb
+            energy_old%non_coulomb = zero
+            energy_old%coulomb = zero
+            energy_old%ewald_self = zero
+            energy_old%intra_coulomb = zero
+            energy_old%recip_coulomb = energy%recip_coulomb
 
         else if (deletion_flag) then
 
             ! Deletion scenario
             ! Note: In deletion scenario, recompute all energy components
 
-            old%ewald_self = ewald_self_energy_single_mol(res_type)
-            old%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
+            energy_old%ewald_self = ewald_self_energy_single_mol(res_type)
+            energy_old%intra_coulomb = intra_res_real_coulomb_energy(res_type, mol_index)
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
-                old%non_coulomb, old%coulomb, skip_ordering_check = .true.)
-            old%recip_coulomb = energy%recip_coulomb
+                energy_old%non_coulomb, energy_old%coulomb, skip_ordering_check = .true.)
+            energy_old%recip_coulomb = energy%recip_coulomb
 
         else
 
@@ -424,16 +393,17 @@ contains
             ! recompute pairwise interactions. Current value for the reciprocal
             ! energy is used.
 
-            old%ewald_self = zero
-            old%intra_coulomb = zero
-            old%recip_coulomb = energy%recip_coulomb
+            energy_old%ewald_self = zero
+            energy_old%intra_coulomb = zero
+            energy_old%recip_coulomb = energy%recip_coulomb
             call pairwise_energy_for_molecule(primary, res_type, mol_index, &
-                old%non_coulomb, old%coulomb, skip_ordering_check = .true.)
+                energy_old%non_coulomb, energy_old%coulomb, skip_ordering_check = .true.)
 
         end if
 
         ! Recalculate total energy
-        old%total = old%non_coulomb + old%coulomb + old%recip_coulomb + old%ewald_self + old%intra_coulomb
+        energy_old%total = energy_old%non_coulomb + energy_old%coulomb + energy_old%recip_coulomb + &
+            energy_old%ewald_self + energy_old%intra_coulomb
 
     end subroutine compute_old_energy
 
@@ -441,17 +411,17 @@ contains
     ! Update the global system energy and Monte Carlo counters after
     ! accepting a trial move (translation or rotation) of a molecule.
     !---------------------------------------------------------------------------
-    subroutine accept_molecule_move(old, new, counter_var)
+    subroutine accept_molecule_move(energy_old, energy_new, counter_var)
 
         ! Input arguments
-        type(energy_type), intent(in) :: old, new  ! Old and new energy states
+        type(energy_type), intent(in) :: energy_old, energy_new  ! Old and new energy states
         integer, intent(inout) :: counter_var(2)    ! Counter for succesfull move
 
-        energy%recip_coulomb = new%recip_coulomb
-        energy%non_coulomb = energy%non_coulomb + new%non_coulomb - old%non_coulomb
-        energy%coulomb = energy%coulomb + new%coulomb - old%coulomb
+        energy%recip_coulomb = energy_new%recip_coulomb
+        energy%non_coulomb = energy%non_coulomb + energy_new%non_coulomb - energy_old%non_coulomb
+        energy%coulomb = energy%coulomb + energy_new%coulomb - energy_old%coulomb
 
-        energy%total = energy%total + new%total - old%total
+        energy%total = energy%total + energy_new%total - energy_old%total
         counter_var(2) = counter_var(2) + 1
 
     end subroutine accept_molecule_move

@@ -61,7 +61,7 @@ contains
         call reject_creation_move(res_type, mol_index)
 
         ! Compute Boltzmann weight for Widom insertion
-        deltaU = new%total - old%total
+        deltaU = energy_new%total - energy_old%total
 
         call accumulate_widom_weight(res_type, deltaU)
 

@@ -46,12 +46,12 @@ contains
         call compute_new_energy(res_type, mol_index)
 
         ! Compute acceptance probability for the move
-        probability = compute_acceptance_probability(old, new, res_type, TYPE_ROTATION)
+        probability = compute_acceptance_probability(energy_old, energy_new, res_type, TYPE_ROTATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then
             ! Accept move: update system state
-            call accept_molecule_move(old, new, counter%rotations)
+            call accept_molecule_move(energy_old, energy_new, counter%rotations)
         else ! Reject move
             ! Reject move: restore previous orientation
             call reject_molecule_move(res_type, mol_index, site_offset_old = saved%offset)
