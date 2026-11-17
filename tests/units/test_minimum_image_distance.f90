@@ -24,13 +24,13 @@ program test_minimum_image_distance
     allocate(res%role(nres))
     res%role = TYPE_GUEST
 
-    allocate(guest%com(3, nres, nmaxmol))
-    allocate(guest%offset(3, nres, nmaxmol, natoms))
+    allocate(primary_guest%com(3, nres, nmaxmol))
+    allocate(primary_guest%offset(3, nres, nmaxmol, natoms))
 
-    guest%com(:,1,1) = [-4.0_real64, -4.0_real64, -4.0_real64]
-    guest%offset(:,1,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
-    guest%com(:,2,1) = [4.0_real64, 4.0_real64, 4.0_real64]
-    guest%offset(:,2,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
+    primary_guest%com(:,1,1) = [-4.0_real64, -4.0_real64, -4.0_real64]
+    primary_guest%offset(:,1,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
+    primary_guest%com(:,2,1) = [4.0_real64, 4.0_real64, 4.0_real64]
+    primary_guest%offset(:,2,1,1) = [1.0_real64, 0.0_real64, 0.0_real64]
 
     !------------------------------------------------------
     ! 1) Cubic box
@@ -94,6 +94,6 @@ program test_minimum_image_distance
     ! end if
 
     if (allocated(res%role)) deallocate(res%role)
-    if (allocated(guest%offset)) deallocate(guest%offset)
+    if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
 
 end program test_minimum_image_distance

@@ -54,7 +54,7 @@ contains
         ! Set rotation matrix based on axis
         rotation_matrix = return_rotation_matrix(rotation_axis, theta)
 
-        ! Return the correct pointer (host or guest)
+        ! Return the correct pointer (host or primary_guest)
         coord => get_coord(res_type)
 
         ! Apply rotation to all atoms in the residue
@@ -210,7 +210,8 @@ contains
         integer, intent(in) :: res_type     ! Index of the residue type
 
         ! Local variables
-        real(real64) :: N, Nplus1               ! Number of residues of this type, and Number + 1
+        real(real64) :: n_new                   ! Residue count after the trial move.
+        real(real64) :: n_old                   ! Residue count before the trial move.
         real(real64) :: mu                      ! Chemical potential
         real(real64) :: deltaU                  ! Energy difference ΔE between trial and current state
         real(real64) :: prefactor               ! Prefactor for probability calculation
@@ -219,8 +220,7 @@ contains
         ! Return value
         real(real64) :: probability             ! Acceptance probability (0 <= P <= 1)
 
-        N = real(primary%num%residues(res_type), real64)
-        Nplus1 = N + 1.0_real64
+        n_new = real(primary%num%residues(res_type), real64)
         deltaU = energy_new%total - energy_old%total                  ! kcal/mol
         mu = thermo%chemical_potential(res_type)     ! kcal/mol
 
@@ -228,19 +228,20 @@ contains
         select case (move_type)
             case (TYPE_CREATION)
 
+                n_old = n_new - 1.0_real64
                 ! P_acc(N -> N+1) = min[1, (V / ((N+1) λ³)) * exp(-β * (ΔU - μ))]
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
-                ! Note: N+1 instead of N to avoid division by zero
                 lambda = res%lambda(res_type) ! Thermal de Broglie wavelength (A)
-                prefactor = primary%cell%volume / N / lambda**3 ! note: N must be used because the residue was already added
+                prefactor = primary%cell%volume / n_new / lambda**3 ! note: n_new must be used because the residue was already added
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
 
             case (TYPE_DELETION)
 
+                n_old = n_new + 1.0_real64
                 ! P_acc(N -> N-1) = min[1, (N λ³ / V) * exp(-β * (ΔU + μ))]
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(res_type) ! Thermal de Broglie wavelength (A)
-                prefactor = Nplus1 * lambda**3 / (primary%cell%volume) ! note: Nplus1 must be used because the residue was already removed
+                prefactor = n_old * lambda**3 / (primary%cell%volume) ! note: n_old must be used because the residue was already removed
                 probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
@@ -447,13 +448,13 @@ contains
 
         ! Save center-of-mass if requested (translation)
         if (present(com_old)) then
-            com_old(:) = guest%com(:, res_type, mol_index)
+            com_old(:) = primary_guest%com(:, res_type, mol_index)
         end if
 
         ! Save site offsets if requested (rotation)
         if (present(offset_old)) then
             natoms = res%atom(res_type)
-            offset_old(:, 1:natoms) = guest%offset(:, res_type, mol_index, 1:natoms)
+            offset_old(:, 1:natoms) = primary_guest%offset(:, res_type, mol_index, 1:natoms)
         end if
 
     end subroutine save_molecule_state
@@ -475,13 +476,13 @@ contains
 
         ! Restore COM if present (translation)
         if (present(com_old)) then
-            guest%com(:, res_type, mol_index) = com_old(:)
+            primary_guest%com(:, res_type, mol_index) = com_old(:)
         end if
 
         ! Restore site offsets if present (rotation)
         if (present(site_offset_old)) then
             natoms = res%atom(res_type)
-            guest%offset(:, res_type, mol_index, 1:natoms) = site_offset_old(:, 1:natoms)
+            primary_guest%offset(:, res_type, mol_index, 1:natoms) = site_offset_old(:, 1:natoms)
         end if
 
         ! Restore Fourier states
@@ -518,7 +519,7 @@ contains
         ! Generate a random position in the simulation box (if enabled)
         if (do_place_com) then
             call random_number(trial_pos) ! Random numbers in [0,1)
-            guest%com(:, res_type, molecule_index) = primary%cell%bounds(:,1) &
+            primary_guest%com(:, res_type, molecule_index) = primary%cell%bounds(:,1) &
                 + matmul(primary%cell%matrix, trial_pos)
         end if
 
@@ -531,12 +532,12 @@ contains
             if (present(place_random_com)) then
                 rand_idx_reservoir = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
-                guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
+                primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
                     reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type))
             else
                 rand_idx_reservoir = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
-                guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
+                primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
                     reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type))
             end if  
 
@@ -546,8 +547,8 @@ contains
             rand_idx_reservoir = 0
 
             ! Copy site offsets from the first molecule
-            guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-                guest%offset(:, res_type, 1, 1:res%atom(res_type))
+            primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
+                primary_guest%offset(:, res_type, 1, 1:res%atom(res_type))
 
             ! Rotate the new molecule randomly (using full 360° rotation)
             full_rotation = .true.
@@ -631,10 +632,10 @@ contains
         integer, intent(in):: last_molecule_index ! Index of the last molecule in the primary box
 
         ! Replace with the last molecule
-        guest%com(:, res_type, molecule_index) = &
-            guest%com(:, res_type, last_molecule_index)
-        guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-            guest%offset(:, res_type, last_molecule_index, 1:res%atom(res_type))
+        primary_guest%com(:, res_type, molecule_index) = &
+            primary_guest%com(:, res_type, last_molecule_index)
+        primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
+            primary_guest%offset(:, res_type, last_molecule_index, 1:res%atom(res_type))
 
         ! Replace Fourier terms
         call replace_fourier_terms_single_mol(res_type, molecule_index, last_molecule_index)

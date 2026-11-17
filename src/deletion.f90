@@ -138,8 +138,8 @@ contains
         call update_counts(primary, res_type, +1)
 
         ! Restore previous positions and orientation
-        guest%com(:, res_type, molecule_index) = mol_com_old(:)
-        guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
+        primary_guest%com(:, res_type, molecule_index) = mol_com_old(:)
+        primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
             site_offset_old(:, 1:res%atom(res_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)

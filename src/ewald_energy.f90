@@ -99,9 +99,9 @@ contains
             kz_idx = ewald%kvectors(idx)%kz
 
             ! Compute phase factors for the current residue
-            ewald%phase%new_tmp(1:natoms) = ewald%phase%factor_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
-                ewald%phase%factor_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
-                ewald%phase%factor_guest(3, res_type, mol_index, 1:natoms, kz_idx)
+            ewald%phase%new_tmp(1:natoms) = ewald%phase%factor_primary_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
+                ewald%phase%factor_primary_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
+                ewald%phase%factor_primary_guest(3, res_type, mol_index, 1:natoms, kz_idx)
 
             ewald%phase%old_tmp(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
                 ewald%phase%factor_old(2, 1:natoms, ky_idx) * &
@@ -310,9 +310,9 @@ contains
 
                         ! Extract charge and phase product
                         charges = primary%atoms%charges(res_type, atom_index)
-                        product = ewald%phase%factor_guest(1, res_type, mol_index, atom_index, kx_idx) * &
-                                ewald%phase%factor_guest(2, res_type, mol_index, atom_index, ky_idx) * &
-                                ewald%phase%factor_guest(3, res_type, mol_index, atom_index, kz_idx)
+                        product = ewald%phase%factor_primary_guest(1, res_type, mol_index, atom_index, kx_idx) * &
+                                ewald%phase%factor_primary_guest(2, res_type, mol_index, atom_index, ky_idx) * &
+                                ewald%phase%factor_primary_guest(3, res_type, mol_index, atom_index, kz_idx)
 
                         ! Accumulate contribution from this atom:
                         ! charge * exp(i k · r) factor in x, y, z directions

@@ -40,18 +40,18 @@ program test_apply_random_rotation
     allocate(res%atom(1))
     res%atom(1) = n_atoms
 
-    ! Allocate guest%offset (3 x n_residues x n_molecules x n_atoms)
-    if (allocated(guest%offset)) deallocate(guest%offset)
-    allocate(guest%offset(3, 1, 1, n_atoms))
-    guest%offset(:,:,:,:) = 0.0_real64
+    ! Allocate primary_guest%offset (3 x n_residues x n_molecules x n_atoms)
+    if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
+    allocate(primary_guest%offset(3, 1, 1, n_atoms))
+    primary_guest%offset(:,:,:,:) = 0.0_real64
 
     ! Set positions for 2 atoms
-    guest%offset(:, res_type, mol_index, 1) = [0.0_real64, 0.0_real64, 0.0_real64]
-    guest%offset(:, res_type, mol_index, 2) = [1.0_real64, 0.0_real64, 0.0_real64]
+    primary_guest%offset(:, res_type, mol_index, 1) = [0.0_real64, 0.0_real64, 0.0_real64]
+    primary_guest%offset(:, res_type, mol_index, 2) = [1.0_real64, 0.0_real64, 0.0_real64]
 
     ! Copy original coordinates
     allocate(original(3,n_atoms))
-    original = guest%offset(:, res_type, mol_index, 1:n_atoms)
+    original = primary_guest%offset(:, res_type, mol_index, 1:n_atoms)
 
     !--------------------------------------------------
     ! Apply rotation
@@ -60,7 +60,7 @@ program test_apply_random_rotation
 
     ! Copy rotated coordinates
     allocate(rotated(3,n_atoms))
-    rotated = guest%offset(:, res_type, mol_index, 1:n_atoms)
+    rotated = primary_guest%offset(:, res_type, mol_index, 1:n_atoms)
 
     !--------------------------------------------------
     ! Test 1: distances preserved
@@ -76,13 +76,13 @@ program test_apply_random_rotation
     !--------------------------------------------------
     n_atoms = 1
     res%atom(1) = n_atoms
-    if (allocated(guest%offset)) deallocate(guest%offset)
-    allocate(guest%offset(3, 1, 1, n_atoms))
-    guest%offset(:,:,:,:) = 42.0_real64
+    if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
+    allocate(primary_guest%offset(3, 1, 1, n_atoms))
+    primary_guest%offset(:,:,:,:) = 42.0_real64
 
     call apply_random_rotation(res_type, mol_index)
 
-    pass2 = all(abs(guest%offset(:, res_type, mol_index, 1) - 42.0_real64) < local_error)
+    pass2 = all(abs(primary_guest%offset(:, res_type, mol_index, 1) - 42.0_real64) < local_error)
     if (.not. pass2) then
         print *, "FAILED: Single-atom residue should remain unchanged."
         stop 1
@@ -93,6 +93,6 @@ program test_apply_random_rotation
     !--------------------------------------------------
     if (allocated(res%role)) deallocate(res%role)
     if (allocated(res%atom)) deallocate(res%atom)
-    if (allocated(guest%offset)) deallocate(guest%offset)
+    if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
 
 end program test_apply_random_rotation

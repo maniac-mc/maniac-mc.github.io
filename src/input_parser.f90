@@ -113,7 +113,7 @@ contains
 
         ! Allocate atom arrays for primary and reservoir
         call allocate_coordinate(host, .true.)
-        call allocate_coordinate(guest, .false.)
+        call allocate_coordinate(primary_guest, .false.)
         if (status%reservoir_provided) then
             call allocate_coordinate(reservoir_coord, .false.)
         end if
@@ -172,12 +172,12 @@ contains
     end subroutine allocate_atom_block
 
     !-----------------------------------------------------------------------------
-    ! Allocate coordinate array for host, guest, and reservoir
+    ! Allocate coordinate array for host, primary_guest, and reservoir
     !-----------------------------------------------------------------------------
     subroutine allocate_coordinate(type, is_host)
 
         ! Input parameters
-        type(type_coordinate), intent(inout) :: type    ! host, guest, reservoir
+        type(type_coordinate), intent(inout) :: type    ! host, primary_guest, reservoir
         logical :: is_host                              ! To differentiate host
 
         ! Local variables

@@ -99,7 +99,7 @@ contains
         molecule_index_bis = primary%num%residues(residue_type_bis)
 
         ! Use the CoM "saved%com" of the deleted molecule "residue_type" for the created molecule "residue_type_bis"
-        guest%com(:, residue_type_bis, molecule_index_bis) = saved%com
+        primary_guest%com(:, residue_type_bis, molecule_index_bis) = saved%com
 
         ! TO CHECK
         ! *** FIX: save pre-insertion Fourier state so it can be rolled back
@@ -147,8 +147,8 @@ contains
         call update_counts(primary, residue_type, +1)
         call update_counts(primary, residue_type_bis, -1)
 
-        guest%com(:, residue_type, molecule_index) = mol_com_old(:)
-        guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
+        primary_guest%com(:, residue_type, molecule_index) = mol_com_old(:)
+        primary_guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
             site_offset_old(:, 1:res%atom(residue_type))
 
         ! *** FIX: restore BOTH sides — the removal mutation and the insertion mutation

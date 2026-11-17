@@ -63,7 +63,7 @@ contains
         kmax_max = maxval(ewald%param%kmax)
         allocate(ewald%phase%factor_host(3, res%number, 0:nmax%inactive_residues, &
             1:nmax%atoms_inactive_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase%factor_guest(3, res%number, 0:nmax%active_residues, &
+        allocate(ewald%phase%factor_primary_guest(3, res%number, 0:nmax%active_residues, &
             1:nmax%atoms_active_residue, -kmax_max:kmax_max))
         allocate(ewald%phase%factor_old(3, 1:nmax%atoms_active_residue, -kmax_max:kmax_max))
 
@@ -86,7 +86,7 @@ contains
         ewald%phase%new_tmp = zero
         ewald%phase%old_tmp = zero
         ewald%q_buffer = zero
-        ewald%phase%factor_guest = 0
+        ewald%phase%factor_primary_guest = 0
         ewald%phase%factor_host = 0
 
         ! Allocate widom

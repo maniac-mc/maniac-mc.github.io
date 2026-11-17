@@ -44,13 +44,13 @@ contains
 
                     ! Positive k
                     ewald%phase%factor_old(dim, atom_index, k_idx) = &
-                        ewald%phase%factor_guest(dim, res_type, mol_index, atom_index, k_idx)
+                        ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index, k_idx)
 
                     ! Negative k (only if non-zero)
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
                             ewald%phase%factor_old(dim, atom_index, -k_idx) = &
-                                ewald%phase%factor_guest(dim, res_type, mol_index, atom_index, -k_idx)
+                                ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index, -k_idx)
                         end if
                     end if
 
@@ -100,13 +100,13 @@ contains
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Positive k
-                    ewald%phase%factor_guest(dim, res_type, mol_index, atom_index_1, k_idx) = &
+                    ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index_1, k_idx) = &
                         ewald%phase%factor_old(dim, atom_index_1, k_idx)
 
                     ! Negative k
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
-                            ewald%phase%factor_guest(dim, res_type, mol_index, atom_index_1, -k_idx) = &
+                            ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index_1, -k_idx) = &
                                 ewald%phase%factor_old(dim, atom_index_1, -k_idx)
                         end if
                     end if
@@ -157,14 +157,14 @@ contains
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Always copy positive (and zero) k
-                    ewald%phase%factor_guest(dim, res_type, index_1, atom_index_1, k_idx) = &
-                        ewald%phase%factor_guest(dim, res_type, index_2, atom_index_1, k_idx)
+                    ewald%phase%factor_primary_guest(dim, res_type, index_1, atom_index_1, k_idx) = &
+                        ewald%phase%factor_primary_guest(dim, res_type, index_2, atom_index_1, k_idx)
 
                     ! Copy negative k only when allowed (when d=1, only if symmetrize_x is true, or when d=2,3)
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
-                            ewald%phase%factor_guest(dim, res_type, index_1, atom_index_1, -k_idx) = &
-                                ewald%phase%factor_guest(dim, res_type, index_2, atom_index_1, -k_idx)
+                            ewald%phase%factor_primary_guest(dim, res_type, index_1, atom_index_1, -k_idx) = &
+                                ewald%phase%factor_primary_guest(dim, res_type, index_2, atom_index_1, -k_idx)
                         end if
                     end if
 
@@ -241,7 +241,7 @@ contains
                     ewald%phase%factor_host(idim, res_type, mol_index, atom_index_1, &
                         -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
                 else if (res%role(res_type) == TYPE_GUEST) then
-                    ewald%phase%factor_guest(idim, res_type, mol_index, atom_index_1, &
+                    ewald%phase%factor_primary_guest(idim, res_type, mol_index, atom_index_1, &
                         -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
                 end if
             end do

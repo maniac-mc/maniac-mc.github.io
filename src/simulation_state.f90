@@ -82,13 +82,13 @@ module simulation_state
     type(input_thermo_type) :: thermo
 
     !---------------------------------------------------------------------------
-    ! Coordinate for host, guest, and reservoir residue
+    ! Coordinate for host, primary_guest, and reservoir residue
     !---------------------------------------------------------------------------
     type type_coordinate
         real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
         real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
     end type type_coordinate
-    type(type_coordinate), target :: host, guest, reservoir_coord
+    type(type_coordinate), target :: host, primary_guest, reservoir_coord
 
     !---------------------------------------------------------------------------
     ! Old coordinate used in Monte Carlo move
@@ -270,7 +270,7 @@ module simulation_state
     !---------------------------------------------------------------------------
     type phase_ewald
         complex(real64), allocatable :: factor_host(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
-        complex(real64), allocatable :: factor_guest(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
+        complex(real64), allocatable :: factor_primary_guest(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
         complex(real64), allocatable :: factor_old(:,:,:)  ! Previous configuration phase factors used for updating A(k)
         complex(real64), allocatable :: new_tmp(:)         ! Temporary 1D array of phase factors for the new configuration
         complex(real64), allocatable :: old_tmp(:)         ! ! Temporary 1D array of phase factors for the old configuration

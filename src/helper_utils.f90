@@ -221,7 +221,7 @@ contains
             case (TYPE_HOST)
                 coord => host
             case (TYPE_GUEST)
-                coord => guest
+                coord => primary_guest
             case default
                 nullify(coord)
                 error stop "get_coord: invalid residue type in res%role(res_type)"
