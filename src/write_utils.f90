@@ -82,7 +82,7 @@ contains
         do res_type = 1, res%number
 
             if (is_reservoir) then
-                coord => gas
+                coord => reservoir_coord
             else
                 coord => get_coord(res_type)
             end if
@@ -605,7 +605,7 @@ contains
         do i = 1, res%number
 
             if (is_reservoir) then
-                coord => gas
+                coord => reservoir_coord
             else
                 coord => get_coord(i)
             end if

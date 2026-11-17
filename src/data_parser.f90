@@ -1411,7 +1411,7 @@ contains
             end if
 
             if (is_reservoir) then
-                coord => gas
+                coord => reservoir_coord
             else
                 coord => get_coord(i)
             end if

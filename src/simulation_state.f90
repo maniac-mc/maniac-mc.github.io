@@ -82,13 +82,13 @@ module simulation_state
     type(input_thermo_type) :: thermo
 
     !---------------------------------------------------------------------------
-    ! Coordinate for host, guest, and gas residue
+    ! Coordinate for host, guest, and reservoir residue
     !---------------------------------------------------------------------------
     type type_coordinate
         real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
         real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
     end type type_coordinate
-    type(type_coordinate), target :: host, guest, gas
+    type(type_coordinate), target :: host, guest, reservoir_coord
 
     !---------------------------------------------------------------------------
     ! Old coordinate used in Monte Carlo move

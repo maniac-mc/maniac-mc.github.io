@@ -108,11 +108,11 @@ contains
             trial_pos = trial_pos - half
 
             ! Place the deleted molecule randomly in the reservoir
-            gas%com(:, res_type, reservoir%num%residues(res_type)+1) = &
+            reservoir_coord%com(:, res_type, reservoir%num%residues(res_type)+1) = &
                 trial_pos(1)*reservoir%cell%matrix(:, 1) + &
                 trial_pos(2)*reservoir%cell%matrix(:, 2) + &
                 trial_pos(3)*reservoir%cell%matrix(:, 3)
-            gas%offset(:, res_type, reservoir%num%residues(res_type)+1, &
+            reservoir_coord%offset(:, res_type, reservoir%num%residues(res_type)+1, &
                 1:res%atom(res_type)) = &
                 site_offset_old(:, 1:res%atom(res_type))
 

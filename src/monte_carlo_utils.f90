@@ -562,12 +562,12 @@ contains
                 reservoir_index = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-                    gas%offset(:, res_type, reservoir_index, 1:res%atom(res_type))
+                    reservoir_coord%offset(:, res_type, reservoir_index, 1:res%atom(res_type))
             else
                 reservoir_index = int(random_nmb * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-                    gas%offset(:, res_type, reservoir_index, 1:res%atom(res_type))
+                    reservoir_coord%offset(:, res_type, reservoir_index, 1:res%atom(res_type))
             end if  
 
         else

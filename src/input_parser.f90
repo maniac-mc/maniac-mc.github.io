@@ -115,7 +115,7 @@ contains
         call allocate_coordinate(host, .true.)
         call allocate_coordinate(guest, .false.)
         if (status%reservoir_provided) then
-            call allocate_coordinate(gas, .false.)
+            call allocate_coordinate(reservoir_coord, .false.)
         end if
         allocate(res%role(nb_type_res))
 
@@ -172,12 +172,12 @@ contains
     end subroutine allocate_atom_block
 
     !-----------------------------------------------------------------------------
-    ! Allocate coordinate array for host, guest, and gas
+    ! Allocate coordinate array for host, guest, and reservoir
     !-----------------------------------------------------------------------------
     subroutine allocate_coordinate(type, is_host)
 
         ! Input parameters
-        type(type_coordinate), intent(inout) :: type    ! host, guest, gas
+        type(type_coordinate), intent(inout) :: type    ! host, guest, reservoir
         logical :: is_host                              ! To differentiate host
 
         ! Local variables

@@ -4,7 +4,7 @@ module parameters
 
     implicit none
 
-    integer, parameter :: TYPE_HOST = 1, TYPE_GUEST = 2, TYPE_GAS = 3
+    integer, parameter :: TYPE_HOST = 1, TYPE_GUEST = 2, TYPE_RESERVOIR = 3
 
     ! Integer parameters defining maximum sizes and counts
     integer, parameter :: NB_MAX_MOLECULE = 5000    ! Maximum number of molecules of a given type

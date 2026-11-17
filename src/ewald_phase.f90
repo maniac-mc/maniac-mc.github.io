@@ -215,7 +215,7 @@ contains
         integer :: idim                         ! component index: 1=X, 2=Y, 3=Z
         type(type_coordinate), pointer :: coord ! Pointer for host or guest coordinate
 
-        ! Return the correct pointer (host, guest, or gas)
+        ! Return the correct pointer (host, guest, or reservoir)
         coord => get_coord(res_type)
 
         do atom_index_1 = 1, res%atom(res_type)
