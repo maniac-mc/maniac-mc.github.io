@@ -54,6 +54,6 @@ module parameters
     integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions
     logical, parameter :: use_table = .false. ! #TODO: make it an input parameter for user
 
-    real(real64), parameter :: error = 1.0D-10              ! Small number for error calculation
+    real(real64), parameter :: tolerance = 1.0D-10       ! Small number for error calculation
 
 end module parameters

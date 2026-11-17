@@ -176,13 +176,13 @@ contains
         box%cell%determinant = dot_product(box%cell%matrix(:,1), adjugate(:,1))
 
         ! Check for denormal/underflow values in determinant
-        if (abs(box%cell%determinant) < error) then
+        if (abs(box%cell%determinant) < tolerance) then
             call abort_run("Error: Determinant fell into denormal/underflow range")
         end if
 
         ! Calculate reciprocal of determinant if non-zero
         inv_det = zero
-        if (abs(box%cell%determinant) > error) then  ! small tolerance to avoid near-zero
+        if (abs(box%cell%determinant) > tolerance) then  ! small tolerance to avoid near-zero
             inv_det = one / box%cell%determinant
         else
             ! Handle singular matrix case if needed, e.g. print error or return
@@ -352,7 +352,7 @@ contains
                     box%cell%matrix(3,1), box%cell%matrix(3,2)]
 
         ! Check for triclinic (any off-diagonal > tolerance)
-        if (maxval(abs(off_diag)) > error) then
+        if (maxval(abs(off_diag)) > tolerance) then
             box%cell%shape = TRICLINIC
         else
             box%cell%shape = ORTHORHOMBIC

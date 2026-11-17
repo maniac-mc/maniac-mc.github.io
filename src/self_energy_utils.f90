@@ -74,7 +74,7 @@ contains
             q_i = primary%atoms%charges(res_i, atom_i)
 
             ! Skip atoms with negligible charge
-            if (abs(q_i) < error) cycle
+            if (abs(q_i) < tolerance) cycle
 
             ! Add the self-energy contribution of this atom
             self_energy = self_energy - ewald%param%alpha / SQRTPI * q_i**2  ! In units of e^2/Å

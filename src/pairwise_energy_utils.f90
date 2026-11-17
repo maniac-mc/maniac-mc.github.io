@@ -113,7 +113,7 @@ contains
         if (r >= mc_input%real_space_cutoff) return
 
         ! Return large value if overlap
-        if (r < error) then
+        if (r < tolerance) then
             energy = 1.0e20 ! Very large repulsive energy
             return
         end if
@@ -154,10 +154,10 @@ contains
         energy = zero
 
         ! Skip negligible charges and avoid division by zero
-        if (abs(q_i) < error .or. abs(q_j) < error) return
+        if (abs(q_i) < tolerance .or. abs(q_j) < tolerance) return
 
         ! Return large value if overlap
-        if (r < error) then
+        if (r < tolerance) then
             energy = 1.0e20 ! Very large repulsive energy
             return
         end if

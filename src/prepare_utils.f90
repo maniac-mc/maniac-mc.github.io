@@ -69,8 +69,8 @@ contains
 
         ! Allocate temporary arrays once
         allocate(ewald%phase%axis(-kmax_max:kmax_max))
-        allocate(ewald%phase%new(nmax%atoms_per_residue))
-        allocate(ewald%phase%old(nmax%atoms_per_residue))
+        allocate(ewald%phase%new_tmp(nmax%atoms_per_residue))
+        allocate(ewald%phase%old_tmp(nmax%atoms_per_residue))
         allocate(ewald%q_buffer(nmax%atoms_per_residue))
 
         ! Allocate kvectors
@@ -83,8 +83,8 @@ contains
         ewald%form_factor = zero
         ewald%phase%factor_old = zero
         ewald%phase%axis = zero
-        ewald%phase%new = zero
-        ewald%phase%old = zero
+        ewald%phase%new_tmp = zero
+        ewald%phase%old_tmp = zero
         ewald%q_buffer = zero
         ewald%phase%factor_guest = 0
         ewald%phase%factor_host = 0

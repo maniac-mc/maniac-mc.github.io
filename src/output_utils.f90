@@ -295,7 +295,7 @@ contains
         e_coul = energy%coulomb + energy%intra_coulomb
         e_long = energy%recip_coulomb + energy%ewald_self
 
-        if (abs(e_tot - energy%total) > error) then
+        if (abs(e_tot - energy%total) > tolerance) then
             call warn_user("Energy drift detected during MC move")
         end if
 
@@ -419,11 +419,11 @@ contains
         end do
     end subroutine log_parameters
 
-    subroutine LogData(data_file_name, box, is_primary)
+    subroutine LogData(data_file_name, box, is_reservoir)
 
         ! Input parameters
         type(type_box), intent(inout) :: box
-        logical, intent(in) :: is_primary
+        logical, intent(in) :: is_reservoir
 
         ! Local variables
         character(len=*), intent(in) :: data_file_name
@@ -456,7 +456,7 @@ contains
                 active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Inactive residue ", A, " found in the data file: ", I0)') &
                     trim(res%names(i)), box%num%residues(i)
-            else if ((box%num%residues(i) == 0) .and. (thermo%is_active(i)) .and. (is_primary)) then
+            else if ((box%num%residues(i) == 0) .and. (thermo%is_active(i)) .and. (.not. is_reservoir)) then
                 ! Inactive residue defined in input but not present in data file
                 call abort_run("Inactive residue '" // trim(res%names(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)

@@ -82,7 +82,7 @@ contains
 
         weight = exp(-deltaU * beta)
 
-        if (weight > error) then ! Correspond to a success
+        if (weight > tolerance) then ! Correspond to a success
             counter%widom(2) = counter%widom(2) + 1
             statistic%weight(res_type) = statistic%weight(res_type) + weight
         end if

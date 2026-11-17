@@ -47,25 +47,25 @@ contains
     subroutine read_system_data()
 
         ! Read primary system
-        call read_lmp_data(path%topology, primary, is_primary = .true.)
+        call read_lmp_data(path%topology, primary, is_reservoir = .false.)
 
         ! Read reservoir if provided
         if (trim(path%reservoir) == '') then
             status%reservoir_provided = .false.
         else
             status%reservoir_provided = .true.
-            call read_lmp_data(path%reservoir, reservoir, is_primary = .false.)
+            call read_lmp_data(path%reservoir, reservoir, is_reservoir = .true.)
             call assert_mass_consistency() ! Ensure masses in reservoir are consistent with primary
         end if
 
     end subroutine read_system_data
 
-    subroutine read_lmp_data(data_file_name, box, is_primary)
+    subroutine read_lmp_data(data_file_name, box, is_reservoir)
 
         ! Input parameters
         character(len=*), intent(in) :: data_file_name  ! Path to the LAMMPS data file to read
         type(type_box), intent(inout) :: box            ! Type box (primary or reservoir)
-        logical, intent(in) :: is_primary               ! Flag for primary/reservoir reading
+        logical, intent(in) :: is_reservoir             ! Flag for primary/reservoir reading
 
         ! Local variables
         integer :: infile = 100                         ! Fortran unit number used to open the input file
@@ -140,14 +140,8 @@ contains
         call detect_molecules(box)
         call repair_active_molecules(box)
 
-        ! #tofix : simplify by only using "is_reservoir" everywhere
-        if (is_primary) then
-            call transform_to_COM_frame(box, .false.)
-            call validate_molecule_geometry(box, .false.)
-        else
-            call transform_to_COM_frame(box, .true.)
-            call validate_molecule_geometry(box, .true.)
-        end if 
+        call transform_to_COM_frame(box, is_reservoir)
+        call validate_molecule_geometry(box, is_reservoir)
 
         ! === Step 7: Detect bond, angle, dihedral, improper per residue ===
         call DetectBondPerResidue(box)
@@ -176,7 +170,7 @@ contains
         if (allocated(improper_atoms_1d)) deallocate(improper_atoms_1d)
 
         ! === Setep 9: Log data ===
-        call LogData(data_file_name, box, is_primary)
+        call LogData(data_file_name, box, is_reservoir)
         call LogConnectivity(box)
 
     end subroutine read_lmp_data

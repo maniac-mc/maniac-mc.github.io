@@ -133,7 +133,7 @@ contains
                     do l = 1, res%atom(j)
 
                         ! Detect cross coefficients that are zeros
-                        if ((abs(coeff%epsilon(i,j,k,l)) < error) .and. abs(coeff%sigma(i,j,k,l)) < error) then
+                        if ((abs(coeff%epsilon(i,j,k,l)) < tolerance) .and. abs(coeff%sigma(i,j,k,l)) < tolerance) then
 
                             ! Detect direct coefficients
                             type_i = primary%atoms%types(i, k)
@@ -144,7 +144,7 @@ contains
                             epsilon = sqrt(coeff%epsilon(i, i, k, k) * coeff%epsilon(j, j, l, l))
 
                             ! If direct coefficients are both positive, then record cross coefficients and print warning
-                            if ((sigma > error) .and. (epsilon > error)) then
+                            if ((sigma > tolerance) .and. (epsilon > tolerance)) then
                                 if (.not. warned(type_i, type_j) .and. .not. warned(type_j, type_i)) then
 
                                     ! Print the "rule enforcement" warning only once globally

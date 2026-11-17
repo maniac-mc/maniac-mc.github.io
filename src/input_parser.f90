@@ -65,7 +65,7 @@ contains
         proba_total = proba%translation + proba%rotation + proba%insertion_deletion + proba%swap + proba%widom
 
         ! Rescale if not exactly 1.0
-        if (abs(proba_total - one) > error) then
+        if (abs(proba_total - one) > tolerance) then
 
             scale_factor = one / proba_total
             proba%translation = proba%translation * scale_factor
@@ -86,7 +86,7 @@ contains
             proba%widom
 
         ! Abort if proba invalid
-        if (abs(proba_total - one) > error) &
+        if (abs(proba_total - one) > tolerance) &
             call abort_run("Invalid move probabilities: must sum to 1.0", 1)
 
     end subroutine rescale_move_probabilities
@@ -566,7 +566,7 @@ contains
             proba%widom
 
         ! === Check for impossible case ===
-        if (proba_total < error) then
+        if (proba_total < tolerance) then
             call abort_run("Invalid move probabilities: all enabled moves have zero probability", 1)
         end if
 

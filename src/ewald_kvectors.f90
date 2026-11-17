@@ -118,7 +118,7 @@ contains
 
         ! Reject near-zero k-vectors (avoid singularity at k=0)
         ! and any vectors outside the normalized unit sphere.
-        valid = (abs(k_squared) >= error) .and. (k_squared <= one)
+        valid = (abs(k_squared) >= tolerance) .and. (k_squared <= one)
 
     end function check_valid_reciprocal_vector
 

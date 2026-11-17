@@ -89,7 +89,7 @@ contains
             ! Check atomic masses one by one
             do j = 1, primary%num%atomtypes
                 diff = abs(primary%atoms%masses_vec(j) - reservoir%atoms%masses_vec(j))
-                if (diff > error) then
+                if (diff > tolerance) then
                     write(msg,'("ERROR: mass mismatch for atom type ",I0,": primary=",G0,", reservoir=",G0,", diff=",G0)') &
                         j, primary%atoms%masses_vec(j), reservoir%atoms%masses_vec(j), diff
                     call abort_run(msg)
@@ -99,7 +99,7 @@ contains
             ! Check that system and reservoir atom masses are consistent
             do j = 1, res%number
                 do k = 1, res%types(j)
-                    if (abs(primary%atoms%masses(j, k) - reservoir%atoms%masses(j, k)) > error) then
+                    if (abs(primary%atoms%masses(j, k) - reservoir%atoms%masses(j, k)) > tolerance) then
 
                         ! Generic header warning
                         call warn_user("Reservoir and system mass don't match.")

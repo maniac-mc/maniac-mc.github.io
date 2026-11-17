@@ -43,7 +43,7 @@ contains
         do i = 0, TABULATED_POINTS
             r = i * table%dx
             table%x(i) = r
-            if (r < error) then
+            if (r < tolerance) then
                 table%f(i) = two * alpha / sqrt(pi)
             else
                 table%f(i) = erfc(alpha*r) / r
@@ -78,7 +78,7 @@ contains
         do i = 0, TABULATED_POINTS
             r = i * table%dx
             table%x(i) = r
-            if (r < error) then
+            if (r < tolerance) then
                 ! Avoid 0^power singularities
                 table%f(i) = zero
             else

@@ -99,11 +99,11 @@ contains
             kz_idx = ewald%kvectors(idx)%kz
 
             ! Compute phase factors for the current residue
-            ewald%phase%new(1:natoms) = ewald%phase%factor_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
+            ewald%phase%new_tmp(1:natoms) = ewald%phase%factor_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
                 ewald%phase%factor_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
                 ewald%phase%factor_guest(3, res_type, mol_index, 1:natoms, kz_idx)
 
-            ewald%phase%old(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
+            ewald%phase%old_tmp(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
                 ewald%phase%factor_old(2, 1:natoms, ky_idx) * &
                 ewald%phase%factor_old(3, 1:natoms, kz_idx)
 
@@ -112,20 +112,20 @@ contains
 
                 ! Molecule creation
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) ]
-                ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * ewald%phase%new(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * ewald%phase%new_tmp(1:natoms))
             
             else if (deletion_flag) then
             
                 ! Molecule deletion
                 ! A(k) ← A(k) + Σ q_i [ - e^(i k·r_i,old) ]
-                ewald%Ak(idx) = ewald%Ak(idx) - sum(ewald%q_buffer(1:natoms) * ewald%phase%old(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) - sum(ewald%q_buffer(1:natoms) * ewald%phase%old_tmp(1:natoms))
             
             else
             
                 ! Standard move (translation, rotation)
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) - e^(i k·r_i,old) ]
                 ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * &
-                    (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
+                    (ewald%phase%new_tmp(1:natoms) - ewald%phase%old_tmp(1:natoms)))
             
             end if
 
@@ -194,7 +194,7 @@ contains
             charge = primary%atoms%charges(res_type, atom_index)
 
             ! Skip atoms with negligible charge
-            if (abs(charge) < error) cycle
+            if (abs(charge) < tolerance) cycle
 
             ! Add the individual atomic self-energy contribution
             self_energy = self_energy - ewald%param%alpha / SQRTPI * charge**2
@@ -238,7 +238,7 @@ contains
                             res_type, mol_index, atom_index_2)
 
                 ! Skip extremely small distances to avoid singularity
-                if (distance < error) cycle
+                if (distance < tolerance) cycle
 
                 ! Add the real-space intramolecular contribution (erfc(α * r) - 1) / r
                 u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * &
