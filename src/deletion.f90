@@ -65,7 +65,7 @@ contains
         if (rand_uniform() <= probability) then
         
             ! Accept move
-            call accept_deletion_move(res_type, last_molecule_index)
+            call accept_deletion_move(res_type, saved%offset)
             
         else
         
@@ -80,11 +80,11 @@ contains
     ! Updates system energy and counters when a deletion move is accepted.
     ! Optionally adds the molecule to a reservoir if one exists.
     !---------------------------------------------------------------------------
-    subroutine accept_deletion_move(res_type, last_molecule_index)
+    subroutine accept_deletion_move(res_type, site_offset_old)
 
         ! Input parameters
         integer, intent(in) :: res_type         ! Residue type to be moved
-        integer, intent(in) :: last_molecule_index  ! Index of the last molecule in the reservoir
+        real(real64), intent(in) :: site_offset_old(:, :) ! Geometry of the deleted molecule (saved before removal)
 
         ! Local variable
         real(real64) :: trial_pos(3)                ! Random numbers for initial molecule position in the box
@@ -114,7 +114,7 @@ contains
                 trial_pos(3)*reservoir%cell%matrix(:, 3)
             gas%offset(:, res_type, reservoir%num%residues(res_type)+1, &
                 1:res%atom(res_type)) = &
-                gas%offset(:, res_type, last_molecule_index, 1:res%atom(res_type))
+                site_offset_old(:, 1:res%atom(res_type))
 
             call update_counts(reservoir, res_type, +1)
 
