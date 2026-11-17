@@ -139,7 +139,6 @@ contains
         call sort_atoms_by_original_ID(box)
         call detect_molecules(box)
         call repair_active_molecules(box)
-
         call transform_to_COM_frame(box, is_reservoir)
         call validate_molecule_geometry(box, is_reservoir)
 

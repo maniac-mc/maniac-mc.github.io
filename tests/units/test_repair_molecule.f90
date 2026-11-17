@@ -80,7 +80,7 @@ program test_repair_molecule
     box%cell%matrix(:,3) = [0.0_real64, 0.5_real64, 1.0_real64]
 
     recip = inverse(box%cell%matrix)
-    box%cell%reciprocal = recip
+    box%cell%inv_det = recip
 
     atom_xyz(:,1) = [0.9_real64, 0.1_real64, 0.0_real64]
     atom_xyz(:,2) = [-0.8_real64, 0.2_real64, 0.1_real64]

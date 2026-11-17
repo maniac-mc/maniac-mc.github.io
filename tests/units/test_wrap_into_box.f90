@@ -62,7 +62,7 @@ program test_wrap_into_box
     call wrap_into_box(pos, box)
 
     ! Convert to fractional coordinates
-    pos = matmul(box%cell%reciprocal, pos)
+    pos = matmul(box%cell%inv_det, pos)
     expected = mod(pos + 0.5_real64, 1.0_real64) - 0.5_real64
 
     pass3 = all(abs(pos - expected) < tol)

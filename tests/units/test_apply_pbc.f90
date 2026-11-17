@@ -67,13 +67,13 @@ program test_apply_PBC
     box%cell%matrix(:,3) = [0.0_real64, 0.5_real64, 1.0_real64]
 
     recip = inverse(box%cell%matrix)
-    box%cell%reciprocal = recip
+    box%cell%inv_det = recip
 
     pos = [1.2_real64, 0.3_real64, -0.6_real64]
     call apply_PBC(pos, box)
 
     expected = box%cell%bounds(:,1) + matmul(box%cell%matrix, &
-        modulo(matmul(box%cell%reciprocal, pos - box%cell%bounds(:,1)), 1.0_real64))
+        modulo(matmul(box%cell%inv_det, pos - box%cell%bounds(:,1)), 1.0_real64))
 
     pass3 = all(abs(pos - expected) < tol)
     if (.not. pass3) then
