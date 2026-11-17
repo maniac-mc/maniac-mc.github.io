@@ -42,7 +42,7 @@ contains
     ! Triclinic : fractional coordinates s = H^{-1}·(r - r0),
     !             wrap s into [0,1), then r' = r0 + H·s
     !-----------------------------------------------------------
-    subroutine apply_PBC(pos, box)
+    subroutine wrap_to_box_origin(pos, box)
 
         ! Input parameters
         type(type_box), intent(in) :: box
@@ -94,7 +94,7 @@ contains
 
         end if
 
-    end subroutine apply_PBC
+    end subroutine wrap_to_box_origin
 
     !-----------------------------------------------------------
     ! Ensures a position is inside the simulation box using the

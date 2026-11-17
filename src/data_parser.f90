@@ -1450,7 +1450,7 @@ contains
                     original_com = com ! Save the CoM
 
                     ! Ensure CoM is inside simulation box
-                    call apply_PBC(com, box)
+                    call wrap_to_box_origin(com, box)
 
                     ! Perform sanity checks
                     call check_finite_vector(com, "Invalid (NaN/Inf) CoM detected in residue")

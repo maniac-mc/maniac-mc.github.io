@@ -92,7 +92,7 @@ contains
         coord%com(:, res_type, mol_index) = coord%com(:, res_type, mol_index) + trial_pos(:)
 
         ! Apply minimum image convension
-        call apply_PBC(coord%com(:, res_type, mol_index), primary)
+        call wrap_to_box_origin(coord%com(:, res_type, mol_index), primary)
 
     end subroutine propose_translation_move
 

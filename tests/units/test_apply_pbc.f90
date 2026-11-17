@@ -1,4 +1,4 @@
-program test_apply_PBC
+program test_wrap_to_box_origin
     use, intrinsic :: iso_fortran_env, only: real64
     use geometry_utils
     implicit none
@@ -24,7 +24,7 @@ program test_apply_PBC
     box%cell%matrix(3,3) = 1.0_real64
 
     pos = [1.2_real64, -0.3_real64, 2.7_real64]
-    call apply_PBC(pos, box)
+    call wrap_to_box_origin(pos, box)
 
     expected = modulo(pos, 1.0_real64)
     pass1 = all(abs(pos - expected) < tol)
@@ -45,7 +45,7 @@ program test_apply_PBC
     box%cell%matrix(3,3) = 4.0_real64
 
     pos = [2.5_real64, -1.6_real64, 9.0_real64]
-    call apply_PBC(pos, box)
+    call wrap_to_box_origin(pos, box)
 
     do i = 1,3
         expected(i) = box%cell%bounds(i,1) + modulo(pos(i) - box%cell%bounds(i,1), box%cell%matrix(i,i))
@@ -67,13 +67,13 @@ program test_apply_PBC
     box%cell%matrix(:,3) = [0.0_real64, 0.5_real64, 1.0_real64]
 
     recip = inverse(box%cell%matrix)
-    box%cell%inv_det = recip
+    box%cell%inv_matrix = recip
 
     pos = [1.2_real64, 0.3_real64, -0.6_real64]
-    call apply_PBC(pos, box)
+    call wrap_to_box_origin(pos, box)
 
     expected = box%cell%bounds(:,1) + matmul(box%cell%matrix, &
-        modulo(matmul(box%cell%inv_det, pos - box%cell%bounds(:,1)), 1.0_real64))
+        modulo(matmul(box%cell%inv_matrix, pos - box%cell%bounds(:,1)), 1.0_real64))
 
     pass3 = all(abs(pos - expected) < tol)
     if (.not. pass3) then
@@ -109,4 +109,4 @@ contains
         inv(3,3) =  (mat(1,1)*mat(2,2)-mat(1,2)*mat(2,1))/det
     end function inverse
 
-end program test_apply_PBC
+end program test_wrap_to_box_origin
