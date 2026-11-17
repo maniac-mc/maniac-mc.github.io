@@ -176,7 +176,7 @@ contains
         box%cell%determinant = dot_product(box%cell%matrix(:,1), adjugate(:,1))
 
         ! Check for denormal/underflow values in determinant
-        if (abs(box%cell%determinant) < one) then
+        if (abs(box%cell%determinant) < error) then
             call abort_run("Error: Determinant fell into denormal/underflow range")
         end if
 
