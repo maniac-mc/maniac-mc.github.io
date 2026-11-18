@@ -224,11 +224,9 @@ contains
                     exit
                 end if
                 trimmed_line = adjustl(trim(line))
-                if (len_trim(trimmed_line) > 0 .and. trimmed_line(1:1) /= '!') then
-                end if
 
-                ! Read num%atoms(SYSTEM) lines for masses
-                do i = 1, box%num%atoms
+                ! Read num%atomtypes(SYSTEM) lines for masses
+                do i = 1, box%num%atomtypes
                     read(unit_input, '(A)', IOSTAT=ios) line
                     if (ios /= 0) then
                         exit
@@ -246,7 +244,7 @@ contains
                         exit
                     end if
 
-                    if (tmp_int < 1 .or. tmp_int > box%num%atoms) then
+                    if (tmp_int < 1 .or. tmp_int > box%num%atomtypes) then
                         exit
                     end if
 
