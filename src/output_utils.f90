@@ -13,7 +13,7 @@ module output_utils
 
     implicit none
 
-    integer :: out_unit = 10                        ! Default log file unit
+    integer :: unit_log = 10                        ! Default log file unit
 
 contains
 
@@ -24,7 +24,7 @@ contains
 
         call print_termination_message()
 
-        close(out_unit)
+        close(unit_log)
 
     end subroutine close_output
 
@@ -37,8 +37,8 @@ contains
         character(*), intent(in) :: msg
 
         write(*,*) trim(msg)
-        write(out_unit,*) trim(msg)
-        flush(out_unit) ! Forces the data to be written to disk
+        write(unit_log,*) trim(msg)
+        flush(unit_log) ! Forces the data to be written to disk
 
     end subroutine log_message
 

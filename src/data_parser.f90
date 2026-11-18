@@ -68,18 +68,18 @@ contains
         logical, intent(in) :: is_reservoir             ! Flag for primary/reservoir reading
 
         ! Local variables
-        integer :: infile = 100                         ! Fortran unit number used to open the input file
+        integer :: unit_input = 100                         ! Fortran unit number used to open the input file
         integer :: ios                                  ! I/O status flag (nonzero if file open/read fails)
 
         ! === Step 1: Open file ===
-        open(UNIT=infile, FILE=data_file_name, STATUS='OLD', ACTION='read', IOSTAT=ios)
+        open(UNIT=unit_input, FILE=data_file_name, STATUS='OLD', ACTION='read', IOSTAT=ios)
 
         if (ios /= 0) then
             call abort_run("Error opening file: " // trim(data_file_name))
         end if
 
         ! === Step 2: Read header ===
-        call read_lmp_header_info(infile, box)
+        call read_lmp_header_info(unit_input, box)
 
         ! === Step 3: Allocate arrays ===
         allocate(atom_ids_1d(box%num%atoms))
@@ -102,38 +102,38 @@ contains
         allocate(improper_atoms_1d(box%num%impropers,4))
 
         ! === Step 4: Read box dimensions ===
-        rewind(infile)
-        call parse_lammps_box(infile, box)
+        rewind(unit_input)
+        call parse_lammps_box(unit_input, box)
 
         ! Detect box type and other informations
         call prepare_simulation_box(box)
 
         ! === Step 5: Read masses ===
-        rewind(infile)
-        call read_lammps_masses(infile, box)
+        rewind(unit_input)
+        call read_lammps_masses(unit_input, box)
 
         ! === Step 6: Read atoms ===
-        rewind(infile)
-        call read_lammps_atoms(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_atoms(unit_input, data_file_name, box)
         call assign_atom_names(box)
 
         ! === Step 6: Read bonds ===
-        rewind(infile)
-        call read_lammps_bonds(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_bonds(unit_input, data_file_name, box)
 
         ! === Step 6: Read angles ===
-        rewind(infile)
-        call read_lammps_angles(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_angles(unit_input, data_file_name, box)
 
         ! === Step 7: Read dihedrals ===
-        rewind(infile)
-        call read_lammps_dihedrals(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_dihedrals(unit_input, data_file_name, box)
 
         ! === Step 7: Read improper ===
-        rewind(infile)
-        call read_lammps_impropers(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_impropers(unit_input, data_file_name, box)
 
-        close(infile)
+        close(unit_input)
 
         ! === Step 7: Post-processing ===
         call sort_atoms_by_original_ID(box)
@@ -178,11 +178,11 @@ contains
     ! Reads atomic masses from the "Masses" section of a LAMMPS data file and maps them
     ! into a 2D mass array for each atom type and residue type.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_masses(infile, box)
+    subroutine read_lammps_masses(unit_input, box)
 
         ! Input parameters
         type(type_box), intent(inout) :: box         ! Simulation box containing atom/mass info
-        integer, intent(in) :: infile                ! LAMMPS data file unit to read from
+        integer, intent(in) :: unit_input                ! LAMMPS data file unit to read from
 
         ! Local variables
         character(len=256) :: line, trimmed_line     ! Raw and trimmed lines from file
@@ -199,11 +199,11 @@ contains
         box%atoms%mass_by_type = 0.0d0
 
         ! Rewind file to start (optional, remove if file pointer is already positioned)
-        rewind(infile)
+        rewind(unit_input)
 
         ! Look for "Masses" section
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
             if (ios /= 0) then
                 exit
             end if
@@ -219,7 +219,7 @@ contains
             ! Check for "Masses" keyword
             if (trim(trimmed_line) == "Masses") then
                 ! Skip next line (usually blank or a comment)
-                read(infile, '(A)', IOSTAT=ios) line
+                read(unit_input, '(A)', IOSTAT=ios) line
                 if (ios /= 0) then
                     exit
                 end if
@@ -229,7 +229,7 @@ contains
 
                 ! Read num%atoms(SYSTEM) lines for masses
                 do i = 1, box%num%atoms
-                    read(infile, '(A)', IOSTAT=ios) line
+                    read(unit_input, '(A)', IOSTAT=ios) line
                     if (ios /= 0) then
                         exit
                     end if
@@ -541,10 +541,10 @@ contains
     ! with atom IDs, types, charges, and positions. Performs extensive error checks
     ! for missing sections, invalid atom types, parsing errors, and array bounds.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_atoms(infile, data_file_name, box)
+    subroutine read_lammps_atoms(unit_input, data_file_name, box)
 
         ! Input parameters
-        integer, intent(in) :: infile                   ! LAMMPS data file unit to read atom data from
+        integer, intent(in) :: unit_input                   ! LAMMPS data file unit to read atom data from
         character(len=*), intent(in) :: data_file_name  ! Name of the LAMMPS data file
         type(type_box), intent(inout) :: box           ! Simulation box to store atom properties
 
@@ -564,7 +564,7 @@ contains
 
         ! Read until "Atoms" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No atoms found in data file: ", trim(data_file_name)
@@ -583,7 +583,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No atoms found in data file: ", trim(data_file_name)
             call abort_run(trim(formatted_msg), ERROR_READ)
@@ -591,7 +591,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as atom data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -600,7 +600,7 @@ contains
 
         ! Loop over all atoms
         do k = 1, box%num%atoms
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') &
@@ -666,10 +666,10 @@ contains
     ! stores bond IDs, types, and connected atom indices in the corresponding arrays.
     ! If no bonds are expected, the routine returns immediately.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_bonds(infile, data_file_name, box)
+    subroutine read_lammps_bonds(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing bond counts and arrays
 
@@ -691,7 +691,7 @@ contains
 
         ! Read until "Bonds" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No bonds found in data file: ", trim(data_file_name)
@@ -711,7 +711,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No bonds found in data file: ", trim(data_file_name)
@@ -720,7 +720,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as bond data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: " // trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -729,7 +729,7 @@ contains
 
         ! Loop over all bonds
         do k = 1, box%num%bonds
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') "Unexpected end of file at bond line ", k, " in: " // trim(data_file_name)
@@ -763,10 +763,10 @@ contains
     ! and stores angle IDs, types, and connected atom indices in the corresponding arrays.
     ! If no angles are expected, the routine returns immediately.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_angles(infile, data_file_name, box)
+    subroutine read_lammps_angles(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing angle counts and arrays
 
@@ -789,7 +789,7 @@ contains
 
         ! Read until "Angles" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No angles found in data file: ", trim(data_file_name)
@@ -808,7 +808,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No angles found in data file: ", trim(data_file_name)
@@ -817,7 +817,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as angle data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -826,7 +826,7 @@ contains
 
         ! Loop over all angles
         do k = 1, box%num%angles
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') "Unexpected end of file at angle line ", k, " in: " // trim(data_file_name)
@@ -860,10 +860,10 @@ contains
     ! Reads dihedral definitions from the "Dihedrals" section of a LAMMPS data file
     ! and stores dihedral IDs, types, and connected atom indices in the corresponding arrays.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_dihedrals(infile, data_file_name, box)
+    subroutine read_lammps_dihedrals(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing dihedral counts and arrays
 
@@ -884,7 +884,7 @@ contains
 
         ! Read until "Dihedrals" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No dihedrals found in data file: ", trim(data_file_name)
@@ -903,7 +903,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No dihedrals found in data file: ", trim(data_file_name)
@@ -912,7 +912,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as bond data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -921,7 +921,7 @@ contains
 
         ! Loop over all dihedrals
         do k = 1, box%num%dihedrals
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') "Unexpected end of file at dihedrals line ", &
@@ -959,10 +959,10 @@ contains
     ! Reads improper dihedral definitions from the "Impropers" section of a LAMMPS data file
     ! and stores improper IDs, types, and connected atom indices in the corresponding arrays.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_impropers(infile, data_file_name, box)
+    subroutine read_lammps_impropers(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing improper counts and arrays
 
@@ -983,7 +983,7 @@ contains
 
         ! Read until "Impropers" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No impropers found in data file: ", trim(data_file_name)
                 call info_message(trim(formatted_msg))
@@ -1000,7 +1000,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No impropers found in data file: ", trim(data_file_name)
@@ -1009,7 +1009,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as bond data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -1018,7 +1018,7 @@ contains
 
         ! Loop over all impropers
         do k = 1, box%num%impropers
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') &

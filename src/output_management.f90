@@ -70,7 +70,7 @@ contains
         if (present(unit_number)) then
             unit_to_use = unit_number
         else
-            unit_to_use = out_unit
+            unit_to_use = unit_log
         end if
 
         if (present(filename)) then

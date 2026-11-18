@@ -73,10 +73,10 @@ contains
     ! Pre-scans a residue input file to determine the maximum sizes needed
     ! for array allocations
     !-----------------------------------------------------------------------------
-    subroutine predetect_number_info(infile)
+    subroutine predetect_number_info(unit_input)
 
         ! Input parameters
-        integer, intent(in) :: infile                 ! File unit to read residue definitions
+        integer, intent(in) :: unit_input                 ! File unit to read residue definitions
 
         ! Local variables
         character(len=256) :: line                    ! Current line read from input file
@@ -101,7 +101,7 @@ contains
 
         ! Loop over lines in input file
         do
-            read(infile, '(A)', iostat=ios) line
+            read(unit_input, '(A)', iostat=ios) line
             if (ios /= 0) exit  ! End of file or read error
 
             line = adjustl(trim(line))
@@ -200,10 +200,10 @@ contains
     ! Scans the residue definition blocks again to extract the explicit list of
     ! atom types, activation state, and declared atom counts for each residue.
     !-----------------------------------------------------------------------------
-    subroutine predetect_type(infile)
+    subroutine predetect_type(unit_input)
 
         ! Input argument
-        integer, intent(in) :: infile           ! Input file unit number
+        integer, intent(in) :: unit_input           ! Input file unit number
 
         ! Local variables
         character(len=256) :: line              ! Current line read from file
@@ -228,13 +228,13 @@ contains
             if (allocated(res_infos(res_id)%types)) deallocate(res_infos(res_id)%types)
         end do
 
-        rewind(infile)
+        rewind(unit_input)
         in_residue_block = .false.
         res_id = 0
 
         ! Parse again to extract "types" entries
         do
-            read(infile, '(A)', iostat=ios) line
+            read(unit_input, '(A)', iostat=ios) line
             if (ios /= 0) exit
 
             line = adjustl(trim(line))

@@ -233,8 +233,8 @@ contains
         real(real64) :: val_real               ! Real value read from input
         real(real64) :: proba_total            ! Sum of move probabilities for normalization
         logical :: in_residue_block            ! Flag indicating parsing inside a residue block
-        logical :: val_bool                     ! Logical value read from input
-        integer :: val                         ! Temporary integer for parsing site/type IDs
+        logical :: val_bool                    ! Logical value read from input
+        integer :: id_val                      ! Temporary integer for parsing site/type IDs
         logical :: has_nb_block, has_nb_step, has_temp, has_seed
         logical :: has_cutoff, has_tolerance
         logical :: has_translation_step, has_rotation_step, has_recalibrate
@@ -486,10 +486,10 @@ contains
                 pos = 1
                 n_ids = 0
                 do while (pos <= len_rest)
-                    read(rest_line(pos:), *, iostat=ios) val
+                    read(rest_line(pos:), *, iostat=ios) id_val
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%site_types(res%number + 1, n_ids) = val
+                    res%site_types(res%number + 1, n_ids) = id_val
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
                 res%types(res%number + 1) = n_ids
