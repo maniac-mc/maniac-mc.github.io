@@ -28,9 +28,6 @@ module constants
     ! Boltzmann constant in kcal/(mol K)
     real(real64), parameter :: KB_kcalmol = KB * NA * J_to_kcal
 
-    ! --- Runtime variable (NOT a constant, #tocheck : move somewhere else ?) ---
-    real(real64) :: beta ! 1 / (kB T)
-
     ! --- Numeric literals in real64 (to avoid writing 2.0_real64 everywhere) ---
     real(real64), parameter :: zero = 0.0_real64
     real(real64), parameter :: quarter = 0.25_real64

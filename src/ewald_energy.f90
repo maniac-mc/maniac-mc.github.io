@@ -209,10 +209,10 @@ contains
     ! molecule or residue using the Ewald summation method:
     !    E_ij_real = q_i * q_j * (erfc(α * r_ij) / r_ij)
     !------------------------------------------------------------------------------
-    function intra_res_real_coulomb_energy(res_type, mol_index) result(u_intraCoulomb)
+    function intra_res_real_coulomb_energy(res_type, mol_index) result(u_intra_coulomb)
         
         ! Return value
-        real(real64) :: u_intraCoulomb
+        real(real64) :: u_intra_coulomb
         
         ! Input arguments
         integer, intent(in) :: res_type
@@ -224,7 +224,7 @@ contains
         real(real64) :: charge_1, charge_2
 
         ! Initialize energy accumulator
-        u_intraCoulomb = 0
+        u_intra_coulomb = 0
 
         ! Loop over all unique atom pairs in the molecule
         do atom_index_1 = 1, res%atom(res_type)-1
@@ -241,13 +241,13 @@ contains
                 if (distance < tolerance) cycle
 
                 ! Add the real-space intramolecular contribution (erfc(α * r) - 1) / r
-                u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * &
+                u_intra_coulomb = u_intra_coulomb + charge_1 * charge_2 * &
                     (erfc(ewald%param%alpha * distance) - one) / distance
 
             end do
         end do
 
-        u_intraCoulomb = u_intraCoulomb * EPS0_INV_real ! In kcal/mol
+        u_intra_coulomb = u_intra_coulomb * EPS0_INV_real ! In kcal/mol
 
     end function intra_res_real_coulomb_energy
 

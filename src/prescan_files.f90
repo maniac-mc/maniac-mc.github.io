@@ -32,8 +32,8 @@ contains
     subroutine prescan_inputs()
 
         ! Initialize max number of residue
-        nmax%active_residues = 0
-        nmax%inactive_residues = 0
+        max_counts%active_residues = 0
+        max_counts%inactive_residues = 0
 
         ! Pre-scan input files
         call prescan_input_file(path%input) ! Detect residue definitions and sizes
@@ -41,7 +41,7 @@ contains
         if (status%reservoir_provided) then
             call prescan_topology(path%reservoir, is_reservoir = .true.) ! Count residues in reservoir topology
         else
-            nmax%active_residues = NB_MAX_MOLECULE
+            max_counts%active_residues = NB_MAX_MOLECULE
         end if
 
     end subroutine prescan_inputs
@@ -95,8 +95,8 @@ contains
 
         ! Initialize counters
         res%number = 0
-        nmax%types_per_residue = 0
-        nmax%atoms_per_residue = 0
+        max_counts%types_per_residue = 0
+        max_counts%atoms_per_residue = 0
         in_residue_block = .false.
 
         ! Loop over lines in input file
@@ -150,8 +150,8 @@ contains
                 end do
 
                 ! Update global max
-                if (nb_type_per_residue > nmax%types_per_residue) then
-                    nmax%types_per_residue = nb_type_per_residue
+                if (nb_type_per_residue > max_counts%types_per_residue) then
+                    max_counts%types_per_residue = nb_type_per_residue
                 end if
             end if
 
@@ -177,18 +177,18 @@ contains
                 read(rest_line, *, iostat=ios) max_atom_in_residue
 
                 ! Update global maximum
-                if (max_atom_in_residue > nmax%atoms_per_residue) then
-                    nmax%atoms_per_residue = max_atom_in_residue
+                if (max_atom_in_residue > max_counts%atoms_per_residue) then
+                    max_counts%atoms_per_residue = max_atom_in_residue
                 end if
 
                 ! Update active / inactive maxima
                 if (is_active_residue) then
-                    if (max_atom_in_residue > nmax%atoms_active_residue) then
-                        nmax%atoms_active_residue = max_atom_in_residue
+                    if (max_atom_in_residue > max_counts%atoms_active_residue) then
+                        max_counts%atoms_active_residue = max_atom_in_residue
                     end if
                 else
-                    if (max_atom_in_residue > nmax%atoms_inactive_residue) then
-                        nmax%atoms_inactive_residue = max_atom_in_residue
+                    if (max_atom_in_residue > max_counts%atoms_inactive_residue) then
+                        max_counts%atoms_inactive_residue = max_atom_in_residue
                     end if
                 end if
             end if
@@ -425,12 +425,12 @@ contains
         do res_id = 1, res%number
             nb_residue = res_infos(res_id)%nb_res(1) + res_infos(res_id)%nb_res(2)            
             if (res_infos(res_id)%is_active) then
-                if (nb_residue > nmax%active_residues) then
-                    nmax%active_residues = nb_residue
+                if (nb_residue > max_counts%active_residues) then
+                    max_counts%active_residues = nb_residue
                 end if
             else
-                if (nb_residue > nmax%inactive_residues) then
-                    nmax%inactive_residues = nb_residue
+                if (nb_residue > max_counts%inactive_residues) then
+                    max_counts%inactive_residues = nb_residue
                 end if
             end if
         end do

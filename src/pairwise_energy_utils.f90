@@ -65,8 +65,8 @@ contains
                     do atom_j = 1, res%atom(res_j)
 
                         ! Read pair parameters
-                        sigma = coeff%sigma(res_i, res_j, atom_i, atom_j)           ! In Angstrom
-                        epsilon = coeff%epsilon(res_i, res_j, atom_i, atom_j)       ! In kcal/mol
+                        sigma = pair_coeff%sigma(res_i, res_j, atom_i, atom_j)           ! In Angstrom
+                        epsilon = pair_coeff%epsilon(res_i, res_j, atom_i, atom_j)       ! In kcal/mol
                         q_i = primary%atoms%charges(res_i, atom_i)                  ! In units of e
                         q_j = primary%atoms%charges(res_j, atom_j)                  ! In units of e
 

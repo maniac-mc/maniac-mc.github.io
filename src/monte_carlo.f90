@@ -30,7 +30,6 @@ contains
         real(real64) :: cumul_translation   ! Threshold for translation moves
         real(real64) :: cumul_rotation      ! Threshold for rotation moves
         real(real64) :: cumul_swap          ! Threshold for swap moves
-        real(real64) :: cumul_total         ! Total probability (including insertion/deletion)
         integer :: res_type                 ! Index of molecule to be moved
         integer :: mol_index                ! Index of molecule copy
         integer :: hist_step_counter        ! Steps since last histogram sample
@@ -48,7 +47,6 @@ contains
         cumul_translation = proba%translation
         cumul_rotation = cumul_translation + proba%rotation
         cumul_swap = cumul_rotation + proba%swap
-        cumul_total = cumul_swap + proba%insertion_deletion
 
         ! Main Monte Carlo Loop
         do

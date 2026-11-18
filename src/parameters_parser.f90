@@ -49,8 +49,8 @@ contains
         allocate(epsilons(max_pairs), sigmas(max_pairs))    ! Allocate arrays for storing epsilon and sigma values
 
         ! Initialise LJ coefficients to 0.0
-        coeff%sigma = 0.0_real64
-        coeff%epsilon = 0.0_real64
+        pair_coeff%sigma = 0.0_real64
+        pair_coeff%epsilon = 0.0_real64
 
         printed = .false.                                   ! Initialize printed array to false (no pairs logged yet)
 
@@ -86,12 +86,12 @@ contains
                             type_j = primary%atoms%types(j, l)
                             if ((type_i == val_int1) .and. (type_j == val_int2)) then
                                 ! Record parameters
-                                coeff%sigma(i, j, k, l) = sigma
-                                coeff%epsilon(i, j, k, l) = epsilon
+                                pair_coeff%sigma(i, j, k, l) = sigma
+                                pair_coeff%epsilon(i, j, k, l) = epsilon
 
                                 ! Also record the symmetric
-                                coeff%sigma(j, i, l, k) = sigma
-                                coeff%epsilon(j, i, l, k) = epsilon
+                                pair_coeff%sigma(j, i, l, k) = sigma
+                                pair_coeff%epsilon(j, i, l, k) = epsilon
                             end if
                         end do
                     end do
@@ -133,15 +133,15 @@ contains
                     do l = 1, res%atom(j)
 
                         ! Detect cross coefficients that are zeros
-                        if ((abs(coeff%epsilon(i,j,k,l)) < tolerance) .and. abs(coeff%sigma(i,j,k,l)) < tolerance) then
+                        if ((abs(pair_coeff%epsilon(i,j,k,l)) < tolerance) .and. abs(pair_coeff%sigma(i,j,k,l)) < tolerance) then
 
                             ! Detect direct coefficients
                             type_i = primary%atoms%types(i, k)
                             type_j = primary%atoms%types(j, l)
 
                             ! Apply Lorentz-Berthelot rule
-                            sigma = (coeff%sigma(i, i, k, k) + coeff%sigma(j, j, l, l)) / 2
-                            epsilon = sqrt(coeff%epsilon(i, i, k, k) * coeff%epsilon(j, j, l, l))
+                            sigma = (pair_coeff%sigma(i, i, k, k) + pair_coeff%sigma(j, j, l, l)) / 2
+                            epsilon = sqrt(pair_coeff%epsilon(i, i, k, k) * pair_coeff%epsilon(j, j, l, l))
 
                             ! If direct coefficients are both positive, then record cross coefficients and print warning
                             if ((sigma > tolerance) .and. (epsilon > tolerance)) then
@@ -166,8 +166,8 @@ contains
                                     warned(type_j, type_i) = .true.
                                 end if
 
-                                coeff%sigma(i,j,k,l) = sigma
-                                coeff%epsilon(i,j,k,l) = epsilon
+                                pair_coeff%sigma(i,j,k,l) = sigma
+                                pair_coeff%epsilon(i,j,k,l) = epsilon
                                 
                             end if
                         end if

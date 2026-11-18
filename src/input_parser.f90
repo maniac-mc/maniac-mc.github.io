@@ -101,7 +101,7 @@ contains
         integer :: max_type_per_res
 
         nb_type_res = res%number
-        max_type_per_res = nmax%types_per_residue
+        max_type_per_res = max_counts%types_per_residue
 
         ! Allocate per residue arrays
         allocate(res%lambda(nb_type_res))
@@ -128,10 +128,10 @@ contains
         allocate(connect%impropers(nb_type_res, NB_MAX_IMPROPER, 5))
 
         ! Allocate interaction parameters
-        allocate(coeff%sigma(nb_type_res, nb_type_res, &
-                            nmax%atoms_per_residue, nmax%atoms_per_residue))
-        allocate(coeff%epsilon(nb_type_res, nb_type_res, &
-                            nmax%atoms_per_residue, nmax%atoms_per_residue))
+        allocate(pair_coeff%sigma(nb_type_res, nb_type_res, &
+                            max_counts%atoms_per_residue, max_counts%atoms_per_residue))
+        allocate(pair_coeff%epsilon(nb_type_res, nb_type_res, &
+                            max_counts%atoms_per_residue, max_counts%atoms_per_residue))
 
         ! Allocate input arrays
         allocate(thermo%fugacity(nb_type_res))
@@ -146,7 +146,7 @@ contains
         allocate(res%angles(nb_type_res))
         allocate(res%dihedrals(nb_type_res))
         allocate(res%impropers(nb_type_res))
-        allocate(res%pattern_types(nb_type_res, nmax%atoms_per_residue))
+        allocate(res%pattern_types(nb_type_res, max_counts%atoms_per_residue))
 
     end subroutine allocate_atom_arrays
 
@@ -160,11 +160,11 @@ contains
         type(type_box), intent(inout) :: system
 
         ! Allocate basic atom properties
-        allocate(system%atoms%charges(res%number, nmax%atoms_per_residue))
-        allocate(system%atoms%masses(res%number, nmax%atoms_per_residue))
-        allocate(system%atoms%names(res%number, nmax%atoms_per_residue))
-        allocate(system%atoms%types(res%number, nmax%atoms_per_residue))
-        allocate(system%atoms%ids(res%number, nmax%atoms_per_residue))
+        allocate(system%atoms%charges(res%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%mass_by_site(res%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%names(res%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%types(res%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%ids(res%number, max_counts%atoms_per_residue))
 
         ! Allocate residue counters
         allocate(system%num%residues(res%number))
@@ -188,14 +188,14 @@ contains
         ! Detect max number of atom
         if (is_host) then
             ! Host (i.., the inactive residue)
-            max_atom = nmax%atoms_inactive_residue
-            max_molecule = nmax%inactive_residues
+            max_atom = max_counts%atoms_inactive_residue
+            max_molecule = max_counts%inactive_residues
         else
-            max_atom = nmax%atoms_active_residue
+            max_atom = max_counts%atoms_active_residue
             if (status%reservoir_provided) then
                 ! In presence of a reservoir, the maximum number of molecule is
                 ! the sum of residue in box and reservoir
-                max_molecule = nmax%active_residues
+                max_molecule = max_counts%active_residues
             else
                 ! In absence of a reservoir, use NB_MAX_MOLECULE
                 max_molecule = NB_MAX_MOLECULE

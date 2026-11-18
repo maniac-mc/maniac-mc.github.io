@@ -233,7 +233,7 @@ contains
                 ! V in Å³, λ in Å, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(res_type) ! Thermal de Broglie wavelength (A)
                 prefactor = primary%cell%volume / n_new / lambda**3 ! note: n_new must be used because the residue was already added
-                probability = min(1.0_real64, prefactor * exp(-beta * (deltaU - mu)))
+                probability = min(1.0_real64, prefactor * exp(-thermo%beta * (deltaU - mu)))
 
             case (TYPE_DELETION)
 
@@ -242,12 +242,12 @@ contains
                 ! λ in Å, V in Å³, ΔU and μ in kcal/mol, β = 1/(kB T)
                 lambda = res%lambda(res_type) ! Thermal de Broglie wavelength (A)
                 prefactor = n_old * lambda**3 / (primary%cell%volume) ! note: n_old must be used because the residue was already removed
-                probability = min(1.0_real64, prefactor * exp(-beta * (deltaU + mu)))
+                probability = min(1.0_real64, prefactor * exp(-thermo%beta * (deltaU + mu)))
 
             case (TYPE_TRANSLATION, TYPE_ROTATION)
 
                 ! P_acc = min[1, exp(-β * ΔU)]
-                probability = min(1.0_real64, exp(-beta * deltaU))
+                probability = min(1.0_real64, exp(-thermo%beta * deltaU))
 
             case default
                 call abort_run("Unknown move_type in compute_acceptance_probability!", 1)
@@ -279,7 +279,7 @@ contains
         probability = min(1.0_real64, &
             (N_old / (N_new + 1.0_real64)) * &
             (res%lambda(type_old)**3 / res%lambda(type_new)**3) * &
-            exp(-beta * (deltaU + mu_old - mu_new)))
+            exp(-thermo%beta * (deltaU + mu_old - mu_new)))
 
     end function swap_acceptance_probability
 
@@ -506,7 +506,7 @@ contains
         ! Local variables
         logical :: do_place_com                 ! Internal flag to control COM generation
         logical :: full_rotation                ! Flag indicating whether a full 360° random rotation should be applied
-        real(real64) :: random_nmb              ! Uniform random number in [0,1), used for random index selection
+        real(real64) :: rand_val                ! Uniform random number in [0,1), used for random index selection
         real(real64) :: trial_pos(3)            ! Random numbers for initial molecule position in the box
 
         ! Decide whether to place a random COM
@@ -527,15 +527,15 @@ contains
         if (status%reservoir_provided) then
 
             ! Pick a random (and existing) molecule in the reservoir
-            call random_number(random_nmb)
+            call random_number(rand_val)
 
             if (present(place_random_com)) then
-                rand_idx_reservoir = int(random_nmb * reservoir%num%residues(res_type)) + 1  
+                rand_idx_reservoir = int(rand_val * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
                     reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type))
             else
-                rand_idx_reservoir = int(random_nmb * reservoir%num%residues(res_type)) + 1  
+                rand_idx_reservoir = int(rand_val * reservoir%num%residues(res_type)) + 1  
                 ! Copy site offsets from the chosen molecule
                 primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
                     reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type))

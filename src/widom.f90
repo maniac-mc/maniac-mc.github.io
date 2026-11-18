@@ -80,7 +80,7 @@ contains
         ! Local variables
         real(real64) :: weight                  ! Boltzmann weight
 
-        weight = exp(-deltaU * beta)
+        weight = exp(-deltaU * thermo%beta)
 
         if (weight > tolerance) then ! Correspond to a success
             counter%widom(2) = counter%widom(2) + 1

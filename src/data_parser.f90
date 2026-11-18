@@ -195,8 +195,8 @@ contains
         ! Initialize
         mass_found = 0
 
-        allocate(box%atoms%masses_vec(box%num%atomtypes))
-        box%atoms%masses_vec = 0.0d0
+        allocate(box%atoms%mass_by_type(box%num%atomtypes))
+        box%atoms%mass_by_type = 0.0d0
 
         ! Rewind file to start (optional, remove if file pointer is already positioned)
         rewind(infile)
@@ -250,7 +250,7 @@ contains
                         exit
                     end if
 
-                    box%atoms%masses_vec(tmp_int) = tmp_flt
+                    box%atoms%mass_by_type(tmp_int) = tmp_flt
                     mass_found = mass_found + 1
                 end do
 
@@ -259,7 +259,7 @@ contains
                 do j = 1, res%number
                     do k = 1, res%types(j)
                         if ((i <= box%num%atoms) .and. (i <= box%num%atomtypes)) then
-                            box%atoms%masses(j, k) = box%atoms%masses_vec(i)
+                            box%atoms%mass_by_site(j, k) = box%atoms%mass_by_type(i)
                             i = i + 1
                         else
                             exit
@@ -1415,7 +1415,7 @@ contains
             do j = 1, res%atom(i)
                 do l = 1, res%types(i)
                     if (res%site_types(i, l) == primary%atoms%types(i, j)) then
-                        tmp_atom_masses_1d = primary%atoms%masses(i, l)
+                        tmp_atom_masses_1d = primary%atoms%mass_by_site(i, l)
                         cpt = cpt + 1
                     end if
                 end do

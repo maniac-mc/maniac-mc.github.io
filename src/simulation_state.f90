@@ -72,6 +72,7 @@ module simulation_state
     ! Thermodynamic input parameters
     !---------------------------------------------------------------------------
     type input_thermo_type
+        real(real64) :: beta                            ! 1 / (kB T)
         real(real64) :: temperature                     ! System temperature (K)
         real(real64), allocatable :: fugacity(:)        ! Species fugacity for GCMC reservoir (dimensionless)
         real(real64), allocatable :: chemical_potential(:) ! Species chemical potential of reservoir (kcal/mol)
@@ -134,9 +135,9 @@ module simulation_state
     ! Atom-specific data
     !---------------------------------------------------------------------------
     type type_atomdata
-        real(real64), allocatable :: masses_vec(:)      ! Mass vector for all atom types
+        real(real64), allocatable :: mass_by_type(:)      ! Mass vector for all atom types
         real(real64), allocatable :: charges(:,:)       ! Partial charges on sites (system/reservoir)
-        real(real64), allocatable :: masses(:,:)        ! Masses of atoms (system/reservoir)
+        real(real64), allocatable :: mass_by_site(:,:)        ! Masses of atoms (system/reservoir)
         character(len=10), allocatable :: names(:,:)    ! Atom names for each residue (system/reservoir)
         integer, allocatable :: types(:,:)              ! Atom types for each residue (system/reservoir)
         integer, allocatable :: ids(:,:)                ! Atom ids for each residue (system/reservoir)
@@ -163,7 +164,7 @@ module simulation_state
         integer :: atoms_active_residue       ! Max number of atoms in active residues
         integer :: atoms_inactive_residue     ! Max number of atoms in inactive residues
     end type type_max
-    type (type_max) :: nmax
+    type (type_max) :: max_counts
 
     !---------------------------------------------------------------------------
     ! Statistic accumulator
@@ -190,9 +191,9 @@ module simulation_state
     !---------------------------------------------------------------------------
     type type_coeff
         real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
-        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
+        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones coefficients
     end type type_coeff
-    type(type_coeff) :: coeff
+    type(type_coeff) :: pair_coeff
 
    !---------------------------------------------------------------------------
     ! For tabulating potential

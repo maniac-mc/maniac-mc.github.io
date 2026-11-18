@@ -404,8 +404,8 @@ contains
                                             n_pairs = n_pairs + 1         ! Increment pair counter
                                             pair1(n_pairs) = it1          ! Store first atom type
                                             pair2(n_pairs) = it2          ! Store second atom type
-                                            epsilons(n_pairs) = coeff%epsilon(i,k,m,n)              ! Store epsilon in kcal/mol
-                                            sigmas(n_pairs) = coeff%sigma(i,k,m,n)                  ! Store sigma in Å
+                                            epsilons(n_pairs) = pair_coeff%epsilon(i,k,m,n)              ! Store epsilon in kcal/mol
+                                            sigmas(n_pairs) = pair_coeff%sigma(i,k,m,n)                  ! Store sigma in Å
                                             printed(it1, it2) = .true.    ! Mark pair as recorded
                                             printed(it2, it1) = .true.    ! Mark symmetric pair as recorded
                                         end if
@@ -476,7 +476,7 @@ contains
         call log_message("")
         call log_message("Atoms masses (g/mol):")
         do atom_id = 1, box%num%atomtypes
-            write(formatted_msg, '(I5, 2X, F12.6)') atom_id, box%atoms%masses_vec(atom_id)
+            write(formatted_msg, '(I5, 2X, F12.6)') atom_id, box%atoms%mass_by_type(atom_id)
             call log_message(formatted_msg)
         end do
 

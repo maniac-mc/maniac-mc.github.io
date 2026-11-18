@@ -591,7 +591,7 @@ contains
         write(unit_data, *) "Masses"
         write(unit_data, *)
         do atom_id = 1, primary%num%atomtypes
-            write(unit_data, '(I5, 1X, F12.6)') atom_id, box%atoms%masses_vec(atom_id)
+            write(unit_data, '(I5, 1X, F12.6)') atom_id, box%atoms%mass_by_type(atom_id)
         end do
 
         write(unit_data, *)
