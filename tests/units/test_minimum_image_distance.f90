@@ -19,10 +19,10 @@ program test_minimum_image_distance
     nres = 2
     natoms = 1
 
-    ! Allocate res%role
-    if (allocated(res%role)) deallocate(res%role)
-    allocate(res%role(nres))
-    res%role = TYPE_GUEST
+    ! Allocate residue_info%role
+    if (allocated(residue_info%role)) deallocate(residue_info%role)
+    allocate(residue_info%role(nres))
+    residue_info%role = TYPE_GUEST
 
     allocate(primary_guest%com(3, nres, nmaxmol))
     allocate(primary_guest%offset(3, nres, nmaxmol, natoms))
@@ -93,7 +93,7 @@ program test_minimum_image_distance
     !     stop 1
     ! end if
 
-    if (allocated(res%role)) deallocate(res%role)
+    if (allocated(residue_info%role)) deallocate(residue_info%role)
     if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
 
 end program test_minimum_image_distance

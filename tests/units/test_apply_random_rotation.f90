@@ -15,11 +15,11 @@ program test_apply_random_rotation
     local_error = 1.0d-12
 
     !--------------------------------------------------
-    ! Allocate res%role
+    ! Allocate residue_info%role
     !--------------------------------------------------
-    if (allocated(res%role)) deallocate(res%role)
-    allocate(res%role(1))
-    res%role = TYPE_GUEST
+    if (allocated(residue_info%role)) deallocate(residue_info%role)
+    allocate(residue_info%role(1))
+    residue_info%role = TYPE_GUEST
 
     !--------------------------------------------------
     ! Initialize input parameters for rotation
@@ -35,10 +35,10 @@ program test_apply_random_rotation
     mol_index = 1
     n_atoms = 2
 
-    ! Allocate res%atom and set number of atoms
-    if (allocated(res%atom)) deallocate(res%atom)
-    allocate(res%atom(1))
-    res%atom(1) = n_atoms
+    ! Allocate residue_info%atom and set number of atoms
+    if (allocated(residue_info%atom)) deallocate(residue_info%atom)
+    allocate(residue_info%atom(1))
+    residue_info%atom(1) = n_atoms
 
     ! Allocate primary_guest%offset (3 x n_residues x n_molecules x n_atoms)
     if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
@@ -75,7 +75,7 @@ program test_apply_random_rotation
     ! Test 2: single-atom residue unchanged
     !--------------------------------------------------
     n_atoms = 1
-    res%atom(1) = n_atoms
+    residue_info%atom(1) = n_atoms
     if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
     allocate(primary_guest%offset(3, 1, 1, n_atoms))
     primary_guest%offset(:,:,:,:) = 42.0_real64
@@ -91,8 +91,8 @@ program test_apply_random_rotation
     !--------------------------------------------------
     ! Clean up
     !--------------------------------------------------
-    if (allocated(res%role)) deallocate(res%role)
-    if (allocated(res%atom)) deallocate(res%atom)
+    if (allocated(residue_info%role)) deallocate(residue_info%role)
+    if (allocated(residue_info%atom)) deallocate(residue_info%atom)
     if (allocated(primary_guest%offset)) deallocate(primary_guest%offset)
 
 end program test_apply_random_rotation
