@@ -445,24 +445,24 @@ contains
         write(formatted_msg, '("Number of type of atoms: ", I0)') box%num%atomtypes
         call log_message(formatted_msg)
 
+        active_molecule_count = 0
         do i = 1, residue_info%number
-            if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
-                ! Active residue present in data file
+            if (box%num%residues(i) /= 0 .and. thermo%is_active(i)) then
                 active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Active residue ", A, " found in the data file: ", I0)') &
                     trim(residue_info%names(i)), box%num%residues(i)
-            else if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
-                ! Inactive residue present in data file
-                active_molecule_count = active_molecule_count + box%num%residues(i)
+                call log_message(formatted_msg)
+            else if (box%num%residues(i) /= 0 .and. .not. thermo%is_active(i)) then
                 write(formatted_msg, '("Inactive residue ", A, " found in the data file: ", I0)') &
                     trim(residue_info%names(i)), box%num%residues(i)
-            else if ((box%num%residues(i) == 0) .and. (thermo%is_active(i)) .and. (.not. is_reservoir)) then
-                ! Inactive residue defined in input but not present in data file
-                call abort_run("Inactive residue '" // trim(residue_info%names(i)) // "' (ID=" // &
-                            trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
+                call log_message(formatted_msg)
+            else if (box%num%residues(i) == 0 .and. thermo%is_active(i) .and. .not. is_reservoir) then
+                call abort_run("Active residue '" // trim(residue_info%names(i)) // "' (ID=" // &
+                    trim(adjustl(to_string(i))) // ") defined in input but not present in data file.", 1)
             end if
-            call log_message(formatted_msg)
         end do
+        write(formatted_msg, '("Total active molecules: ", I0)') active_molecule_count
+        call log_message(formatted_msg)
 
         call log_message("")
         call log_message("Simulation box (rows):")
