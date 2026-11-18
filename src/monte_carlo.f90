@@ -37,6 +37,7 @@ contains
         ! Initialization
         call log_starting_msg()                   ! Log starting message
         call update_output_files(.false.)   ! Write initial topology
+        hist_step_counter = 0
 
         ! Sample the initial configuration in the particle-number histogram
         if (allocated(hist%count)) call accumulate_histogram()

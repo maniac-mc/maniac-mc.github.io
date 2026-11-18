@@ -224,17 +224,18 @@ contains
         character(len=256) :: token          ! Token parsed from line (e.g., parameter name)
         character(len=100) :: val_cha        ! String value read from input (longer strings)
         character(len=10)  :: val_str        ! Short string value from input (e.g., site names)
-        integer :: ios                        ! I/O status for read operations
-        integer :: val_int                     ! Integer value read from input
-        integer :: pos                         ! Position index within a string
-        integer :: pos_val                     ! Start position of value in line after keyword
-        integer :: n_ids                       ! Counter for number of IDs parsed (e.g., types/names)
-        integer :: len_rest                    ! Length of rest_line
-        real(real64) :: val_real               ! Real value read from input
-        real(real64) :: proba_total            ! Sum of move probabilities for normalization
-        logical :: in_residue_block            ! Flag indicating parsing inside a residue block
-        logical :: val_bool                    ! Logical value read from input
-        integer :: id_val                      ! Temporary integer for parsing site/type IDs
+        integer :: ios                       ! I/O status for read operations
+        integer :: val_int                   ! Integer value read from input
+        integer :: pos                       ! Position index within a string
+        integer :: pos_val                   ! Start position of value in line after keyword
+        integer :: n_ids                     ! Counter for number of IDs parsed (e.g., types/names)
+        integer :: len_rest                  ! Length of rest_line
+        integer :: new_pos                   ! Next token position in rest_line; guards against index() == 0 infinite loop
+        real(real64) :: val_real             ! Real value read from input
+        real(real64) :: proba_total          ! Sum of move probabilities for normalization
+        logical :: in_residue_block          ! Flag indicating parsing inside a residue block
+        logical :: val_bool                  ! Logical value read from input
+        integer :: id_val                    ! Temporary integer for parsing site/type IDs
         logical :: has_nb_block, has_nb_step, has_temp, has_seed
         logical :: has_cutoff, has_tolerance
         logical :: has_translation_step, has_rotation_step, has_recalibrate
@@ -490,7 +491,9 @@ contains
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
                     residue_info%site_types(residue_info%number + 1, n_ids) = id_val
-                    pos = pos + index(rest_line(pos:), ' ')
+                    new_pos = pos + index(rest_line(pos:), ' ')
+                    if (new_pos == pos .or. new_pos > len_rest + 1) exit
+                    pos = new_pos
                 end do
                 residue_info%types(residue_info%number + 1) = n_ids
 
@@ -504,9 +507,12 @@ contains
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
                     residue_info%site_names(residue_info%number + 1, n_ids) = val_str
-                    pos = pos + index(rest_line(pos:), ' ')
+                    new_pos = pos + index(rest_line(pos:), ' ')
+                    if (new_pos == pos .or. new_pos > len_rest + 1) exit
+                    pos = new_pos
                 end do
             end if
+
         end do
 
         ! Validate fugacity for active residues
