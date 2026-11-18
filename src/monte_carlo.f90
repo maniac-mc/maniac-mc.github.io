@@ -37,6 +37,7 @@ contains
         ! Initialization
         call log_starting_msg()                   ! Log starting message
         call update_output_files(.false.)   ! Write initial topology
+        hist_step_counter = 0
 
         ! Sample the initial configuration in the particle-number histogram
         if (allocated(hist%count)) call accumulate_histogram()
@@ -53,6 +54,7 @@ contains
 
             ! Pick a molecule type and instance
             res_type = pick_random_residue_type(thermo%is_active)
+            if (res_type == 0) cycle   ! no active residue type: skip
             mol_index = pick_random_molecule_index(primary%num%residues(res_type))
 
             ! Perform Monte Carlo move

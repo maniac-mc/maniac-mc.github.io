@@ -184,10 +184,6 @@ contains
         inv_det = zero
         if (abs(box%cell%determinant) > tolerance) then  ! small tolerance to avoid near-zero
             inv_det = one / box%cell%determinant
-        else
-            ! Handle singular matrix case if needed, e.g. print error or return
-            call warn_user("Determinant is zero or near zero, inverse not computed.")
-            return
         end if
 
         ! Store inverse matrix in reciprocal
