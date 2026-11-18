@@ -45,10 +45,10 @@ contains
         e_coulomb = zero
 
         ! Loop over sites in molecule res_i
-        do atom_i = 1, res%atom(res_i)
+        do atom_i = 1, residue_info%atom(res_i)
 
             ! Loop over all molecule types j
-            do res_j = 1, res%number
+            do res_j = 1, residue_info%number
 
                 ! Loop over all molecule index j
                 do mol_j = 1, box%num%residues(res_j)
@@ -62,11 +62,11 @@ contains
                     end if
 
                     ! Loop over all side of the selected molecule j
-                    do atom_j = 1, res%atom(res_j)
+                    do atom_j = 1, residue_info%atom(res_j)
 
                         ! Read pair parameters
-                        sigma = coeff%sigma(res_i, res_j, atom_i, atom_j)           ! In Angstrom
-                        epsilon = coeff%epsilon(res_i, res_j, atom_i, atom_j)       ! In kcal/mol
+                        sigma = pair_coeff%sigma(res_i, res_j, atom_i, atom_j)           ! In Angstrom
+                        epsilon = pair_coeff%epsilon(res_i, res_j, atom_i, atom_j)       ! In kcal/mol
                         q_i = primary%atoms%charges(res_i, atom_i)                  ! In units of e
                         q_j = primary%atoms%charges(res_j, atom_j)                  ! In units of e
 
@@ -113,7 +113,7 @@ contains
         if (r >= mc_input%real_space_cutoff) return
 
         ! Return large value if overlap
-        if (r < error) then
+        if (r < tolerance) then
             energy = 1.0e20 ! Very large repulsive energy
             return
         end if
@@ -154,10 +154,10 @@ contains
         energy = zero
 
         ! Skip negligible charges and avoid division by zero
-        if (abs(q_i) < error .or. abs(q_j) < error) return
+        if (abs(q_i) < tolerance .or. abs(q_j) < tolerance) return
 
         ! Return large value if overlap
-        if (r < error) then
+        if (r < tolerance) then
             energy = 1.0e20 ! Very large repulsive energy
             return
         end if

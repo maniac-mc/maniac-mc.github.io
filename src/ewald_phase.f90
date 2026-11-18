@@ -33,24 +33,24 @@ contains
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
         ! Ensure that the routine deals with guest, not host
-        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+        if (residue_info%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
 
         !----------------------------------------------------------
         ! Save per-atom Fourier phase factors (IKX, IKY, IKZ)
         !----------------------------------------------------------
-        do atom_index = 1, res%atom(res_type)
+        do atom_index = 1, residue_info%atom(res_type)
             do dim = 1, 3
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Positive k
                     ewald%phase%factor_old(dim, atom_index, k_idx) = &
-                        ewald%phase%factor_guest(dim, res_type, mol_index, atom_index, k_idx)
+                        ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index, k_idx)
 
                     ! Negative k (only if non-zero)
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
                             ewald%phase%factor_old(dim, atom_index, -k_idx) = &
-                                ewald%phase%factor_guest(dim, res_type, mol_index, atom_index, -k_idx)
+                                ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index, -k_idx)
                         end if
                     end if
 
@@ -90,23 +90,23 @@ contains
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
         ! Ensure that the routine deals with guest, not host
-        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+        if (residue_info%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
 
         ! Restore per-atom Fourier phase factors (IKX, IKY, IKZ)
-        do atom_index_1 = 1, res%atom(res_type)
+        do atom_index_1 = 1, residue_info%atom(res_type)
 
             do dim = 1, 3
 
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Positive k
-                    ewald%phase%factor_guest(dim, res_type, mol_index, atom_index_1, k_idx) = &
+                    ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index_1, k_idx) = &
                         ewald%phase%factor_old(dim, atom_index_1, k_idx)
 
                     ! Negative k
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
-                            ewald%phase%factor_guest(dim, res_type, mol_index, atom_index_1, -k_idx) = &
+                            ewald%phase%factor_primary_guest(dim, res_type, mol_index, atom_index_1, -k_idx) = &
                                 ewald%phase%factor_old(dim, atom_index_1, -k_idx)
                         end if
                     end if
@@ -147,24 +147,24 @@ contains
         if (present(symmetrize_x)) do_sym = symmetrize_x
 
         ! Ensure that the routine deals with guest, not host
-        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+        if (residue_info%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
 
         ! Restore IKX, IKY, IKZ from backups
-        do atom_index_1 = 1, res%atom(res_type)
+        do atom_index_1 = 1, residue_info%atom(res_type)
 
             do dim = 1, 3
 
                 do k_idx = 0, ewald%param%kmax(dim)
 
                     ! Always copy positive (and zero) k
-                    ewald%phase%factor_guest(dim, res_type, index_1, atom_index_1, k_idx) = &
-                        ewald%phase%factor_guest(dim, res_type, index_2, atom_index_1, k_idx)
+                    ewald%phase%factor_primary_guest(dim, res_type, index_1, atom_index_1, k_idx) = &
+                        ewald%phase%factor_primary_guest(dim, res_type, index_2, atom_index_1, k_idx)
 
                     ! Copy negative k only when allowed (when d=1, only if symmetrize_x is true, or when d=2,3)
                     if (k_idx /= 0) then
                         if (dim /= 1 .or. do_sym) then
-                            ewald%phase%factor_guest(dim, res_type, index_1, atom_index_1, -k_idx) = &
-                                ewald%phase%factor_guest(dim, res_type, index_2, atom_index_1, -k_idx)
+                            ewald%phase%factor_primary_guest(dim, res_type, index_1, atom_index_1, -k_idx) = &
+                                ewald%phase%factor_primary_guest(dim, res_type, index_2, atom_index_1, -k_idx)
                         end if
                     end if
 
@@ -185,7 +185,7 @@ contains
         integer :: mol_index
 
         ! Loop over all residue types
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             ! Loop over all molecules of this residue type
             do mol_index = 1, primary%num%residues(res_type)
@@ -215,10 +215,10 @@ contains
         integer :: idim                         ! component index: 1=X, 2=Y, 3=Z
         type(type_coordinate), pointer :: coord ! Pointer for host or guest coordinate
 
-        ! Return the correct pointer (host, guest, or gas)
+        ! Return the correct pointer (host, guest, or reservoir)
         coord => get_coord(res_type)
 
-        do atom_index_1 = 1, res%atom(res_type)
+        do atom_index_1 = 1, residue_info%atom(res_type)
 
             ! Atom coordinate
             atom = coord%com(:, res_type, mol_index) + &
@@ -227,7 +227,7 @@ contains
             ! Compute the phase vector components as the dot product of the atom position
             ! with each reciprocal lattice vector (columns of reciprocal_box), scaled by 2π.
             ! Compute the phase vector (2π * reciprocal_boxᵀ · atom)
-            local_phase = compute_atom_phase(atom, primary%cell%reciprocal)
+            local_phase = compute_atom_phase(atom, primary%cell%inv_matrix)
 
             ! Precompute the complex exponential (phase) factors for this atom
             ! along each Cartesian direction. These factors will be used repeatedly
@@ -237,11 +237,11 @@ contains
                 call compute_phase_factor(ewald%phase%axis(:), local_phase(idim), ewald%param%kmax(idim))
 
                 ! Differentiate between host and guest
-                if (res%role(res_type) == TYPE_HOST) then                    
+                if (residue_info%role(res_type) == TYPE_HOST) then                    
                     ewald%phase%factor_host(idim, res_type, mol_index, atom_index_1, &
                         -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
-                else if (res%role(res_type) == TYPE_GUEST) then
-                    ewald%phase%factor_guest(idim, res_type, mol_index, atom_index_1, &
+                else if (residue_info%role(res_type) == TYPE_GUEST) then
+                    ewald%phase%factor_primary_guest(idim, res_type, mol_index, atom_index_1, &
                         -ewald%param%kmax(idim):ewald%param%kmax(idim)) = ewald%phase%axis(:)
                 end if
             end do

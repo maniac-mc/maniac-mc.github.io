@@ -217,14 +217,14 @@ contains
         ! Output parameter
         type(type_coordinate), pointer :: coord
 
-        select case (res%role(res_type))
+        select case (residue_info%role(res_type))
             case (TYPE_HOST)
                 coord => host
             case (TYPE_GUEST)
-                coord => guest
+                coord => primary_guest
             case default
                 nullify(coord)
-                error stop "get_coord: invalid residue type in res%role(res_type)"
+                error stop "get_coord: invalid residue type in residue_info%role(res_type)"
         end select
         
     end function get_coord

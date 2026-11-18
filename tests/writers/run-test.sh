@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 # Path to LAMMPS executable (default: "lmp" in PATH)
 LMP=${LMP:-lmp}

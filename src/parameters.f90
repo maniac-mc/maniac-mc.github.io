@@ -4,7 +4,7 @@ module parameters
 
     implicit none
 
-    integer, parameter :: TYPE_HOST = 1, TYPE_GUEST = 2, TYPE_GAS = 3
+    integer, parameter :: TYPE_HOST = 1, TYPE_GUEST = 2, TYPE_RESERVOIR = 3
 
     ! Integer parameters defining maximum sizes and counts
     integer, parameter :: NB_MAX_MOLECULE = 5000    ! Maximum number of molecules of a given type
@@ -54,6 +54,6 @@ module parameters
     integer, parameter :: TABULATED_POINTS = 5000 ! Default number of points in tabulated functions
     logical, parameter :: use_table = .false. ! #TODO: make it an input parameter for user
 
-    real(real64), parameter :: error = 1.0D-10              ! Small number for error calculation
+    real(real64), parameter :: tolerance = 1.0D-10       ! Small number for error calculation
 
 end module parameters

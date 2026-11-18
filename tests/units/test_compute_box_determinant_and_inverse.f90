@@ -24,7 +24,7 @@ program test_compute_box_determinant_and_inverse
     pass1 = abs(test_box%cell%determinant - 8.0_real64) < tol
 
     ! Check inverse correctness: A * A_inv ≈ I
-    identity_check = matmul(test_box%cell%matrix, test_box%cell%reciprocal)
+    identity_check = matmul(test_box%cell%matrix, test_box%cell%inv_matrix)
     do i = 1,3
         do j = 1,3
             if (i == j) then
@@ -51,7 +51,7 @@ program test_compute_box_determinant_and_inverse
     call compute_box_determinant_and_inverse(test_box)
 
     pass2 = abs(test_box%cell%determinant - 6.0_real64) < tol
-    identity_check = matmul(test_box%cell%matrix, test_box%cell%reciprocal)
+    identity_check = matmul(test_box%cell%matrix, test_box%cell%inv_matrix)
     do i = 1,3
         do j = 1,3
             if (i == j) then
@@ -77,7 +77,7 @@ program test_compute_box_determinant_and_inverse
     call compute_box_determinant_and_inverse(test_box)
 
     pass3 = abs(test_box%cell%determinant) > tol
-    identity_check = matmul(test_box%cell%matrix, test_box%cell%reciprocal)
+    identity_check = matmul(test_box%cell%matrix, test_box%cell%inv_matrix)
     do i = 1,3
         do j = 1,3
             if (i == j) then

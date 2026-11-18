@@ -42,7 +42,7 @@ contains
     ! Triclinic : fractional coordinates s = H^{-1}·(r - r0),
     !             wrap s into [0,1), then r' = r0 + H·s
     !-----------------------------------------------------------
-    subroutine apply_PBC(pos, box)
+    subroutine wrap_to_box_origin(pos, box)
 
         ! Input parameters
         type(type_box), intent(in) :: box
@@ -78,7 +78,7 @@ contains
             !   r  = Cartesian position
             !   r0 = lower corner of the box (box%cell%bounds(:,1))
             !   s  = fractional coordinates in [0,1)^3
-            frac_coords = matmul(box%cell%reciprocal, pos - box%cell%bounds(:,1))
+            frac_coords = matmul(box%cell%inv_matrix, pos - box%cell%bounds(:,1))
 
             ! Wrap fractional coords into [0,1)
             ! Equation: s' = mod(s, 1)
@@ -94,7 +94,7 @@ contains
 
         end if
 
-    end subroutine apply_PBC
+    end subroutine wrap_to_box_origin
 
     !-----------------------------------------------------------
     ! Ensures a position is inside the simulation box using the
@@ -102,7 +102,7 @@ contains
     !  - Cubic/Orthorhombic: [-L/2, L/2]
     !  - Triclinic (fractional space): [-0.5, 0.5)
     !-----------------------------------------------------------
-    subroutine wrap_into_box(pos, box)
+    subroutine wrap_centered(pos, box)
 
         ! Input parameters
         real(real64), dimension(3), intent(inout) :: pos   ! Cartesian position to wrap into box
@@ -125,7 +125,7 @@ contains
         else if (box%cell%shape == TRICLINIC) then
 
             ! Convert Cartesian to fractional coordinates
-            fractional_pos = matmul(box%cell%reciprocal, pos)
+            fractional_pos = matmul(box%cell%inv_matrix, pos)
 
             ! Wrap fractional coordinates into [-0.5, 0.5)
             do dim = 1, 3
@@ -137,7 +137,7 @@ contains
 
         end if
 
-    end subroutine wrap_into_box
+    end subroutine wrap_centered
 
     !----------------------------------------------------------------------------
     ! Computes the inverse and determinant of a 3x3 box matrix.
@@ -152,7 +152,7 @@ contains
 
         ! Local variables
         real(real64), dimension(3,3) :: adjugate    ! Adjugate (cofactor transpose) matrix of box_mat
-        real(real64) :: reciprocal                  ! Reciprocal of the determinant of box_mat
+        real(real64) :: inv_det                     ! Reciprocal of the determinant of box_mat
         real(real64), dimension(3) :: vec1, vec2    ! Temporary vectors for cross products
         integer :: i, j                             ! Loop indices for matrix element iteration
 
@@ -176,14 +176,14 @@ contains
         box%cell%determinant = dot_product(box%cell%matrix(:,1), adjugate(:,1))
 
         ! Check for denormal/underflow values in determinant
-        if (abs(box%cell%determinant) < one) then
+        if (abs(box%cell%determinant) < tolerance) then
             call abort_run("Error: Determinant fell into denormal/underflow range")
         end if
 
         ! Calculate reciprocal of determinant if non-zero
-        reciprocal = zero
-        if (abs(box%cell%determinant) > error) then  ! small tolerance to avoid near-zero
-            reciprocal = one / box%cell%determinant
+        inv_det = zero
+        if (abs(box%cell%determinant) > tolerance) then  ! small tolerance to avoid near-zero
+            inv_det = one / box%cell%determinant
         else
             ! Handle singular matrix case if needed, e.g. print error or return
             call warn_user("Determinant is zero or near zero, inverse not computed.")
@@ -193,7 +193,7 @@ contains
         ! Store inverse matrix in reciprocal
         do i = 1, 3
             do j = 1, 3
-                box%cell%reciprocal(i, j) = reciprocal * adjugate(i, j)
+                box%cell%inv_matrix(i, j) = inv_det * adjugate(i, j)
             end do
         end do
 
@@ -352,7 +352,7 @@ contains
                     box%cell%matrix(3,1), box%cell%matrix(3,2)]
 
         ! Check for triclinic (any off-diagonal > tolerance)
-        if (maxval(abs(off_diag)) > error) then
+        if (maxval(abs(off_diag)) > tolerance) then
             box%cell%shape = TRICLINIC
         else
             box%cell%shape = ORTHORHOMBIC

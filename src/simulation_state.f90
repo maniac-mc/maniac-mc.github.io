@@ -66,12 +66,13 @@ module simulation_state
         real(real64) :: intra_coulomb               ! Intramolecular Coulomb energy
         real(real64) :: total                       ! Total energies
     end type energy_type
-    type(energy_type) :: energy, old, new           ! Note: old and new are used during Monte Carlo move
+    type(energy_type) :: energy, energy_old, energy_new           ! Note: old and new are used during Monte Carlo move
 
     !---------------------------------------------------------------------------
     ! Thermodynamic input parameters
     !---------------------------------------------------------------------------
     type input_thermo_type
+        real(real64) :: beta                            ! 1 / (kB T)
         real(real64) :: temperature                     ! System temperature (K)
         real(real64), allocatable :: fugacity(:)        ! Species fugacity for GCMC reservoir (dimensionless)
         real(real64), allocatable :: chemical_potential(:) ! Species chemical potential of reservoir (kcal/mol)
@@ -82,13 +83,13 @@ module simulation_state
     type(input_thermo_type) :: thermo
 
     !---------------------------------------------------------------------------
-    ! Coordinate for host, guest, and gas residue
+    ! Coordinate for host, primary_guest, and reservoir residue
     !---------------------------------------------------------------------------
     type type_coordinate
         real(real64), dimension(:, :, :), allocatable :: com            ! X Y Z coordinate of molecule centers or atoms
         real(real64), dimension(:, :, :, :), allocatable :: offset      ! Local site X Y Z displacements from molecule center
     end type type_coordinate
-    type(type_coordinate), target :: host, guest, gas
+    type(type_coordinate), target :: host, primary_guest, reservoir_coord
 
     !---------------------------------------------------------------------------
     ! Old coordinate used in Monte Carlo move
@@ -103,7 +104,7 @@ module simulation_state
     ! Simulation cell geometrical properties
     !---------------------------------------------------------------------------
     type type_cell
-        real(real64) :: reciprocal(3,3)             ! Reciprocal box matrix
+        real(real64) :: inv_matrix(3,3)             ! Reciprocal box matrix
         real(real64) :: matrix(3,3)                 ! Simulation box matrix
         real(real64) :: bounds(3,2)                 ! Box dimensions (lo, hi)
         real(real64) :: metrics(9)                  ! Misc. box properties (e.g., lengths, cosines of angles)
@@ -134,9 +135,9 @@ module simulation_state
     ! Atom-specific data
     !---------------------------------------------------------------------------
     type type_atomdata
-        real(real64), allocatable :: masses_vec(:)      ! Mass vector for all atom types
+        real(real64), allocatable :: mass_by_type(:)      ! Mass vector for all atom types
         real(real64), allocatable :: charges(:,:)       ! Partial charges on sites (system/reservoir)
-        real(real64), allocatable :: masses(:,:)        ! Masses of atoms (system/reservoir)
+        real(real64), allocatable :: mass_by_site(:,:)        ! Masses of atoms (system/reservoir)
         character(len=10), allocatable :: names(:,:)    ! Atom names for each residue (system/reservoir)
         integer, allocatable :: types(:,:)              ! Atom types for each residue (system/reservoir)
         integer, allocatable :: ids(:,:)                ! Atom ids for each residue (system/reservoir)
@@ -163,13 +164,13 @@ module simulation_state
         integer :: atoms_active_residue       ! Max number of atoms in active residues
         integer :: atoms_inactive_residue     ! Max number of atoms in inactive residues
     end type type_max
-    type (type_max) :: nmax
+    type (type_max) :: max_counts
 
     !---------------------------------------------------------------------------
     ! Statistic accumulator
     !---------------------------------------------------------------------------
     type mc_stat_type
-        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
+        integer, dimension(:), allocatable :: n_widom       ! Indices or count of Widom trial samples
         real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
         real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
         real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
@@ -190,9 +191,9 @@ module simulation_state
     !---------------------------------------------------------------------------
     type type_coeff
         real(real64), dimension(:, :, :, :), allocatable :: sigma ! Lennard-Jones coefficients
-        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones oefficients
+        real(real64), dimension(:, :, :, :), allocatable :: epsilon ! Lennard-Jones coefficients
     end type type_coeff
-    type(type_coeff) :: coeff
+    type(type_coeff) :: pair_coeff
 
    !---------------------------------------------------------------------------
     ! For tabulating potential
@@ -239,7 +240,7 @@ module simulation_state
         character(len=10), allocatable :: names(:)              ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: site_names ! Site names for each residue
     end type type_residue
-    type(type_residue) :: res
+    type(type_residue) :: residue_info
 
     !---------------------------------------------------------------------------
     ! Monte Carlo parameters provided in the input file
@@ -270,10 +271,10 @@ module simulation_state
     !---------------------------------------------------------------------------
     type phase_ewald
         complex(real64), allocatable :: factor_host(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
-        complex(real64), allocatable :: factor_guest(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
+        complex(real64), allocatable :: factor_primary_guest(:,:,:,:,:) ! 5D array of precomputed complex exponentials e^(i k·r) for reciprocal-space summations
         complex(real64), allocatable :: factor_old(:,:,:)  ! Previous configuration phase factors used for updating A(k)
-        complex(real64), allocatable :: new(:)             ! Temporary 1D array of phase factors for the new configuration
-        complex(real64), allocatable :: old(:)             ! Temporary 1D array of phase factors for the old configuration
+        complex(real64), allocatable :: new_tmp(:)         ! Temporary 1D array of phase factors for the new configuration
+        complex(real64), allocatable :: old_tmp(:)         ! ! Temporary 1D array of phase factors for the old configuration
         complex(real64), allocatable :: axis(:)            ! Scratch buffer of 1D complex phase factors along a single k-axis
     end type phase_ewald
 

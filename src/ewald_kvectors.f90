@@ -30,7 +30,7 @@ contains
         real(real64), dimension(3,3) :: kvec_matrix ! Columns are reciprocal lattice vectors b1, b2, b3
 
         ! Store reciprocal lattice vectors as columns of a 3x3 matrix
-        kvec_matrix = TWOPI * reshape(primary%cell%reciprocal, shape(kvec_matrix))
+        kvec_matrix = TWOPI * reshape(primary%cell%inv_matrix, shape(kvec_matrix))
 
         ! Fill the array with the actual k-vectors
         count = 0
@@ -118,7 +118,7 @@ contains
 
         ! Reject near-zero k-vectors (avoid singularity at k=0)
         ! and any vectors outside the normalized unit sphere.
-        valid = (abs(k_squared) >= error) .and. (k_squared <= one)
+        valid = (abs(k_squared) >= tolerance) .and. (k_squared <= one)
 
     end function check_valid_reciprocal_vector
 

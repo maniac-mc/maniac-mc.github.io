@@ -50,7 +50,7 @@ contains
         ! Local variable
         integer :: kmax_max
 
-        allocate(saved%offset(3, nmax%atoms_per_residue))
+        allocate(saved%offset(3, max_counts%atoms_per_residue))
         allocate(saved%com(3))
 
         ! Allocate real arrays for coefficients (dimension ewald%param%nkvec)
@@ -61,17 +61,17 @@ contains
 
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%param%kmax)
-        allocate(ewald%phase%factor_host(3, res%number, 0:nmax%inactive_residues, &
-            1:nmax%atoms_inactive_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase%factor_guest(3, res%number, 0:nmax%active_residues, &
-            1:nmax%atoms_active_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase%factor_old(3, 1:nmax%atoms_active_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase%factor_host(3, residue_info%number, 0:max_counts%inactive_residues, &
+            1:max_counts%atoms_inactive_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase%factor_primary_guest(3, residue_info%number, 0:max_counts%active_residues, &
+            1:max_counts%atoms_active_residue, -kmax_max:kmax_max))
+        allocate(ewald%phase%factor_old(3, 1:max_counts%atoms_active_residue, -kmax_max:kmax_max))
 
         ! Allocate temporary arrays once
         allocate(ewald%phase%axis(-kmax_max:kmax_max))
-        allocate(ewald%phase%new(nmax%atoms_per_residue))
-        allocate(ewald%phase%old(nmax%atoms_per_residue))
-        allocate(ewald%q_buffer(nmax%atoms_per_residue))
+        allocate(ewald%phase%new_tmp(max_counts%atoms_per_residue))
+        allocate(ewald%phase%old_tmp(max_counts%atoms_per_residue))
+        allocate(ewald%q_buffer(max_counts%atoms_per_residue))
 
         ! Allocate kvectors
         allocate(ewald%kvectors(ewald%param%nkvec))
@@ -83,27 +83,27 @@ contains
         ewald%form_factor = zero
         ewald%phase%factor_old = zero
         ewald%phase%axis = zero
-        ewald%phase%new = zero
-        ewald%phase%old = zero
+        ewald%phase%new_tmp = zero
+        ewald%phase%old_tmp = zero
         ewald%q_buffer = zero
-        ewald%phase%factor_guest = 0
+        ewald%phase%factor_primary_guest = 0
         ewald%phase%factor_host = 0
 
         ! Allocate widom
         if (proba%widom > 0) then
-            allocate(statistic%weight(res%number))
-            allocate(statistic%sample(res%number))
-            allocate(statistic%mu_ex(res%number))
-            allocate(statistic%mu_tot(res%number))
+            allocate(statistic%weight(residue_info%number))
+            allocate(statistic%n_widom(residue_info%number))
+            allocate(statistic%mu_ex(residue_info%number))
+            allocate(statistic%mu_tot(residue_info%number))
             ! Initialize to zero
             statistic%weight(:) = zero
-            statistic%sample(:) = zero
+            statistic%n_widom(:) = zero
         end if
 
         ! Allocate particle-number histogram (only meaningful when
         ! insertion/deletion moves are enabled)
         if (proba%insertion_deletion > 0) then
-            allocate(hist%count(res%number, 0:nmax%active_residues))
+            allocate(hist%count(residue_info%number, 0:max_counts%active_residues))
             hist%count = 0
             hist%nb_samples = 0
         end if
@@ -243,9 +243,9 @@ contains
         integer :: val_int                     ! Integer value read from input
 
         ! Compute inverse thermal energy β = 1/(k_B T)
-        beta = 1/(KB_kcalmol*thermo%temperature) ! 1/(kB T) in 1/(kcal/mol)
+        thermo%beta = 1/(KB_kcalmol*thermo%temperature) ! 1/(kB T) in 1/(kcal/mol)
 
-        do val_int = 1, res%number
+        do val_int = 1, residue_info%number
 
             if (.not. thermo%is_active(val_int)) cycle
 
@@ -253,17 +253,17 @@ contains
             ! mu = kT * ln(f). Use the provided-flag (not the sign of f) so that any
             ! explicitly given fugacity is honored; the parser guarantees f > 0.
             if (thermo%fugacity_set(val_int)) then
-                thermo%chemical_potential(val_int) = log(thermo%fugacity(val_int)) / beta
+                thermo%chemical_potential(val_int) = log(thermo%fugacity(val_int)) / thermo%beta
             end if
 
             ! Compute thermal de Broglie wavelength λ for each active residue:
             ! λ = h / sqrt(2 π m k_B T)
             ! H_PLANCK in J s, mass in kg, KB in J/K, T in K
-            mass = res%mass(val_int) * G_TO_KG / NA                                         ! Mass per residue (kg)
-            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * thermo%temperature)    ! Thermal de Broglie wavelength
+            mass = residue_info%mass(val_int) * G_TO_KG / NA                                         ! Mass per residue (kg)
+            residue_info%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * thermo%temperature)    ! Thermal de Broglie wavelength
             
             ! Convert lambda to Å
-            res%lambda(val_int) = res%lambda(val_int) * M_TO_A
+            residue_info%lambda(val_int) = residue_info%lambda(val_int) * M_TO_A
 
         end do
 

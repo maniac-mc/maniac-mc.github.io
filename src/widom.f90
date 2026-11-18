@@ -35,7 +35,7 @@ contains
 
         ! Local variables
         real(real64) :: deltaU                  ! Energy difference
-        integer :: rand_mol_index               ! Randomly selected molecule index from the reservoir for copying geometry
+        integer :: rand_idx_reservoir           ! Randomly selected molecule index from the reservoir for copying geometry
 
         call check_molecule_index(mol_index)
 
@@ -52,7 +52,7 @@ contains
         call save_single_mol_fourier_terms(res_type, mol_index)
 
         ! Generate random insertion position within the simulation box
-        call insert_and_orient_molecule(res_type, mol_index, rand_mol_index)
+        call insert_and_orient_molecule(res_type, mol_index, rand_idx_reservoir)
 
         ! Compute new energy
         call compute_new_energy(res_type, mol_index, is_creation = .true.)
@@ -61,7 +61,7 @@ contains
         call reject_creation_move(res_type, mol_index)
 
         ! Compute Boltzmann weight for Widom insertion
-        deltaU = new%total - old%total
+        deltaU = energy_new%total - energy_old%total
 
         call accumulate_widom_weight(res_type, deltaU)
 
@@ -80,14 +80,14 @@ contains
         ! Local variables
         real(real64) :: weight                  ! Boltzmann weight
 
-        weight = exp(-deltaU * beta)
+        weight = exp(-deltaU * thermo%beta)
 
-        if (weight > error) then ! Correspond to a success
+        if (weight > tolerance) then ! Correspond to a success
             counter%widom(2) = counter%widom(2) + 1
             statistic%weight(res_type) = statistic%weight(res_type) + weight
         end if
 
-        statistic%sample(res_type) = statistic%sample(res_type) + 1
+        statistic%n_widom(res_type) = statistic%n_widom(res_type) + 1
 
     end subroutine accumulate_widom_weight
 

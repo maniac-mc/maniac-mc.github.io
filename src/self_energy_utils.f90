@@ -30,7 +30,7 @@ contains
         energy%ewald_self = zero            ! Initialise ewald_self
 
         ! Loop over all residue types
-        do res_i = 1, res%number
+        do res_i = 1, residue_info%number
 
             ! Compute self-energy for a single molecule of this residue type
             self_energy_mol = single_mol_ewald_self(res_i)
@@ -69,12 +69,12 @@ contains
         self_energy = zero
 
         ! Loop over all atoms in the residue
-        do atom_i = 1, res%atom(res_i)
+        do atom_i = 1, residue_info%atom(res_i)
 
             q_i = primary%atoms%charges(res_i, atom_i)
 
             ! Skip atoms with negligible charge
-            if (abs(q_i) < error) cycle
+            if (abs(q_i) < tolerance) cycle
 
             ! Add the self-energy contribution of this atom
             self_energy = self_energy - ewald%param%alpha / SQRTPI * q_i**2  ! In units of e^2/Å

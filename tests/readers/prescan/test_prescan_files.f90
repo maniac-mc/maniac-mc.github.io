@@ -74,13 +74,13 @@ contains
         call prescan_inputs()
 
         ! Check results
-        pass = (nmax%active_residues == exp_active) .and. &
-            (nmax%inactive_residues == exp_inactive)
+        pass = (max_counts%active_residues == exp_active) .and. &
+            (max_counts%inactive_residues == exp_inactive)
 
         if (.not. pass) then
             print *, "Test FAILED"
-            print *, " expected active =", exp_active, " got=", nmax%active_residues
-            print *, " expected inactive =", exp_inactive, " got=", nmax%inactive_residues
+            print *, " expected active =", exp_active, " got=", max_counts%active_residues
+            print *, " expected inactive =", exp_inactive, " got=", max_counts%inactive_residues
             stop 1
         end if
 

@@ -28,10 +28,10 @@ contains
         logical :: warned_large_offset
         warned_large_offset = .false.
 
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             if (is_reservoir) then
-                coord => gas
+                coord => reservoir_coord
             else
                 coord => get_coord(res_type)
             end if
@@ -49,7 +49,7 @@ contains
                 end do
 
                 ! Check atom offsets
-                do atom_index = 1, res%atom(res_type)
+                do atom_index = 1, residue_info%atom(res_type)
                     
                     ! Read molecule offsets
                     offset = coord%offset(:, res_type, mol_index, atom_index)
@@ -88,18 +88,18 @@ contains
 
             ! Check atomic masses one by one
             do j = 1, primary%num%atomtypes
-                diff = abs(primary%atoms%masses_vec(j) - reservoir%atoms%masses_vec(j))
-                if (diff > error) then
+                diff = abs(primary%atoms%mass_by_type(j) - reservoir%atoms%mass_by_type(j))
+                if (diff > tolerance) then
                     write(msg,'("ERROR: mass mismatch for atom type ",I0,": primary=",G0,", reservoir=",G0,", diff=",G0)') &
-                        j, primary%atoms%masses_vec(j), reservoir%atoms%masses_vec(j), diff
+                        j, primary%atoms%mass_by_type(j), reservoir%atoms%mass_by_type(j), diff
                     call abort_run(msg)
                 end if
             end do
 
             ! Check that system and reservoir atom masses are consistent
-            do j = 1, res%number
-                do k = 1, res%types(j)
-                    if (abs(primary%atoms%masses(j, k) - reservoir%atoms%masses(j, k)) > error) then
+            do j = 1, residue_info%number
+                do k = 1, residue_info%types(j)
+                    if (abs(primary%atoms%mass_by_site(j, k) - reservoir%atoms%mass_by_site(j, k)) > tolerance) then
 
                         ! Generic header warning
                         call warn_user("Reservoir and system mass don't match.")
@@ -107,8 +107,8 @@ contains
                         ! Detailed mismatch info
                         write(msg, '(A,I3,A,I3,A,F10.5,A,F10.5)') &
                             "Mismatch at residue ", j, ", site ", k, &
-                            ": system mass = ", primary%atoms%masses(j, k), &
-                            ", reservoir mass = ", reservoir%atoms%masses(j, k)
+                            ": system mass = ", primary%atoms%mass_by_site(j, k), &
+                            ", reservoir mass = ", reservoir%atoms%mass_by_site(j, k)
                         call warn_user(trim(msg))
 
                         ! Extra guidance

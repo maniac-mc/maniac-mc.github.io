@@ -47,39 +47,39 @@ contains
     subroutine read_system_data()
 
         ! Read primary system
-        call read_lmp_data(path%topology, primary, is_primary = .true.)
+        call read_lmp_data(path%topology, primary, is_reservoir = .false.)
 
         ! Read reservoir if provided
         if (trim(path%reservoir) == '') then
             status%reservoir_provided = .false.
         else
             status%reservoir_provided = .true.
-            call read_lmp_data(path%reservoir, reservoir, is_primary = .false.)
+            call read_lmp_data(path%reservoir, reservoir, is_reservoir = .true.)
             call assert_mass_consistency() ! Ensure masses in reservoir are consistent with primary
         end if
 
     end subroutine read_system_data
 
-    subroutine read_lmp_data(data_file_name, box, is_primary)
+    subroutine read_lmp_data(data_file_name, box, is_reservoir)
 
         ! Input parameters
         character(len=*), intent(in) :: data_file_name  ! Path to the LAMMPS data file to read
         type(type_box), intent(inout) :: box            ! Type box (primary or reservoir)
-        logical, intent(in) :: is_primary               ! Flag for primary/reservoir reading
+        logical, intent(in) :: is_reservoir             ! Flag for primary/reservoir reading
 
         ! Local variables
-        integer :: infile = 100                         ! Fortran unit number used to open the input file
+        integer :: unit_input = 100                         ! Fortran unit number used to open the input file
         integer :: ios                                  ! I/O status flag (nonzero if file open/read fails)
 
         ! === Step 1: Open file ===
-        open(UNIT=infile, FILE=data_file_name, STATUS='OLD', ACTION='read', IOSTAT=ios)
+        open(UNIT=unit_input, FILE=data_file_name, STATUS='OLD', ACTION='read', IOSTAT=ios)
 
         if (ios /= 0) then
             call abort_run("Error opening file: " // trim(data_file_name))
         end if
 
         ! === Step 2: Read header ===
-        call read_lmp_header_info(infile, box)
+        call read_lmp_header_info(unit_input, box)
 
         ! === Step 3: Allocate arrays ===
         allocate(atom_ids_1d(box%num%atoms))
@@ -102,52 +102,45 @@ contains
         allocate(improper_atoms_1d(box%num%impropers,4))
 
         ! === Step 4: Read box dimensions ===
-        rewind(infile)
-        call parse_lammps_box(infile, box)
+        rewind(unit_input)
+        call parse_lammps_box(unit_input, box)
 
         ! Detect box type and other informations
         call prepare_simulation_box(box)
 
         ! === Step 5: Read masses ===
-        rewind(infile)
-        call read_lammps_masses(infile, box)
+        rewind(unit_input)
+        call read_lammps_masses(unit_input, box)
 
         ! === Step 6: Read atoms ===
-        rewind(infile)
-        call read_lammps_atoms(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_atoms(unit_input, data_file_name, box)
         call assign_atom_names(box)
 
         ! === Step 6: Read bonds ===
-        rewind(infile)
-        call read_lammps_bonds(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_bonds(unit_input, data_file_name, box)
 
         ! === Step 6: Read angles ===
-        rewind(infile)
-        call read_lammps_angles(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_angles(unit_input, data_file_name, box)
 
         ! === Step 7: Read dihedrals ===
-        rewind(infile)
-        call read_lammps_dihedrals(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_dihedrals(unit_input, data_file_name, box)
 
         ! === Step 7: Read improper ===
-        rewind(infile)
-        call read_lammps_impropers(infile, data_file_name, box)
+        rewind(unit_input)
+        call read_lammps_impropers(unit_input, data_file_name, box)
 
-        close(infile)
+        close(unit_input)
 
         ! === Step 7: Post-processing ===
         call sort_atoms_by_original_ID(box)
         call detect_molecules(box)
         call repair_active_molecules(box)
-
-        ! #tofix : simplify by only using "is_reservoir" everywhere
-        if (is_primary) then
-            call transform_to_COM_frame(box, .false.)
-            call validate_molecule_geometry(box, .false.)
-        else
-            call transform_to_COM_frame(box, .true.)
-            call validate_molecule_geometry(box, .true.)
-        end if 
+        call transform_to_COM_frame(box, is_reservoir)
+        call validate_molecule_geometry(box, is_reservoir)
 
         ! === Step 7: Detect bond, angle, dihedral, improper per residue ===
         call DetectBondPerResidue(box)
@@ -176,7 +169,7 @@ contains
         if (allocated(improper_atoms_1d)) deallocate(improper_atoms_1d)
 
         ! === Setep 9: Log data ===
-        call LogData(data_file_name, box, is_primary)
+        call LogData(data_file_name, box, is_reservoir)
         call LogConnectivity(box)
 
     end subroutine read_lmp_data
@@ -185,11 +178,11 @@ contains
     ! Reads atomic masses from the "Masses" section of a LAMMPS data file and maps them
     ! into a 2D mass array for each atom type and residue type.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_masses(infile, box)
+    subroutine read_lammps_masses(unit_input, box)
 
         ! Input parameters
         type(type_box), intent(inout) :: box         ! Simulation box containing atom/mass info
-        integer, intent(in) :: infile                ! LAMMPS data file unit to read from
+        integer, intent(in) :: unit_input                ! LAMMPS data file unit to read from
 
         ! Local variables
         character(len=256) :: line, trimmed_line     ! Raw and trimmed lines from file
@@ -202,15 +195,15 @@ contains
         ! Initialize
         mass_found = 0
 
-        allocate(box%atoms%masses_vec(box%num%atomtypes))
-        box%atoms%masses_vec = 0.0d0
+        allocate(box%atoms%mass_by_type(box%num%atomtypes))
+        box%atoms%mass_by_type = 0.0d0
 
         ! Rewind file to start (optional, remove if file pointer is already positioned)
-        rewind(infile)
+        rewind(unit_input)
 
         ! Look for "Masses" section
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
             if (ios /= 0) then
                 exit
             end if
@@ -226,7 +219,7 @@ contains
             ! Check for "Masses" keyword
             if (trim(trimmed_line) == "Masses") then
                 ! Skip next line (usually blank or a comment)
-                read(infile, '(A)', IOSTAT=ios) line
+                read(unit_input, '(A)', IOSTAT=ios) line
                 if (ios /= 0) then
                     exit
                 end if
@@ -236,7 +229,7 @@ contains
 
                 ! Read num%atoms(SYSTEM) lines for masses
                 do i = 1, box%num%atoms
-                    read(infile, '(A)', IOSTAT=ios) line
+                    read(unit_input, '(A)', IOSTAT=ios) line
                     if (ios /= 0) then
                         exit
                     end if
@@ -257,16 +250,16 @@ contains
                         exit
                     end if
 
-                    box%atoms%masses_vec(tmp_int) = tmp_flt
+                    box%atoms%mass_by_type(tmp_int) = tmp_flt
                     mass_found = mass_found + 1
                 end do
 
-                ! Map site masses into 2D mass array (assuming res%number and res%types are defined)
+                ! Map site masses into 2D mass array (assuming residue_info%number and residue_info%types are defined)
                 i = 1
-                do j = 1, res%number
-                    do k = 1, res%types(j)
+                do j = 1, residue_info%number
+                    do k = 1, residue_info%types(j)
                         if ((i <= box%num%atoms) .and. (i <= box%num%atomtypes)) then
-                            box%atoms%masses(j, k) = box%atoms%masses_vec(i)
+                            box%atoms%mass_by_site(j, k) = box%atoms%mass_by_type(i)
                             i = i + 1
                         else
                             exit
@@ -303,10 +296,10 @@ contains
         ! Loop over all atoms
         do k = 1, box%num%atoms
             atom_names_1d(k) = '' ! Initialize to empty string
-            do i = 1, res%number
-                do j = 1, res%types(i)
-                    if (res%site_types(i, j) == atom_types_1d(k)) then
-                        atom_names_1d(k) = res%site_names(i, j)
+            do i = 1, residue_info%number
+                do j = 1, residue_info%types(i)
+                    if (residue_info%site_types(i, j) == atom_types_1d(k)) then
+                        atom_names_1d(k) = residue_info%site_names(i, j)
                         exit  ! Exit inner loop once match is found
                     end if
                 end do
@@ -329,7 +322,7 @@ contains
         integer :: nb_bond
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_bond = 0
 
             ! Loop directly over the bonds
@@ -368,7 +361,7 @@ contains
 
             end do
 
-            res%bonds(i) = nb_bond
+            residue_info%bonds(i) = nb_bond
 
         end do
 
@@ -383,7 +376,7 @@ contains
         integer :: nb_angle
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_angle = 0
 
             ! Loop directly over the angles
@@ -422,7 +415,7 @@ contains
                     end if
                 end if
             end do
-            res%angles(i) = nb_angle
+            residue_info%angles(i) = nb_angle
         end do
 
     end subroutine DetectAnglePerResidue
@@ -436,7 +429,7 @@ contains
         integer :: nb_dihedral
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_dihedral = 0
 
             ! Loop directly over the dihedrals
@@ -480,7 +473,7 @@ contains
                     end if
                 end if
             end do
-            res%dihedrals(i) = nb_dihedral
+            residue_info%dihedrals(i) = nb_dihedral
         end do
 
     end subroutine DetectDihedralPerResidue
@@ -494,7 +487,7 @@ contains
         integer :: nb_improper
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_improper = 0
 
             ! Loop directly over the impropers
@@ -538,7 +531,7 @@ contains
                     end if
                 end if
             end do
-            res%impropers(i) = nb_improper
+            residue_info%impropers(i) = nb_improper
         end do
 
     end subroutine DetectImproperPerResidue
@@ -548,10 +541,10 @@ contains
     ! with atom IDs, types, charges, and positions. Performs extensive error checks
     ! for missing sections, invalid atom types, parsing errors, and array bounds.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_atoms(infile, data_file_name, box)
+    subroutine read_lammps_atoms(unit_input, data_file_name, box)
 
         ! Input parameters
-        integer, intent(in) :: infile                   ! LAMMPS data file unit to read atom data from
+        integer, intent(in) :: unit_input                   ! LAMMPS data file unit to read atom data from
         character(len=*), intent(in) :: data_file_name  ! Name of the LAMMPS data file
         type(type_box), intent(inout) :: box           ! Simulation box to store atom properties
 
@@ -571,7 +564,7 @@ contains
 
         ! Read until "Atoms" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No atoms found in data file: ", trim(data_file_name)
@@ -590,7 +583,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No atoms found in data file: ", trim(data_file_name)
             call abort_run(trim(formatted_msg), ERROR_READ)
@@ -598,7 +591,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as atom data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -607,7 +600,7 @@ contains
 
         ! Loop over all atoms
         do k = 1, box%num%atoms
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') &
@@ -673,10 +666,10 @@ contains
     ! stores bond IDs, types, and connected atom indices in the corresponding arrays.
     ! If no bonds are expected, the routine returns immediately.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_bonds(infile, data_file_name, box)
+    subroutine read_lammps_bonds(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing bond counts and arrays
 
@@ -698,7 +691,7 @@ contains
 
         ! Read until "Bonds" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No bonds found in data file: ", trim(data_file_name)
@@ -718,7 +711,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No bonds found in data file: ", trim(data_file_name)
@@ -727,7 +720,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as bond data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: " // trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -736,7 +729,7 @@ contains
 
         ! Loop over all bonds
         do k = 1, box%num%bonds
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') "Unexpected end of file at bond line ", k, " in: " // trim(data_file_name)
@@ -770,10 +763,10 @@ contains
     ! and stores angle IDs, types, and connected atom indices in the corresponding arrays.
     ! If no angles are expected, the routine returns immediately.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_angles(infile, data_file_name, box)
+    subroutine read_lammps_angles(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing angle counts and arrays
 
@@ -796,7 +789,7 @@ contains
 
         ! Read until "Angles" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No angles found in data file: ", trim(data_file_name)
@@ -815,7 +808,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No angles found in data file: ", trim(data_file_name)
@@ -824,7 +817,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as angle data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -833,7 +826,7 @@ contains
 
         ! Loop over all angles
         do k = 1, box%num%angles
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') "Unexpected end of file at angle line ", k, " in: " // trim(data_file_name)
@@ -867,10 +860,10 @@ contains
     ! Reads dihedral definitions from the "Dihedrals" section of a LAMMPS data file
     ! and stores dihedral IDs, types, and connected atom indices in the corresponding arrays.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_dihedrals(infile, data_file_name, box)
+    subroutine read_lammps_dihedrals(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing dihedral counts and arrays
 
@@ -891,7 +884,7 @@ contains
 
         ! Read until "Dihedrals" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No dihedrals found in data file: ", trim(data_file_name)
@@ -910,7 +903,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No dihedrals found in data file: ", trim(data_file_name)
@@ -919,7 +912,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as bond data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -928,7 +921,7 @@ contains
 
         ! Loop over all dihedrals
         do k = 1, box%num%dihedrals
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') "Unexpected end of file at dihedrals line ", &
@@ -966,10 +959,10 @@ contains
     ! Reads improper dihedral definitions from the "Impropers" section of a LAMMPS data file
     ! and stores improper IDs, types, and connected atom indices in the corresponding arrays.
     !-----------------------------------------------------------------------------
-    subroutine read_lammps_impropers(infile, data_file_name, box)
+    subroutine read_lammps_impropers(unit_input, data_file_name, box)
 
         ! Input
-        integer, intent(in) :: infile                    ! Fortran unit number of the LAMMPS data file
+        integer, intent(in) :: unit_input                    ! Fortran unit number of the LAMMPS data file
         character(len=*), intent(in) :: data_file_name   ! Path to the LAMMPS data file
         type(type_box), intent(inout) :: box             ! Box structure containing improper counts and arrays
 
@@ -990,7 +983,7 @@ contains
 
         ! Read until "Impropers" section or end of file
         do
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
             if (ios < 0) then
                 write(formatted_msg, '(A, A)') "No impropers found in data file: ", trim(data_file_name)
                 call info_message(trim(formatted_msg))
@@ -1007,7 +1000,7 @@ contains
         end do
 
         ! Read and discard a blank line, if present
-        read(infile, '(A)', IOSTAT=ios) line
+        read(unit_input, '(A)', IOSTAT=ios) line
 
         if (ios < 0) then
             write(formatted_msg, '(A, A)') "No impropers found in data file: ", trim(data_file_name)
@@ -1016,7 +1009,7 @@ contains
 
         if (TRIM(adjustl(line)) /= "") then
             ! If not blank, rewind to re-read as bond data
-            backspace(infile, IOSTAT=ios)
+            backspace(unit_input, IOSTAT=ios)
             if (ios /= 0) then
                 write(formatted_msg, '(A, A)') "Failed to rewind file after non-blank line in: ", trim(data_file_name)
                 call abort_run(trim(formatted_msg), ERROR_READ)
@@ -1025,7 +1018,7 @@ contains
 
         ! Loop over all impropers
         do k = 1, box%num%impropers
-            read(infile, '(A)', IOSTAT=ios) line
+            read(unit_input, '(A)', IOSTAT=ios) line
 
             if (ios < 0) then
                 write(formatted_msg, '(A, I0, A)') &
@@ -1154,7 +1147,7 @@ contains
         integer, allocatable :: cpt_per_residue(:)            ! Counters for each residue type
 
         ! one counter per residue
-        allocate(cpt_per_residue(res%number))
+        allocate(cpt_per_residue(residue_info%number))
         cpt_per_residue = 1
 
         do idx = 1, box%num%atoms
@@ -1162,9 +1155,9 @@ contains
             residue = -1
 
             ! find which residue this atom belongs to
-            do i = 1, res%number
-                do j = 1, res%types(i)
-                    if (res%site_types(i,j) == tmp_atom_types_1d(idx)) then
+            do i = 1, residue_info%number
+                do j = 1, residue_info%types(i)
+                    if (residue_info%site_types(i,j) == tmp_atom_types_1d(idx)) then
                         found = .true.
                         residue = i
                         exit  ! break from j-loop
@@ -1174,9 +1167,9 @@ contains
             end do
 
             if (found) then
-                res%pattern_types(residue, cpt_per_residue(residue)) = tmp_atom_types_1d(idx)
+                residue_info%pattern_types(residue, cpt_per_residue(residue)) = tmp_atom_types_1d(idx)
                 cpt_per_residue(residue) = cpt_per_residue(residue) + 1
-                if (cpt_per_residue(residue) > res%atom(residue)) then
+                if (cpt_per_residue(residue) > residue_info%atom(residue)) then
                     cpt_per_residue(residue) = 1
                 end if
             end if
@@ -1218,10 +1211,10 @@ contains
 
         ! Local variables
         integer :: i, j, k, cpt                 ! loop counters
-        integer :: detected_nb_max_molecule     ! track max molecules found
+        integer :: max_molecules_seen           ! track max molecules found
         character(len=200) :: formatted_msg     ! buffer for error/info messages
 
-        detected_nb_max_molecule = 0
+        max_molecules_seen = 0
 
         ! Initialize arrays inside box
         box%atoms%types = 0
@@ -1230,7 +1223,7 @@ contains
         box%atoms%charges = 0.0D0
 
         ! Loop over residue types
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
             box%num%residues(i) = 0
             k = 1
@@ -1243,15 +1236,15 @@ contains
                 cpt = 1
 
                 ! If atom at position k matches the first atom of residue i
-                if (atom_types_1d(k) == res%pattern_types(i, cpt)) then
+                if (atom_types_1d(k) == residue_info%pattern_types(i, cpt)) then
 
                     ! Ensure there are enough atoms left to build a full residue
-                    if (k + res%atom(i) - 1 > box%num%atoms) then
+                    if (k + residue_info%atom(i) - 1 > box%num%atoms) then
                         call abort_run("Not enough atoms left in box to complete residue type ")
                     end if
 
                     ! Copy all atoms belonging to this residue
-                    do j = 1, res%atom(i)
+                    do j = 1, residue_info%atom(i)
                         box%atoms%types(i, j) = atom_types_1d(k)
                         box%atoms%ids(i, j) = atom_original_1d(k)
                         box%atoms%names(i, j) = atom_names_1d(k)
@@ -1259,7 +1252,7 @@ contains
 
                         ! Check atom order against residue pattern
                         if (thermo%is_active(i)) then
-                            if (atom_types_1d(k) /= res%pattern_types(i, cpt)) then
+                            if (atom_types_1d(k) /= residue_info%pattern_types(i, cpt)) then
                                 call abort_run("Issue with atom order in data file")
                             end if
                         end if
@@ -1279,15 +1272,15 @@ contains
             end do
 
             ! Track maximum number of molecules detected among all types
-            if (box%num%residues(i) > detected_nb_max_molecule) detected_nb_max_molecule = box%num%residues(i)
+            if (box%num%residues(i) > max_molecules_seen) max_molecules_seen = box%num%residues(i)
 
         end do
 
         ! Global check: maximum allowed molecules
-        if (detected_nb_max_molecule > NB_MAX_MOLECULE) then
+        if (max_molecules_seen > NB_MAX_MOLECULE) then
             write(formatted_msg, '(A, I0)') "The number of molecules exceeds the maximum allowed = ", NB_MAX_MOLECULE
             call info_message(trim(formatted_msg))
-            write(formatted_msg, '(A, I0)') "Number of molecules found = ", detected_nb_max_molecule
+            write(formatted_msg, '(A, I0)') "Number of molecules found = ", max_molecules_seen
             call abort_run(trim(formatted_msg) // " Please increase 'NB_MAX_MOLECULE' in src/parameters.f90 and recompile.", 11)
         end if
 
@@ -1310,18 +1303,18 @@ contains
         real(real64) :: dist                      ! Intramoleclar distance for sanity check
 
         ! Allocate temporary arrays for one molecule's atom positions
-        if (.not. allocated(res%atom)) then
-           call  abort_run("res%atom is not allocated")
+        if (.not. allocated(residue_info%atom)) then
+           call  abort_run("residue_info%atom is not allocated")
         else
-            allocate(tmp_xyz(3, maxval(res%atom)))
+            allocate(tmp_xyz(3, maxval(residue_info%atom)))
         end if
 
         k = 1  ! Global atom index
 
         ! Loop over all residue types
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
-            natoms = res%atom(i)      ! number of atoms per molecule of type i
+            natoms = residue_info%atom(i)      ! number of atoms per molecule of type i
             nmolecules = box%num%residues(i)    ! number of molecules of this type
 
             ! Loop over each molecule of this residue type
@@ -1400,18 +1393,18 @@ contains
         allocate(tmp_atom_xyz(3, box%num%atoms))
 
         cpt = 1
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
             ! #tofix, should have been done before
             ! Store CoM position
             if (thermo%is_active(i)) then
-                res%role(i) = TYPE_GUEST
+                residue_info%role(i) = TYPE_GUEST
             else
-                res%role(i) = TYPE_HOST
+                residue_info%role(i) = TYPE_HOST
             end if
 
             if (is_reservoir) then
-                coord => gas
+                coord => reservoir_coord
             else
                 coord => get_coord(i)
             end if
@@ -1419,19 +1412,19 @@ contains
             nb_res = 0
 
             ! Build mass vector for the residue type i
-            do j = 1, res%atom(i)
-                do l = 1, res%types(i)
-                    if (res%site_types(i, l) == primary%atoms%types(i, j)) then
-                        tmp_atom_masses_1d = primary%atoms%masses(i, l)
+            do j = 1, residue_info%atom(i)
+                do l = 1, residue_info%types(i)
+                    if (residue_info%site_types(i, l) == primary%atoms%types(i, j)) then
+                        tmp_atom_masses_1d = primary%atoms%mass_by_site(i, l)
                         cpt = cpt + 1
                     end if
                 end do
             end do
 
             ! Sanity check
-            if (any(tmp_atom_masses_1d(1:res%atom(i)) <= 0.0_real64)) then
+            if (any(tmp_atom_masses_1d(1:residue_info%atom(i)) <= 0.0_real64)) then
                 call warn_user("Zero or negative atomic mass detected in residue type")
-            else if (sum(tmp_atom_masses_1d(1:res%atom(i))) < 1.0e-6_real64) then
+            else if (sum(tmp_atom_masses_1d(1:residue_info%atom(i))) < 1.0e-6_real64) then
                 call warn_user("Total molecular mass nearly zero in residue")
             end if
 
@@ -1444,33 +1437,33 @@ contains
                     nb_res = nb_res + 1
 
                     ! Extract atom coordinates for this molecule
-                    tmp_atom_xyz(:, 1:res%atom(i)) = atom_xyz(:, k:k+res%atom(i)-1)
-                    k = k + res%atom(i)
+                    tmp_atom_xyz(:, 1:residue_info%atom(i)) = atom_xyz(:, k:k+residue_info%atom(i)-1)
+                    k = k + residue_info%atom(i)
 
                     ! Compute Center of Mass
-                    call compute_COM(tmp_atom_xyz, res%atom(i), tmp_atom_masses_1d, com)
+                    call compute_COM(tmp_atom_xyz, residue_info%atom(i), tmp_atom_masses_1d, com)
 
-                    total_mass = compute_mass(res%atom(i), tmp_atom_masses_1d)
-                    res%mass(i) = total_mass 
+                    total_mass = compute_mass(residue_info%atom(i), tmp_atom_masses_1d)
+                    residue_info%mass(i) = total_mass 
 
                     ! Save original CoM before applying periodic boundary conditions
                     original_com = com ! Save the CoM
 
                     ! Ensure CoM is inside simulation box
-                    call apply_PBC(com, box)
+                    call wrap_to_box_origin(com, box)
 
                     ! Perform sanity checks
                     call check_finite_vector(com, "Invalid (NaN/Inf) CoM detected in residue")
                     call check_inside_bounds(com, box%cell%bounds(:,1), box%cell%bounds(:,2), &
                         "Molecule COM outside simulation box")
                     if (thermo%is_active(i)) then
-                        call check_com_distance(tmp_atom_xyz, res%atom(i), &
+                        call check_com_distance(tmp_atom_xyz, residue_info%atom(i), &
                             original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
                     end if
 
                     coord%com(:, i, l) = com(:)
 
-                    do m = 1, res%atom(i)
+                    do m = 1, residue_info%atom(i)
                         coord%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                     end do
 
@@ -1497,7 +1490,7 @@ contains
 
         isInResidue = .false.
 
-        do n = 1, res%atom(resid)
+        do n = 1, residue_info%atom(resid)
 
             if (box%atoms%ids(resid, n) == atom_id) then
 
@@ -1520,7 +1513,7 @@ contains
         integer :: n
 
         atomIndexInResidue = -1
-        do n = 1, res%atom(res_id)
+        do n = 1, residue_info%atom(res_id)
             if (box%atoms%ids(res_id, n) == atom_id) then
 
                 atomIndexInResidue = n

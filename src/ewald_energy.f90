@@ -78,13 +78,13 @@ contains
         logical :: deletion_flag
 
         ! Ensure that the routine deals with guest, not host
-        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+        if (residue_info%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
 
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
 
         ! Atom charges in this residue
-        natoms = res%atom(res_type)
+        natoms = residue_info%atom(res_type)
         ewald%q_buffer(1:natoms) = primary%atoms%charges(res_type, 1:natoms)
 
         ! Loop over all precomputed reciprocal lattice vectors
@@ -99,11 +99,11 @@ contains
             kz_idx = ewald%kvectors(idx)%kz
 
             ! Compute phase factors for the current residue
-            ewald%phase%new(1:natoms) = ewald%phase%factor_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
-                ewald%phase%factor_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
-                ewald%phase%factor_guest(3, res_type, mol_index, 1:natoms, kz_idx)
+            ewald%phase%new_tmp(1:natoms) = ewald%phase%factor_primary_guest(1, res_type, mol_index, 1:natoms, kx_idx) * &
+                ewald%phase%factor_primary_guest(2, res_type, mol_index, 1:natoms, ky_idx) * &
+                ewald%phase%factor_primary_guest(3, res_type, mol_index, 1:natoms, kz_idx)
 
-            ewald%phase%old(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
+            ewald%phase%old_tmp(1:natoms) = ewald%phase%factor_old(1, 1:natoms, kx_idx) * &
                 ewald%phase%factor_old(2, 1:natoms, ky_idx) * &
                 ewald%phase%factor_old(3, 1:natoms, kz_idx)
 
@@ -112,20 +112,20 @@ contains
 
                 ! Molecule creation
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) ]
-                ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * ewald%phase%new(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * ewald%phase%new_tmp(1:natoms))
             
             else if (deletion_flag) then
             
                 ! Molecule deletion
                 ! A(k) ← A(k) + Σ q_i [ - e^(i k·r_i,old) ]
-                ewald%Ak(idx) = ewald%Ak(idx) - sum(ewald%q_buffer(1:natoms) * ewald%phase%old(1:natoms))
+                ewald%Ak(idx) = ewald%Ak(idx) - sum(ewald%q_buffer(1:natoms) * ewald%phase%old_tmp(1:natoms))
             
             else
             
                 ! Standard move (translation, rotation)
                 ! A(k) ← A(k) + Σ q_i [ e^(i k·r_i,new) - e^(i k·r_i,old) ]
                 ewald%Ak(idx) = ewald%Ak(idx) + sum(ewald%q_buffer(1:natoms) * &
-                    (ewald%phase%new(1:natoms) - ewald%phase%old(1:natoms)))
+                    (ewald%phase%new_tmp(1:natoms) - ewald%phase%old_tmp(1:natoms)))
             
             end if
 
@@ -190,11 +190,11 @@ contains
         self_energy = zero
 
         ! Loop over all atoms in the molecule/residue
-        do atom_index = 1, res%atom(res_type)
+        do atom_index = 1, residue_info%atom(res_type)
             charge = primary%atoms%charges(res_type, atom_index)
 
             ! Skip atoms with negligible charge
-            if (abs(charge) < error) cycle
+            if (abs(charge) < tolerance) cycle
 
             ! Add the individual atomic self-energy contribution
             self_energy = self_energy - ewald%param%alpha / SQRTPI * charge**2
@@ -209,10 +209,10 @@ contains
     ! molecule or residue using the Ewald summation method:
     !    E_ij_real = q_i * q_j * (erfc(α * r_ij) / r_ij)
     !------------------------------------------------------------------------------
-    function intra_res_real_coulomb_energy(res_type, mol_index) result(u_intraCoulomb)
+    function intra_res_real_coulomb_energy(res_type, mol_index) result(u_intra_coulomb)
         
         ! Return value
-        real(real64) :: u_intraCoulomb
+        real(real64) :: u_intra_coulomb
         
         ! Input arguments
         integer, intent(in) :: res_type
@@ -224,13 +224,13 @@ contains
         real(real64) :: charge_1, charge_2
 
         ! Initialize energy accumulator
-        u_intraCoulomb = 0
+        u_intra_coulomb = 0
 
         ! Loop over all unique atom pairs in the molecule
-        do atom_index_1 = 1, res%atom(res_type)-1
+        do atom_index_1 = 1, residue_info%atom(res_type)-1
             charge_1 = primary%atoms%charges(res_type, atom_index_1)
 
-            do atom_index_2 = atom_index_1+1, res%atom(res_type)
+            do atom_index_2 = atom_index_1+1, residue_info%atom(res_type)
                 charge_2 = primary%atoms%charges(res_type, atom_index_2)
 
                 ! Compute interatomic distance
@@ -238,16 +238,16 @@ contains
                             res_type, mol_index, atom_index_2)
 
                 ! Skip extremely small distances to avoid singularity
-                if (distance < error) cycle
+                if (distance < tolerance) cycle
 
                 ! Add the real-space intramolecular contribution (erfc(α * r) - 1) / r
-                u_intraCoulomb = u_intraCoulomb + charge_1 * charge_2 * &
+                u_intra_coulomb = u_intra_coulomb + charge_1 * charge_2 * &
                     (erfc(ewald%param%alpha * distance) - one) / distance
 
             end do
         end do
 
-        u_intraCoulomb = u_intraCoulomb * EPS0_INV_real ! In kcal/mol
+        u_intra_coulomb = u_intra_coulomb * EPS0_INV_real ! In kcal/mol
 
     end function intra_res_real_coulomb_energy
 
@@ -277,15 +277,15 @@ contains
         Ak = (zero, zero)
 
         ! Loop over all residue types
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             ! For host
-            if (res%role(res_type) == TYPE_HOST) then
+            if (residue_info%role(res_type) == TYPE_HOST) then
 
                 ! Loop over all molecules of this residue type
                 do mol_index = 1, primary%num%residues(res_type)
                     ! Loop over sites in molecule
-                    do atom_index = 1, res%atom(res_type)
+                    do atom_index = 1, residue_info%atom(res_type)
 
                         ! Extract charge and phase product
                         charges = primary%atoms%charges(res_type, atom_index)
@@ -301,18 +301,18 @@ contains
                 end do 
 
             ! For guest
-            else if (res%role(res_type) == TYPE_GUEST) then
+            else if (residue_info%role(res_type) == TYPE_GUEST) then
 
                 ! Loop over all molecules of this residue type
                 do mol_index = 1, primary%num%residues(res_type)
                     ! Loop over sites in molecule
-                    do atom_index = 1, res%atom(res_type)
+                    do atom_index = 1, residue_info%atom(res_type)
 
                         ! Extract charge and phase product
                         charges = primary%atoms%charges(res_type, atom_index)
-                        product = ewald%phase%factor_guest(1, res_type, mol_index, atom_index, kx_idx) * &
-                                ewald%phase%factor_guest(2, res_type, mol_index, atom_index, ky_idx) * &
-                                ewald%phase%factor_guest(3, res_type, mol_index, atom_index, kz_idx)
+                        product = ewald%phase%factor_primary_guest(1, res_type, mol_index, atom_index, kx_idx) * &
+                                ewald%phase%factor_primary_guest(2, res_type, mol_index, atom_index, ky_idx) * &
+                                ewald%phase%factor_primary_guest(3, res_type, mol_index, atom_index, kz_idx)
 
                         ! Accumulate contribution from this atom:
                         ! charge * exp(i k · r) factor in x, y, z directions

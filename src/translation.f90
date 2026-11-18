@@ -48,13 +48,13 @@ contains
 
         ! Compute Metropolis acceptance probability
         ! probability = min(1, exp(-(new - old)/kT))
-        probability = compute_acceptance_probability(old, new, res_type, TYPE_TRANSLATION)
+        probability = compute_acceptance_probability(energy_old, energy_new, res_type, TYPE_TRANSLATION)
 
         ! Accept or reject
         if (rand_uniform() <= probability) then
 
             ! Accept move: update system state
-            call accept_molecule_move(old, new, counter%translations)
+            call accept_molecule_move(energy_old, energy_new, counter%translations)
         
         else
         
@@ -92,7 +92,7 @@ contains
         coord%com(:, res_type, mol_index) = coord%com(:, res_type, mol_index) + trial_pos(:)
 
         ! Apply minimum image convension
-        call apply_PBC(coord%com(:, res_type, mol_index), primary)
+        call wrap_to_box_origin(coord%com(:, res_type, mol_index), primary)
 
     end subroutine propose_translation_move
 

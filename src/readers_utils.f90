@@ -297,7 +297,7 @@ contains
 
             else if (box%cell%shape == TRICLINIC) then
                 ! Triclinic: use fractional coords
-                delta_r_frac = matmul(box%cell%reciprocal, delta_r_cart)
+                delta_r_frac = matmul(box%cell%inv_matrix, delta_r_cart)
 
                 ! Wrap into [-0.5, 0.5)
                 do idim = 1, 3

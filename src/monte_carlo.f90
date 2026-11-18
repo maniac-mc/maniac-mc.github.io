@@ -27,10 +27,9 @@ contains
 
         ! Local Variables
         real(real64) :: random_draw         ! Random number used for move selection
-        real(real64) :: cumul_translation   ! Threshold for translation moves
-        real(real64) :: cumul_rotation      ! Threshold for rotation moves
-        real(real64) :: cumul_swap          ! Threshold for swap moves
-        real(real64) :: cumul_total         ! Total probability (including insertion/deletion)
+        real(real64) :: threshold_translation ! Threshold for translation moves
+        real(real64) :: threshold_rotation  ! Threshold for rotation moves
+        real(real64) :: threshold_swap      ! Threshold for swap moves
         integer :: res_type                 ! Index of molecule to be moved
         integer :: mol_index                ! Index of molecule copy
         integer :: hist_step_counter        ! Steps since last histogram sample
@@ -45,10 +44,9 @@ contains
         ! Initialize Monte Carlo counters and probabilities
         status%block = 0
         status%step  = 0
-        cumul_translation = proba%translation
-        cumul_rotation = cumul_translation + proba%rotation
-        cumul_swap = cumul_rotation + proba%swap
-        cumul_total = cumul_swap + proba%insertion_deletion
+        threshold_translation = proba%translation
+        threshold_rotation = threshold_translation + proba%rotation
+        threshold_swap = threshold_rotation + proba%swap
 
         ! Main Monte Carlo Loop
         do
@@ -61,17 +59,17 @@ contains
             random_draw = rand_uniform()
 
             ! Select move type based on random draw
-            if (random_draw <= cumul_translation) then
+            if (random_draw <= threshold_translation) then
 
                 ! Translation move
                 call attempt_translation_move(res_type, mol_index)
 
-            else if (random_draw <= cumul_rotation) then
+            else if (random_draw <= threshold_rotation) then
 
                 ! Rotation move
                 call attempt_rotation_move(res_type, mol_index)
 
-            else if (random_draw <= cumul_swap) then
+            else if (random_draw <= threshold_swap) then
 
                 ! Swap move
                 call attempt_swap_move(res_type, mol_index)
