@@ -28,7 +28,7 @@ contains
         logical :: warned_large_offset
         warned_large_offset = .false.
 
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             if (is_reservoir) then
                 coord => reservoir_coord
@@ -49,7 +49,7 @@ contains
                 end do
 
                 ! Check atom offsets
-                do atom_index = 1, res%atom(res_type)
+                do atom_index = 1, residue_info%atom(res_type)
                     
                     ! Read molecule offsets
                     offset = coord%offset(:, res_type, mol_index, atom_index)
@@ -97,8 +97,8 @@ contains
             end do
 
             ! Check that system and reservoir atom masses are consistent
-            do j = 1, res%number
-                do k = 1, res%types(j)
+            do j = 1, residue_info%number
+                do k = 1, residue_info%types(j)
                     if (abs(primary%atoms%mass_by_site(j, k) - reservoir%atoms%mass_by_site(j, k)) > tolerance) then
 
                         ! Generic header warning

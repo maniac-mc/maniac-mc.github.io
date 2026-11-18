@@ -78,13 +78,13 @@ contains
         logical :: deletion_flag
 
         ! Ensure that the routine deals with guest, not host
-        if (res%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
+        if (residue_info%role(res_type) == TYPE_HOST) call abort_run("Inconsistence in fourier routine")
 
         creation_flag = present_or_false(is_creation)
         deletion_flag = present_or_false(is_deletion)
 
         ! Atom charges in this residue
-        natoms = res%atom(res_type)
+        natoms = residue_info%atom(res_type)
         ewald%q_buffer(1:natoms) = primary%atoms%charges(res_type, 1:natoms)
 
         ! Loop over all precomputed reciprocal lattice vectors
@@ -190,7 +190,7 @@ contains
         self_energy = zero
 
         ! Loop over all atoms in the molecule/residue
-        do atom_index = 1, res%atom(res_type)
+        do atom_index = 1, residue_info%atom(res_type)
             charge = primary%atoms%charges(res_type, atom_index)
 
             ! Skip atoms with negligible charge
@@ -227,10 +227,10 @@ contains
         u_intra_coulomb = 0
 
         ! Loop over all unique atom pairs in the molecule
-        do atom_index_1 = 1, res%atom(res_type)-1
+        do atom_index_1 = 1, residue_info%atom(res_type)-1
             charge_1 = primary%atoms%charges(res_type, atom_index_1)
 
-            do atom_index_2 = atom_index_1+1, res%atom(res_type)
+            do atom_index_2 = atom_index_1+1, residue_info%atom(res_type)
                 charge_2 = primary%atoms%charges(res_type, atom_index_2)
 
                 ! Compute interatomic distance
@@ -277,15 +277,15 @@ contains
         Ak = (zero, zero)
 
         ! Loop over all residue types
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             ! For host
-            if (res%role(res_type) == TYPE_HOST) then
+            if (residue_info%role(res_type) == TYPE_HOST) then
 
                 ! Loop over all molecules of this residue type
                 do mol_index = 1, primary%num%residues(res_type)
                     ! Loop over sites in molecule
-                    do atom_index = 1, res%atom(res_type)
+                    do atom_index = 1, residue_info%atom(res_type)
 
                         ! Extract charge and phase product
                         charges = primary%atoms%charges(res_type, atom_index)
@@ -301,12 +301,12 @@ contains
                 end do 
 
             ! For guest
-            else if (res%role(res_type) == TYPE_GUEST) then
+            else if (residue_info%role(res_type) == TYPE_GUEST) then
 
                 ! Loop over all molecules of this residue type
                 do mol_index = 1, primary%num%residues(res_type)
                     ! Loop over sites in molecule
-                    do atom_index = 1, res%atom(res_type)
+                    do atom_index = 1, residue_info%atom(res_type)
 
                         ! Extract charge and phase product
                         charges = primary%atoms%charges(res_type, atom_index)

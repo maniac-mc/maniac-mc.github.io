@@ -61,9 +61,9 @@ contains
 
         ! Allocate complex arrays for wave vector components
         kmax_max = maxval(ewald%param%kmax)
-        allocate(ewald%phase%factor_host(3, res%number, 0:max_counts%inactive_residues, &
+        allocate(ewald%phase%factor_host(3, residue_info%number, 0:max_counts%inactive_residues, &
             1:max_counts%atoms_inactive_residue, -kmax_max:kmax_max))
-        allocate(ewald%phase%factor_primary_guest(3, res%number, 0:max_counts%active_residues, &
+        allocate(ewald%phase%factor_primary_guest(3, residue_info%number, 0:max_counts%active_residues, &
             1:max_counts%atoms_active_residue, -kmax_max:kmax_max))
         allocate(ewald%phase%factor_old(3, 1:max_counts%atoms_active_residue, -kmax_max:kmax_max))
 
@@ -91,10 +91,10 @@ contains
 
         ! Allocate widom
         if (proba%widom > 0) then
-            allocate(statistic%weight(res%number))
-            allocate(statistic%sample(res%number))
-            allocate(statistic%mu_ex(res%number))
-            allocate(statistic%mu_tot(res%number))
+            allocate(statistic%weight(residue_info%number))
+            allocate(statistic%sample(residue_info%number))
+            allocate(statistic%mu_ex(residue_info%number))
+            allocate(statistic%mu_tot(residue_info%number))
             ! Initialize to zero
             statistic%weight(:) = zero
             statistic%sample(:) = zero
@@ -103,7 +103,7 @@ contains
         ! Allocate particle-number histogram (only meaningful when
         ! insertion/deletion moves are enabled)
         if (proba%insertion_deletion > 0) then
-            allocate(hist%count(res%number, 0:max_counts%active_residues))
+            allocate(hist%count(residue_info%number, 0:max_counts%active_residues))
             hist%count = 0
             hist%nb_samples = 0
         end if
@@ -245,7 +245,7 @@ contains
         ! Compute inverse thermal energy β = 1/(k_B T)
         thermo%beta = 1/(KB_kcalmol*thermo%temperature) ! 1/(kB T) in 1/(kcal/mol)
 
-        do val_int = 1, res%number
+        do val_int = 1, residue_info%number
 
             if (.not. thermo%is_active(val_int)) cycle
 
@@ -259,11 +259,11 @@ contains
             ! Compute thermal de Broglie wavelength λ for each active residue:
             ! λ = h / sqrt(2 π m k_B T)
             ! H_PLANCK in J s, mass in kg, KB in J/K, T in K
-            mass = res%mass(val_int) * G_TO_KG / NA                                         ! Mass per residue (kg)
-            res%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * thermo%temperature)    ! Thermal de Broglie wavelength
+            mass = residue_info%mass(val_int) * G_TO_KG / NA                                         ! Mass per residue (kg)
+            residue_info%lambda(val_int) = H_PLANCK / sqrt(TWOPI * mass * KB * thermo%temperature)    ! Thermal de Broglie wavelength
             
             ! Convert lambda to Å
-            res%lambda(val_int) = res%lambda(val_int) * M_TO_A
+            residue_info%lambda(val_int) = residue_info%lambda(val_int) * M_TO_A
 
         end do
 

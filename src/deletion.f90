@@ -113,8 +113,8 @@ contains
                 trial_pos(2)*reservoir%cell%matrix(:, 2) + &
                 trial_pos(3)*reservoir%cell%matrix(:, 3)
             reservoir_coord%offset(:, res_type, reservoir%num%residues(res_type)+1, &
-                1:res%atom(res_type)) = &
-                site_offset_old(:, 1:res%atom(res_type))
+                1:residue_info%atom(res_type)) = &
+                site_offset_old(:, 1:residue_info%atom(res_type))
 
             call update_counts(reservoir, res_type, +1)
 
@@ -139,8 +139,8 @@ contains
 
         ! Restore previous positions and orientation
         primary_guest%com(:, res_type, molecule_index) = mol_com_old(:)
-        primary_guest%offset(:, res_type, molecule_index, 1:res%atom(res_type)) = &
-            site_offset_old(:, 1:res%atom(res_type))
+        primary_guest%offset(:, res_type, molecule_index, 1:residue_info%atom(res_type)) = &
+            site_offset_old(:, 1:residue_info%atom(res_type))
 
         ! Restore Fourier states (ik_alloc and dk_alloc)
         call restore_single_mol_fourier(res_type, molecule_index)

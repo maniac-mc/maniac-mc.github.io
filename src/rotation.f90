@@ -29,7 +29,7 @@ contains
         real(real64) :: probability                     ! Acceptance probability of rotation move
 
         ! Exit early if molecule cannot rotate
-        if ((res%atom(res_type) == 1) .or. (mol_index == 0)) return
+        if ((residue_info%atom(res_type) == 1) .or. (mol_index == 0)) return
 
         ! Count trial move
         counter%rotations(1) = counter%rotations(1) + 1

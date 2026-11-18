@@ -56,7 +56,7 @@ contains
         energy%intra_coulomb = zero ! In kcal/mol
 
         ! Loop over all residue types
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
             
             ! Skip inactive residues
             if (.not. thermo%is_active(res_type)) cycle
@@ -90,7 +90,7 @@ contains
         energy%coulomb = zero
 
         ! Loop over all residue types
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             ! Loop over all molecule of type "res_type"
             do mol_index = 1, box%num%residues(res_type)

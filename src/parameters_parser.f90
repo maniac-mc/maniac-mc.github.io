@@ -78,10 +78,10 @@ contains
                 end if
             end select
 
-            do i = 1, res%number
-                do k = 1, res%atom(i)
-                    do j = 1, res%number
-                        do l = 1, res%atom(j)
+            do i = 1, residue_info%number
+                do k = 1, residue_info%atom(i)
+                    do j = 1, residue_info%number
+                        do l = 1, residue_info%atom(j)
                             type_i = primary%atoms%types(i, k)
                             type_j = primary%atoms%types(j, l)
                             if ((type_i == val_int1) .and. (type_j == val_int2)) then
@@ -127,10 +127,10 @@ contains
         allocate(warned(max_atom_type, max_atom_type))  ! Allocate warned array to track logged warnings for atom type pairs
         warned = .false.
 
-        do i = 1, res%number
-            do k = 1, res%atom(i)
-                do j = 1, res%number
-                    do l = 1, res%atom(j)
+        do i = 1, residue_info%number
+            do k = 1, residue_info%atom(i)
+                do j = 1, residue_info%number
+                    do l = 1, residue_info%atom(j)
 
                         ! Detect cross coefficients that are zeros
                         if ((abs(pair_coeff%epsilon(i,j,k,l)) < tolerance) .and. abs(pair_coeff%sigma(i,j,k,l)) < tolerance) then

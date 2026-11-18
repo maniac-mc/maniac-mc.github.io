@@ -138,7 +138,7 @@ contains
         end if
 
         if (proba%widom > 0) then
-            do type_residue = 1, res%number
+            do type_residue = 1, residue_info%number
                 if (statistic%sample(type_residue) > 0) then
                     write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", statistic%sample(type_residue)
                     call box_line(trim(line), BOX_WIDTH)
@@ -152,7 +152,7 @@ contains
 
         ! Particle-number histogram summary (GCMC only)
         if (proba%insertion_deletion > 0 .and. allocated(hist%count)) then
-            do type_residue = 1, res%number
+            do type_residue = 1, residue_info%number
                 if (thermo%is_active(type_residue) .and. hist%nb_samples > 0) then
                     ! Mean <N>
                     mean_n = 0.0_real64
@@ -168,7 +168,7 @@ contains
                     var_n = var_n / real(hist%nb_samples, real64)
                     sd_n = sqrt(var_n)
                     write(line,'(A,A,A,F10.3,A,F10.3,A,I10,A)') &
-                        "  Histogram ", trim(res%names(type_residue)), &
+                        "  Histogram ", trim(residue_info%names(type_residue)), &
                         ": <N> = ", mean_n, ", sigma(N) = ", sd_n, &
                         " (", hist%nb_samples, " samples)"
                     call box_line(trim(line), BOX_WIDTH)
@@ -204,9 +204,9 @@ contains
         ! Active molecule summary
         ! -----------------------
         header_msg = "  Energy report | Active molecules: "
-        do nb_type_residue = 1, res%number
+        do nb_type_residue = 1, residue_info%number
             if (thermo%is_active(nb_type_residue)) then
-                write(tmp,'(A,"=",I0)') trim(res%names(nb_type_residue)), primary%num%residues(nb_type_residue)
+                write(tmp,'(A,"=",I0)') trim(residue_info%names(nb_type_residue)), primary%num%residues(nb_type_residue)
                 if (len_trim(header_msg) > 0) then
                     header_msg = trim(header_msg)//" "//trim(tmp)
                 else
@@ -385,16 +385,16 @@ contains
         call log_message(formatted_msg)                                     ! Log the input file name
 
         n_pairs = 0 ! Initialize the pair counter
-        do i = 1, res%number
-            do j = 1, res%types(i)
-                do k = 1, res%number
-                    do l = 1, res%types(k)
-                        type1 = res%site_types(i, j) ! Get atom type for site j in residue i
-                        type2 = res%site_types(k, l) ! Get atom type for site l in residue k
+        do i = 1, residue_info%number
+            do j = 1, residue_info%types(i)
+                do k = 1, residue_info%number
+                    do l = 1, residue_info%types(k)
+                        type1 = residue_info%site_types(i, j) ! Get atom type for site j in residue i
+                        type2 = residue_info%site_types(k, l) ! Get atom type for site l in residue k
                         found_pair = .false.        ! Reset found_pair flag (unused in logic)
                         if (type1 <= type2) then    ! Process pairs where type1 <= type2 to avoid duplicates
-                            do m = 1, res%atom(i)
-                                do n = 1, res%atom(k)
+                            do m = 1, residue_info%atom(i)
+                                do n = 1, residue_info%atom(k)
                                     type_m = primary%atoms%types(i, m) ! Get atom type for atom m in residue i
                                     type_n = primary%atoms%types(k, n) ! Get atom type for atom n in residue k
                                     it1 = min(type_m, type_n)    ! Get minimum atom type for pair
@@ -440,25 +440,25 @@ contains
         call log_message("")
         write(formatted_msg, '("Number of atoms: ", I0)') box%num%atoms
         call log_message(formatted_msg)
-        write(formatted_msg, '("Number of type of residues: ", I0)') res%number
+        write(formatted_msg, '("Number of type of residues: ", I0)') residue_info%number
         call log_message(formatted_msg)
         write(formatted_msg, '("Number of type of atoms: ", I0)') box%num%atomtypes
         call log_message(formatted_msg)
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Active residue present in data file
                 active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Active residue ", A, " found in the data file: ", I0)') &
-                    trim(res%names(i)), box%num%residues(i)
+                    trim(residue_info%names(i)), box%num%residues(i)
             else if ((box%num%residues(i) /= 0) .and. (thermo%is_active(i))) then
                 ! Inactive residue present in data file
                 active_molecule_count = active_molecule_count + box%num%residues(i)
                 write(formatted_msg, '("Inactive residue ", A, " found in the data file: ", I0)') &
-                    trim(res%names(i)), box%num%residues(i)
+                    trim(residue_info%names(i)), box%num%residues(i)
             else if ((box%num%residues(i) == 0) .and. (thermo%is_active(i)) .and. (.not. is_reservoir)) then
                 ! Inactive residue defined in input but not present in data file
-                call abort_run("Inactive residue '" // trim(res%names(i)) // "' (ID=" // &
+                call abort_run("Inactive residue '" // trim(residue_info%names(i)) // "' (ID=" // &
                             trim(adjustl(to_string(i))) // ") defined in input file but not present in data file.", 1)
             end if
             call log_message(formatted_msg)
@@ -498,39 +498,39 @@ contains
             call box_header("Connectivity summary")
 
             ! --- Bonds ---
-            do i = 1, res%number
-                if (box%num%residues(i) > 0 .and. res%bonds(i) > 0) then
+            do i = 1, residue_info%number
+                if (box%num%residues(i) > 0 .and. residue_info%bonds(i) > 0) then
                     call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " bonds")') &
-                        trim(res%names(i)), res%bonds(i)
+                        trim(residue_info%names(i)), residue_info%bonds(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT bonds
-                    do j = 1, min(res%bonds(i), MAX_PRINT)
+                    do j = 1, min(residue_info%bonds(i), MAX_PRINT)
                         write(formatted_msg, '("   bond type ", I0, ": atoms [", I0, ",", I0, "]")') &
                             connect%bonds(i,j,1), connect%bonds(i,j,2), connect%bonds(i,j,3)
                         call log_message(formatted_msg)
                     end do
 
                     ! If more bonds exist, indicate truncation
-                    if (res%bonds(i) > MAX_PRINT) then
+                    if (residue_info%bonds(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more bonds not shown")') &
-                            res%bonds(i) - MAX_PRINT
+                            residue_info%bonds(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
             end do
 
             ! --- Angles ---
-            do i = 1, res%number
-                if (box%num%residues(i) > 0 .and. res%angles(i) > 0) then
+            do i = 1, residue_info%number
+                if (box%num%residues(i) > 0 .and. residue_info%angles(i) > 0) then
                     call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " angles")') &
-                        trim(res%names(i)), res%angles(i)
+                        trim(residue_info%names(i)), residue_info%angles(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT angles
-                    do j = 1, min(res%angles(i), MAX_PRINT)
+                    do j = 1, min(residue_info%angles(i), MAX_PRINT)
                         write(formatted_msg, '("   angle type ", I0, ": atoms [", I0, ",", I0, ",", I0, "]")') &
                             connect%angles(i,j,1), connect%angles(i,j,2), &
                             connect%angles(i,j,3), connect%angles(i,j,4)
@@ -538,9 +538,9 @@ contains
                     end do
 
                     ! If more angles exist, indicate truncation
-                    if (res%angles(i) > MAX_PRINT) then
+                    if (residue_info%angles(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more angles not shown")') &
-                            res%angles(i) - MAX_PRINT
+                            residue_info%angles(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
@@ -548,15 +548,15 @@ contains
 
             ! --- Dihedrals ---
             
-            do i = 1, res%number
-                if (box%num%residues(i) > 0 .and. res%dihedrals(i) > 0) then
+            do i = 1, residue_info%number
+                if (box%num%residues(i) > 0 .and. residue_info%dihedrals(i) > 0) then
                     call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " dihedrals")') &
-                        trim(res%names(i)), res%dihedrals(i)
+                        trim(residue_info%names(i)), residue_info%dihedrals(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT dihedrals
-                    do j = 1, min(res%dihedrals(i), MAX_PRINT)
+                    do j = 1, min(residue_info%dihedrals(i), MAX_PRINT)
                         write(formatted_msg, &
                         '("   dihedral type ", I0, ": atoms [", I0, ",", I0, ",", I0, ",", I0, "]")') &
                             connect%dihedrals(i,j,1), connect%dihedrals(i,j,2), &
@@ -566,24 +566,24 @@ contains
                     end do
 
                     ! If more dihedrals exist, indicate truncation
-                    if (res%dihedrals(i) > MAX_PRINT) then
+                    if (residue_info%dihedrals(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more dihedrals not shown")') &
-                            res%dihedrals(i) - MAX_PRINT
+                            residue_info%dihedrals(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
             end do
 
             ! --- Impropers ---
-            do i = 1, res%number
-                if (box%num%residues(i) > 0 .and. res%impropers(i) > 0) then
+            do i = 1, residue_info%number
+                if (box%num%residues(i) > 0 .and. residue_info%impropers(i) > 0) then
                     call log_message("")
                     write(formatted_msg, '("Residue ", A, ": ", I0, " impropers")') &
-                        trim(res%names(i)), res%impropers(i)
+                        trim(residue_info%names(i)), residue_info%impropers(i)
                     call log_message(formatted_msg)
 
                     ! Print up to MAX_PRINT impropers
-                    do j = 1, min(res%impropers(i), MAX_PRINT)
+                    do j = 1, min(residue_info%impropers(i), MAX_PRINT)
                         write(formatted_msg, &
                         '("   improper type ", I0, ": atoms [", I0, ",", I0, ",", I0, ",", I0, "]")') &
                             connect%impropers(i,j,1), connect%impropers(i,j,2), &
@@ -593,9 +593,9 @@ contains
                     end do
 
                     ! If more impropers exist, indicate truncation
-                    if (res%impropers(i) > MAX_PRINT) then
+                    if (residue_info%impropers(i) > MAX_PRINT) then
                         write(formatted_msg, '("   ... ", I0, " more impropers not shown")') &
-                            res%impropers(i) - MAX_PRINT
+                            residue_info%impropers(i) - MAX_PRINT
                         call log_message(formatted_msg)
                     end if
                 end if
@@ -756,13 +756,13 @@ contains
         ! ===== RESIDUES =====
         call box_header("Residue information")
         call log_message("")
-        write(msg, '("Number of type of residue found: ", I0)') res%number
+        write(msg, '("Number of type of residue found: ", I0)') residue_info%number
         call log_message(msg)
         call log_message("")
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
-            write(msg, '("  Residue ", A)') trim(res%names(i))
+            write(msg, '("  Residue ", A)') trim(residue_info%names(i))
             call log_message(msg)
 
             write(msg, '("  Is active: ", A)') merge("yes", "no ", thermo%is_active(i))
@@ -782,24 +782,24 @@ contains
                 end if
             end if
 
-            write(msg, '("  Number of atoms in residue: ", I0)') res%atom(i)
+            write(msg, '("  Number of atoms in residue: ", I0)') residue_info%atom(i)
             call log_message(msg)
 
-            write(msg, '("  Number of atom types in residue: ", I0)') res%types(i)
+            write(msg, '("  Number of atom types in residue: ", I0)') residue_info%types(i)
             call log_message(msg)
 
             ! Types
             msg = "  Types: "
-            do j = 1, res%types(i)
-                write(temp, '(I0)') res%site_types(i, j)
+            do j = 1, residue_info%types(i)
+                write(temp, '(I0)') residue_info%site_types(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
             call log_message(msg)
 
             ! Names
             msg = "  Names: "
-            do j = 1, res%types(i)
-                temp = res%site_names(i, j)
+            do j = 1, residue_info%types(i)
+                temp = residue_info%site_names(i, j)
                 msg = trim(msg) // " " // trim(temp)
             end do
             call log_message(msg)

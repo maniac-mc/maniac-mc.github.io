@@ -105,8 +105,8 @@ contains
             ! Replace mol_index with the last molecule in the list to maintain continuity
             last_mol_idx_reservoir = reservoir%num%residues(res_type)
             reservoir_coord%com(:, res_type, rand_idx_reservoir) = reservoir_coord%com(:, res_type, last_mol_idx_reservoir)
-            reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:res%atom(res_type)) = &
-                reservoir_coord%offset(:, res_type, last_mol_idx_reservoir, 1:res%atom(res_type))
+            reservoir_coord%offset(:, res_type, rand_idx_reservoir, 1:residue_info%atom(res_type)) = &
+                reservoir_coord%offset(:, res_type, last_mol_idx_reservoir, 1:residue_info%atom(res_type))
 
             ! Increase the residue and atom counts
             call update_counts(reservoir, res_type, -1)

@@ -254,10 +254,10 @@ contains
                     mass_found = mass_found + 1
                 end do
 
-                ! Map site masses into 2D mass array (assuming res%number and res%types are defined)
+                ! Map site masses into 2D mass array (assuming residue_info%number and residue_info%types are defined)
                 i = 1
-                do j = 1, res%number
-                    do k = 1, res%types(j)
+                do j = 1, residue_info%number
+                    do k = 1, residue_info%types(j)
                         if ((i <= box%num%atoms) .and. (i <= box%num%atomtypes)) then
                             box%atoms%mass_by_site(j, k) = box%atoms%mass_by_type(i)
                             i = i + 1
@@ -296,10 +296,10 @@ contains
         ! Loop over all atoms
         do k = 1, box%num%atoms
             atom_names_1d(k) = '' ! Initialize to empty string
-            do i = 1, res%number
-                do j = 1, res%types(i)
-                    if (res%site_types(i, j) == atom_types_1d(k)) then
-                        atom_names_1d(k) = res%site_names(i, j)
+            do i = 1, residue_info%number
+                do j = 1, residue_info%types(i)
+                    if (residue_info%site_types(i, j) == atom_types_1d(k)) then
+                        atom_names_1d(k) = residue_info%site_names(i, j)
                         exit  ! Exit inner loop once match is found
                     end if
                 end do
@@ -322,7 +322,7 @@ contains
         integer :: nb_bond
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_bond = 0
 
             ! Loop directly over the bonds
@@ -361,7 +361,7 @@ contains
 
             end do
 
-            res%bonds(i) = nb_bond
+            residue_info%bonds(i) = nb_bond
 
         end do
 
@@ -376,7 +376,7 @@ contains
         integer :: nb_angle
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_angle = 0
 
             ! Loop directly over the angles
@@ -415,7 +415,7 @@ contains
                     end if
                 end if
             end do
-            res%angles(i) = nb_angle
+            residue_info%angles(i) = nb_angle
         end do
 
     end subroutine DetectAnglePerResidue
@@ -429,7 +429,7 @@ contains
         integer :: nb_dihedral
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_dihedral = 0
 
             ! Loop directly over the dihedrals
@@ -473,7 +473,7 @@ contains
                     end if
                 end if
             end do
-            res%dihedrals(i) = nb_dihedral
+            residue_info%dihedrals(i) = nb_dihedral
         end do
 
     end subroutine DetectDihedralPerResidue
@@ -487,7 +487,7 @@ contains
         integer :: nb_improper
         character(len=100) :: formatted_msg
 
-        do i = 1, res%number
+        do i = 1, residue_info%number
             nb_improper = 0
 
             ! Loop directly over the impropers
@@ -531,7 +531,7 @@ contains
                     end if
                 end if
             end do
-            res%impropers(i) = nb_improper
+            residue_info%impropers(i) = nb_improper
         end do
 
     end subroutine DetectImproperPerResidue
@@ -1147,7 +1147,7 @@ contains
         integer, allocatable :: cpt_per_residue(:)            ! Counters for each residue type
 
         ! one counter per residue
-        allocate(cpt_per_residue(res%number))
+        allocate(cpt_per_residue(residue_info%number))
         cpt_per_residue = 1
 
         do idx = 1, box%num%atoms
@@ -1155,9 +1155,9 @@ contains
             residue = -1
 
             ! find which residue this atom belongs to
-            do i = 1, res%number
-                do j = 1, res%types(i)
-                    if (res%site_types(i,j) == tmp_atom_types_1d(idx)) then
+            do i = 1, residue_info%number
+                do j = 1, residue_info%types(i)
+                    if (residue_info%site_types(i,j) == tmp_atom_types_1d(idx)) then
                         found = .true.
                         residue = i
                         exit  ! break from j-loop
@@ -1167,9 +1167,9 @@ contains
             end do
 
             if (found) then
-                res%pattern_types(residue, cpt_per_residue(residue)) = tmp_atom_types_1d(idx)
+                residue_info%pattern_types(residue, cpt_per_residue(residue)) = tmp_atom_types_1d(idx)
                 cpt_per_residue(residue) = cpt_per_residue(residue) + 1
-                if (cpt_per_residue(residue) > res%atom(residue)) then
+                if (cpt_per_residue(residue) > residue_info%atom(residue)) then
                     cpt_per_residue(residue) = 1
                 end if
             end if
@@ -1223,7 +1223,7 @@ contains
         box%atoms%charges = 0.0D0
 
         ! Loop over residue types
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
             box%num%residues(i) = 0
             k = 1
@@ -1236,15 +1236,15 @@ contains
                 cpt = 1
 
                 ! If atom at position k matches the first atom of residue i
-                if (atom_types_1d(k) == res%pattern_types(i, cpt)) then
+                if (atom_types_1d(k) == residue_info%pattern_types(i, cpt)) then
 
                     ! Ensure there are enough atoms left to build a full residue
-                    if (k + res%atom(i) - 1 > box%num%atoms) then
+                    if (k + residue_info%atom(i) - 1 > box%num%atoms) then
                         call abort_run("Not enough atoms left in box to complete residue type ")
                     end if
 
                     ! Copy all atoms belonging to this residue
-                    do j = 1, res%atom(i)
+                    do j = 1, residue_info%atom(i)
                         box%atoms%types(i, j) = atom_types_1d(k)
                         box%atoms%ids(i, j) = atom_original_1d(k)
                         box%atoms%names(i, j) = atom_names_1d(k)
@@ -1252,7 +1252,7 @@ contains
 
                         ! Check atom order against residue pattern
                         if (thermo%is_active(i)) then
-                            if (atom_types_1d(k) /= res%pattern_types(i, cpt)) then
+                            if (atom_types_1d(k) /= residue_info%pattern_types(i, cpt)) then
                                 call abort_run("Issue with atom order in data file")
                             end if
                         end if
@@ -1303,18 +1303,18 @@ contains
         real(real64) :: dist                      ! Intramoleclar distance for sanity check
 
         ! Allocate temporary arrays for one molecule's atom positions
-        if (.not. allocated(res%atom)) then
-           call  abort_run("res%atom is not allocated")
+        if (.not. allocated(residue_info%atom)) then
+           call  abort_run("residue_info%atom is not allocated")
         else
-            allocate(tmp_xyz(3, maxval(res%atom)))
+            allocate(tmp_xyz(3, maxval(residue_info%atom)))
         end if
 
         k = 1  ! Global atom index
 
         ! Loop over all residue types
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
-            natoms = res%atom(i)      ! number of atoms per molecule of type i
+            natoms = residue_info%atom(i)      ! number of atoms per molecule of type i
             nmolecules = box%num%residues(i)    ! number of molecules of this type
 
             ! Loop over each molecule of this residue type
@@ -1393,14 +1393,14 @@ contains
         allocate(tmp_atom_xyz(3, box%num%atoms))
 
         cpt = 1
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
             ! #tofix, should have been done before
             ! Store CoM position
             if (thermo%is_active(i)) then
-                res%role(i) = TYPE_GUEST
+                residue_info%role(i) = TYPE_GUEST
             else
-                res%role(i) = TYPE_HOST
+                residue_info%role(i) = TYPE_HOST
             end if
 
             if (is_reservoir) then
@@ -1412,9 +1412,9 @@ contains
             nb_res = 0
 
             ! Build mass vector for the residue type i
-            do j = 1, res%atom(i)
-                do l = 1, res%types(i)
-                    if (res%site_types(i, l) == primary%atoms%types(i, j)) then
+            do j = 1, residue_info%atom(i)
+                do l = 1, residue_info%types(i)
+                    if (residue_info%site_types(i, l) == primary%atoms%types(i, j)) then
                         tmp_atom_masses_1d = primary%atoms%mass_by_site(i, l)
                         cpt = cpt + 1
                     end if
@@ -1422,9 +1422,9 @@ contains
             end do
 
             ! Sanity check
-            if (any(tmp_atom_masses_1d(1:res%atom(i)) <= 0.0_real64)) then
+            if (any(tmp_atom_masses_1d(1:residue_info%atom(i)) <= 0.0_real64)) then
                 call warn_user("Zero or negative atomic mass detected in residue type")
-            else if (sum(tmp_atom_masses_1d(1:res%atom(i))) < 1.0e-6_real64) then
+            else if (sum(tmp_atom_masses_1d(1:residue_info%atom(i))) < 1.0e-6_real64) then
                 call warn_user("Total molecular mass nearly zero in residue")
             end if
 
@@ -1437,14 +1437,14 @@ contains
                     nb_res = nb_res + 1
 
                     ! Extract atom coordinates for this molecule
-                    tmp_atom_xyz(:, 1:res%atom(i)) = atom_xyz(:, k:k+res%atom(i)-1)
-                    k = k + res%atom(i)
+                    tmp_atom_xyz(:, 1:residue_info%atom(i)) = atom_xyz(:, k:k+residue_info%atom(i)-1)
+                    k = k + residue_info%atom(i)
 
                     ! Compute Center of Mass
-                    call compute_COM(tmp_atom_xyz, res%atom(i), tmp_atom_masses_1d, com)
+                    call compute_COM(tmp_atom_xyz, residue_info%atom(i), tmp_atom_masses_1d, com)
 
-                    total_mass = compute_mass(res%atom(i), tmp_atom_masses_1d)
-                    res%mass(i) = total_mass 
+                    total_mass = compute_mass(residue_info%atom(i), tmp_atom_masses_1d)
+                    residue_info%mass(i) = total_mass 
 
                     ! Save original CoM before applying periodic boundary conditions
                     original_com = com ! Save the CoM
@@ -1457,13 +1457,13 @@ contains
                     call check_inside_bounds(com, box%cell%bounds(:,1), box%cell%bounds(:,2), &
                         "Molecule COM outside simulation box")
                     if (thermo%is_active(i)) then
-                        call check_com_distance(tmp_atom_xyz, res%atom(i), &
+                        call check_com_distance(tmp_atom_xyz, residue_info%atom(i), &
                             original_com, 10.0_real64, "CoM unusually far from all atoms in residue type")
                     end if
 
                     coord%com(:, i, l) = com(:)
 
-                    do m = 1, res%atom(i)
+                    do m = 1, residue_info%atom(i)
                         coord%offset(:, i, l, m) = tmp_atom_xyz(:, m) - original_com
                     end do
 
@@ -1490,7 +1490,7 @@ contains
 
         isInResidue = .false.
 
-        do n = 1, res%atom(resid)
+        do n = 1, residue_info%atom(resid)
 
             if (box%atoms%ids(resid, n) == atom_id) then
 
@@ -1513,7 +1513,7 @@ contains
         integer :: n
 
         atomIndexInResidue = -1
-        do n = 1, res%atom(res_id)
+        do n = 1, residue_info%atom(res_id)
             if (box%atoms%ids(res_id, n) == atom_id) then
 
                 atomIndexInResidue = n

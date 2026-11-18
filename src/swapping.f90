@@ -148,8 +148,8 @@ contains
         call update_counts(primary, residue_type_bis, -1)
 
         primary_guest%com(:, residue_type, molecule_index) = mol_com_old(:)
-        primary_guest%offset(:, residue_type, molecule_index, 1:res%atom(residue_type)) = &
-            site_offset_old(:, 1:res%atom(residue_type))
+        primary_guest%offset(:, residue_type, molecule_index, 1:residue_info%atom(residue_type)) = &
+            site_offset_old(:, 1:residue_info%atom(residue_type))
 
         ! *** FIX: restore BOTH sides — the removal mutation and the insertion mutation
         call restore_single_mol_fourier(residue_type, molecule_index)

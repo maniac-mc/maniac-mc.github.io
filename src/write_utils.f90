@@ -79,7 +79,7 @@ contains
         write(UNIT_LMP, '(A)') "ITEM: ATOMS id type x y z"
 
         atom_id = 0
-        do res_type = 1, res%number
+        do res_type = 1, residue_info%number
 
             if (is_reservoir) then
                 coord => reservoir_coord
@@ -97,7 +97,7 @@ contains
                     call wrap_centered(com, box)
                 end if
 
-                do atom_index = 1, res%atom(res_type)
+                do atom_index = 1, residue_info%atom(res_type)
 
                     atom_id = atom_id + 1
                     atom_type = box%atoms%types(res_type, atom_index)
@@ -207,7 +207,7 @@ contains
         ! Histogram only allocated when insertion/deletion moves are enabled
         if (.not. allocated(hist%count)) return
 
-        do resi = 1, res%number
+        do resi = 1, residue_info%number
 
             if (.not. thermo%is_active(resi)) cycle
 
@@ -223,7 +223,7 @@ contains
             if (n_min == -1) cycle
 
             ! Construct the filename for this residue
-            filename = trim(path%outputs) // 'histogram_' // trim(res%names(resi)) // '.dat'
+            filename = trim(path%outputs) // 'histogram_' // trim(residue_info%names(resi)) // '.dat'
 
             ! Rewrite the file each block (cumulative histogram)
             open(unit=UNIT_HIST, file=filename, status='REPLACE', action='write')
@@ -270,12 +270,12 @@ contains
             call calculate_excess_mu()
 
             ! Loop over residue types
-            do type_residue = 1, res%number
+            do type_residue = 1, residue_info%number
 
                 if (thermo%is_active(type_residue)) then
 
                     ! Construct the file name
-                    filename = trim(path%outputs) // 'widom_' // trim(res%names(type_residue)) // '.dat'
+                    filename = trim(path%outputs) // 'widom_' // trim(residue_info%names(type_residue)) // '.dat'
 
                     ! Open file in append mode
                     open(unit=UNIT_WIDOM, file=filename, status=file_status, action='write', position='append')
@@ -317,7 +317,7 @@ contains
         ! Histogram only allocated when insertion/deletion moves are enabled
         if (.not. allocated(hist%count)) return
 
-        do resi = 1, res%number
+        do resi = 1, residue_info%number
             if (.not. thermo%is_active(resi)) cycle
             hist%count(resi, primary%num%residues(resi)) = &
                 hist%count(resi, primary%num%residues(resi)) + 1
@@ -345,11 +345,11 @@ contains
         integer :: UNIT_COUNT  = 19
 
         ! Loop over residues
-        do resi = 1, res%number
+        do resi = 1, residue_info%number
 
             if (thermo%is_active(resi)) then
                 ! Construct the filename for this residue
-                filename = trim(path%outputs) // 'number_' // trim(res%names(resi)) // '.dat'
+                filename = trim(path%outputs) // 'number_' // trim(residue_info%names(resi)) // '.dat'
 
                 ! Open file for append (create if not exists)
                 open(unit=UNIT_COUNT, file=filename, status=file_status, action='write', position='append')
@@ -510,9 +510,9 @@ contains
 
         ! Update bond number count
         cpt_bond = 0
-        do i = 1, res%number
+        do i = 1, residue_info%number
             do j = 1, box%num%residues(i)
-                do k = 1, res%bonds(i)
+                do k = 1, residue_info%bonds(i)
                     cpt_bond = cpt_bond + 1
                 end do
             end do
@@ -521,9 +521,9 @@ contains
 
         ! Update angle number count
         cpt_angle = 0
-        do i = 1, res%number
+        do i = 1, residue_info%number
             do j = 1, box%num%residues(i)
-                do k = 1, res%angles(i)
+                do k = 1, residue_info%angles(i)
                     cpt_angle = cpt_angle + 1
                 end do
             end do
@@ -532,9 +532,9 @@ contains
 
         ! Update dihedral number count
         cpt_dihedral = 0
-        do i = 1, res%number
+        do i = 1, residue_info%number
             do j = 1, box%num%residues(i)
-                do k = 1, res%dihedrals(i)
+                do k = 1, residue_info%dihedrals(i)
                     cpt_dihedral = cpt_dihedral + 1
                 end do
             end do
@@ -543,9 +543,9 @@ contains
 
         ! Update improper number count
         cpt_improper = 0
-        do i = 1, res%number
+        do i = 1, residue_info%number
             do j = 1, box%num%residues(i)
-                do k = 1, res%impropers(i)
+                do k = 1, residue_info%impropers(i)
                     cpt_improper = cpt_improper + 1
                 end do
             end do
@@ -602,7 +602,7 @@ contains
 
         atom_id = 0
         mol_id = 0
-        do i = 1, res%number
+        do i = 1, residue_info%number
 
             if (is_reservoir) then
                 coord => reservoir_coord
@@ -612,7 +612,7 @@ contains
 
             do j = 1, box%num%residues(i)
                 mol_id = mol_id + 1
-                do k = 1, res%atom(i)
+                do k = 1, residue_info%atom(i)
 
                     atom_id = atom_id + 1
                     atom_type = box%atoms%types(i,k)
@@ -641,15 +641,15 @@ contains
             write(unit_data, *)
             cpt_bond = 1
             cpt_atom = 0
-            do i = 1, res%number
+            do i = 1, residue_info%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, res%bonds(i)
+                    do k = 1, residue_info%bonds(i)
                         write(unit_data, *) cpt_bond, connect%bonds(i, k, 1), &
                             cpt_atom + connect%bonds(i, k, 2), &
                             cpt_atom + connect%bonds(i, k, 3)
                         cpt_bond = cpt_bond + 1
                     end do
-                    cpt_atom = cpt_atom + res%atom(i)
+                    cpt_atom = cpt_atom + residue_info%atom(i)
                 end do
             end do
         end if
@@ -661,16 +661,16 @@ contains
             write(unit_data, *)
             cpt_angle = 1
             cpt_atom = 0
-            do i = 1, res%number
+            do i = 1, residue_info%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, res%angles(i)
+                    do k = 1, residue_info%angles(i)
                         write(unit_data, *) cpt_angle, connect%angles(i, k, 1), &
                             cpt_atom + connect%angles(i, k, 2), &
                             cpt_atom + connect%angles(i, k, 3), &
                             cpt_atom + connect%angles(i, k, 4)
                         cpt_angle = cpt_angle + 1
                     end do
-                    cpt_atom = cpt_atom + res%atom(i)
+                    cpt_atom = cpt_atom + residue_info%atom(i)
                 end do
             end do
         end if
@@ -682,9 +682,9 @@ contains
             write(unit_data, *)
             cpt_dihedral = 1
             cpt_atom = 0
-            do i = 1, res%number
+            do i = 1, residue_info%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, res%dihedrals(i)
+                    do k = 1, residue_info%dihedrals(i)
                         write(unit_data, *) cpt_dihedral, connect%dihedrals(i, k, 1), &
                             cpt_atom + connect%dihedrals(i, k, 2), &
                             cpt_atom + connect%dihedrals(i, k, 3), &
@@ -692,7 +692,7 @@ contains
                             cpt_atom + connect%dihedrals(i, k, 5)
                         cpt_dihedral= cpt_dihedral + 1
                     end do
-                    cpt_atom = cpt_atom + res%atom(i)
+                    cpt_atom = cpt_atom + residue_info%atom(i)
                 end do
             end do
         end if
@@ -704,9 +704,9 @@ contains
             write(unit_data, *)
             cpt_improper = 1
             cpt_atom = 0
-            do i = 1, res%number
+            do i = 1, residue_info%number
                 do j = 1, box%num%residues(i)
-                    do k = 1, res%impropers(i)
+                    do k = 1, residue_info%impropers(i)
                         write(unit_data, *) cpt_improper, connect%impropers(i, k, 1), &
                             cpt_atom + connect%impropers(i, k, 2), &
                             cpt_atom + connect%impropers(i, k, 3), &
@@ -714,7 +714,7 @@ contains
                             cpt_atom + connect%impropers(i, k, 5)
                         cpt_improper= cpt_improper + 1
                     end do
-                    cpt_atom = cpt_atom + res%atom(i)
+                    cpt_atom = cpt_atom + residue_info%atom(i)
                 end do
             end do
         end if

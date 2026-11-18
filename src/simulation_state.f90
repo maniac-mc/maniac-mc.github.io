@@ -240,7 +240,7 @@ module simulation_state
         character(len=10), allocatable :: names(:)              ! Array of residue names
         character(len=10), dimension(:, :), allocatable :: site_names ! Site names for each residue
     end type type_residue
-    type(type_residue) :: res
+    type(type_residue) :: residue_info
 
     !---------------------------------------------------------------------------
     ! Monte Carlo parameters provided in the input file

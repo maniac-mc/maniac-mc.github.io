@@ -100,16 +100,16 @@ contains
         integer :: nb_type_res
         integer :: max_type_per_res
 
-        nb_type_res = res%number
+        nb_type_res = residue_info%number
         max_type_per_res = max_counts%types_per_residue
 
         ! Allocate per residue arrays
-        allocate(res%lambda(nb_type_res))
-        allocate(res%mass(nb_type_res))
-        allocate(res%names(nb_type_res))
-        allocate(res%atom(nb_type_res))
-        allocate(res%site_types(nb_type_res, max_type_per_res))
-        allocate(res%site_names(nb_type_res, max_type_per_res))
+        allocate(residue_info%lambda(nb_type_res))
+        allocate(residue_info%mass(nb_type_res))
+        allocate(residue_info%names(nb_type_res))
+        allocate(residue_info%atom(nb_type_res))
+        allocate(residue_info%site_types(nb_type_res, max_type_per_res))
+        allocate(residue_info%site_names(nb_type_res, max_type_per_res))
 
         ! Allocate atom arrays for primary and reservoir
         call allocate_coordinate(host, .true.)
@@ -117,7 +117,7 @@ contains
         if (status%reservoir_provided) then
             call allocate_coordinate(reservoir_coord, .false.)
         end if
-        allocate(res%role(nb_type_res))
+        allocate(residue_info%role(nb_type_res))
 
         call allocate_atom_block(primary)
         call allocate_atom_block(reservoir)
@@ -141,12 +141,12 @@ contains
         allocate(thermo%mu_set(nb_type_res))
 
         ! Allocate system bookkeeping arrays
-        allocate(res%types(nb_type_res))
-        allocate(res%bonds(nb_type_res))
-        allocate(res%angles(nb_type_res))
-        allocate(res%dihedrals(nb_type_res))
-        allocate(res%impropers(nb_type_res))
-        allocate(res%pattern_types(nb_type_res, max_counts%atoms_per_residue))
+        allocate(residue_info%types(nb_type_res))
+        allocate(residue_info%bonds(nb_type_res))
+        allocate(residue_info%angles(nb_type_res))
+        allocate(residue_info%dihedrals(nb_type_res))
+        allocate(residue_info%impropers(nb_type_res))
+        allocate(residue_info%pattern_types(nb_type_res, max_counts%atoms_per_residue))
 
     end subroutine allocate_atom_arrays
 
@@ -160,14 +160,14 @@ contains
         type(type_box), intent(inout) :: system
 
         ! Allocate basic atom properties
-        allocate(system%atoms%charges(res%number, max_counts%atoms_per_residue))
-        allocate(system%atoms%mass_by_site(res%number, max_counts%atoms_per_residue))
-        allocate(system%atoms%names(res%number, max_counts%atoms_per_residue))
-        allocate(system%atoms%types(res%number, max_counts%atoms_per_residue))
-        allocate(system%atoms%ids(res%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%charges(residue_info%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%mass_by_site(residue_info%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%names(residue_info%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%types(residue_info%number, max_counts%atoms_per_residue))
+        allocate(system%atoms%ids(residue_info%number, max_counts%atoms_per_residue))
 
         ! Allocate residue counters
-        allocate(system%num%residues(res%number))
+        allocate(system%num%residues(residue_info%number))
 
     end subroutine allocate_atom_block
 
@@ -203,8 +203,8 @@ contains
         end if
 
         ! Allocate molecular coordinates
-        allocate(type%com(dim, res%number, max_molecule))
-        allocate(type%offset(dim, res%number, max_molecule, max_atom))
+        allocate(type%com(dim, residue_info%number, max_molecule))
+        allocate(type%offset(dim, residue_info%number, max_molecule, max_atom))
 
     end subroutine allocate_coordinate
 
@@ -261,7 +261,7 @@ contains
 
         ! Initialize state
         in_residue_block = .false.
-        res%number = 0
+        residue_info%number = 0
 
         ! Initialize all fugacities to -1.0 (indicating unset)
         thermo%fugacity(:) = -one
@@ -398,7 +398,7 @@ contains
 
             case ("end_residue")
                 in_residue_block = .false.
-                res%number = res%number + 1
+                residue_info%number = residue_info%number + 1
                 cycle
 
             case default
@@ -419,15 +419,15 @@ contains
                 if (trim(token) == "name") then
 
                     ! Store the residue name in the 1D array of residue names
-                    res%names(res%number + 1) = trim(val_cha)
+                    residue_info%names(residue_info%number + 1) = trim(val_cha)
 
                 ! Store the activity state of the residue: active (1) or inactive (0)
                 else if (trim(token) == "state") then
                     select case (trim(val_cha))
                         case ("actif")
-                            thermo%is_active(res%number + 1) = .true.
+                            thermo%is_active(residue_info%number + 1) = .true.
                         case ("inactif")
-                            thermo%is_active(res%number + 1) = .false.
+                            thermo%is_active(residue_info%number + 1) = .false.
                         case default
                             call warn_user("Unknown state: " // trim(val_cha))
                             call abort_run("Unknown residue state")
@@ -452,20 +452,20 @@ contains
                 if (trim(token) == 'fugacity') then
                     read(rest_line, *, iostat=ios) val_real
                     if (ios /= 0) call abort_run("Error reading fugacity")
-                    thermo%fugacity(res%number + 1) = val_real
-                    thermo%fugacity_set(res%number + 1) = .true.
+                    thermo%fugacity(residue_info%number + 1) = val_real
+                    thermo%fugacity_set(residue_info%number + 1) = .true.
 
                 ! Check if the line specifies the chemical potential
                 else if (trim(token) == 'chemical_potential') then
                     read(rest_line, *, iostat=ios) val_real
                     if (ios /= 0) call abort_run("Error reading chemical potential")
-                    thermo%chemical_potential(res%number + 1) = val_real
-                    thermo%mu_set(res%number + 1) = .true.
+                    thermo%chemical_potential(residue_info%number + 1) = val_real
+                    thermo%mu_set(residue_info%number + 1) = .true.
 
                 ! Check if the line specifies the number of atoms
                 else if (trim(token) == 'nb-atoms') then
                     read(rest_line, *, iostat=ios) val_int
-                    res%atom(res%number + 1) = val_int
+                    residue_info%atom(residue_info%number + 1) = val_int
                 end if
             end if
 
@@ -489,10 +489,10 @@ contains
                     read(rest_line(pos:), *, iostat=ios) id_val
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%site_types(res%number + 1, n_ids) = id_val
+                    residue_info%site_types(residue_info%number + 1, n_ids) = id_val
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
-                res%types(res%number + 1) = n_ids
+                residue_info%types(residue_info%number + 1) = n_ids
 
             ! Parse the names of atom types for this residue
             else if (trim(token) == 'names') then
@@ -503,14 +503,14 @@ contains
                     read(rest_line(pos:), *, iostat=ios) val_str
                     if (ios /= 0) exit
                     n_ids = n_ids + 1
-                    res%site_names(res%number + 1, n_ids) = val_str
+                    residue_info%site_names(residue_info%number + 1, n_ids) = val_str
                     pos = pos + index(rest_line(pos:), ' ')
                 end do
             end if
         end do
 
         ! Validate fugacity for active residues
-        do val_int = 1, res%number
+        do val_int = 1, residue_info%number
 
             if (.not. thermo%is_active(val_int)) cycle
 
@@ -520,18 +520,18 @@ contains
             ! Rule 1: at least one must be provided
             if (.not.(has_fugacity .or. has_chemical_potential) .and. proba%insertion_deletion > 0) then
                 call abort_run("Chemical potential not provided for GCMC insert of active residue: " // &
-                            trim(res%names(val_int)))
+                            trim(residue_info%names(val_int)))
             end if
 
             ! Rule 2: cannot both be provided
             if (has_fugacity .and. has_chemical_potential) then
                 call abort_run("Both fugacity and chemical potential were specified for active residue: " // &
-                            trim(res%names(val_int)))
+                            trim(residue_info%names(val_int)))
             end if
 
             if (has_fugacity .and. thermo%fugacity(val_int) <= zero) then
                 call abort_run("Invalid fugacity (must be > 0) for residue " // &
-                            trim(res%names(val_int)))
+                            trim(residue_info%names(val_int)))
             end if
 
         end do
@@ -597,7 +597,7 @@ contains
         character(len=10), allocatable :: tmp_names_2d(:,:)
 
         ! Number of residues
-        n = res%number
+        n = residue_info%number
 
         ! Allocate temporary arrays
         allocate(keys(n), order(n))
@@ -609,12 +609,12 @@ contains
         allocate(tmp_chemical_potential(n))
         allocate(tmp_atom_in_residue(n))
         allocate(tmp_types_per_residue(n))
-        allocate(tmp_types_2d(size(res%site_types,1), size(res%site_types,2)))
-        allocate(tmp_names_2d(size(res%site_names,1), size(res%site_names,2)))
+        allocate(tmp_types_2d(size(residue_info%site_types,1), size(residue_info%site_types,2)))
+        allocate(tmp_names_2d(size(residue_info%site_names,1), size(residue_info%site_names,2)))
 
         ! Compute sorting key for each residue: minimum atom type ID
         do i = 1, n
-            keys(i) = minval(res%site_types(i, 1:res%types(i)))
+            keys(i) = minval(residue_info%site_types(i, 1:residue_info%types(i)))
         end do
 
         ! Initialize the order array to [1,2,3,...,n]
@@ -634,29 +634,29 @@ contains
         ! Reorder all residue arrays based on the computed order
         do i = 1, n
             k = order(i)
-            tmp_names_1d(i) = res%names(k)
+            tmp_names_1d(i) = residue_info%names(k)
             tmp_is_active(i) = thermo%is_active(k)
             tmp_fugacity_set(i) = thermo%fugacity_set(k)
             tmp_mu_set(i) = thermo%mu_set(k)
             tmp_fugacity(i) = thermo%fugacity(k)
             tmp_chemical_potential(i) = thermo%chemical_potential(k)
-            tmp_atom_in_residue(i) = res%atom(k)
-            tmp_types_per_residue(i) = res%types(k)
-            tmp_types_2d(i,:) = res%site_types(k,:)
-            tmp_names_2d(i,:) = res%site_names(k,:)
+            tmp_atom_in_residue(i) = residue_info%atom(k)
+            tmp_types_per_residue(i) = residue_info%types(k)
+            tmp_types_2d(i,:) = residue_info%site_types(k,:)
+            tmp_names_2d(i,:) = residue_info%site_names(k,:)
         end do
 
         ! Copy temporary arrays back into original arrays
-        res%names = tmp_names_1d
+        residue_info%names = tmp_names_1d
         thermo%is_active = tmp_is_active
         thermo%fugacity_set = tmp_fugacity_set
         thermo%mu_set = tmp_mu_set
         thermo%fugacity = tmp_fugacity
         thermo%chemical_potential = tmp_chemical_potential
-        res%atom = tmp_atom_in_residue
-        res%types  = tmp_types_per_residue
-        res%site_types = tmp_types_2d
-        res%site_names = tmp_names_2d
+        residue_info%atom = tmp_atom_in_residue
+        residue_info%types  = tmp_types_per_residue
+        residue_info%site_types = tmp_types_2d
+        residue_info%site_names = tmp_names_2d
 
         ! Deallocate temporary arrays
         deallocate(keys, order, tmp_names_1d, tmp_is_active, tmp_fugacity_set, tmp_mu_set, &
