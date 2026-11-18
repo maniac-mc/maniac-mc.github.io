@@ -196,11 +196,6 @@ contains
             call abort_run("Empty value after option "//trim(flag), 1)
         end if
 
-        ! Check empty value (e.g. "-i  ")
-        if (len_trim(tmp) == 0) then
-            call abort_run("Empty value after option "//trim(flag), 1)
-        end if
-
         value_out = trim(tmp)
 
     end subroutine expect_value

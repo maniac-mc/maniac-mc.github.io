@@ -523,9 +523,12 @@ contains
             has_fugacity = thermo%fugacity_set(val_int)
             has_chemical_potential = thermo%mu_set(val_int)
 
-            ! Rule 1: at least one must be provided
-            if (.not.(has_fugacity .or. has_chemical_potential) .and. proba%insertion_deletion > 0) then
-                call abort_run("Chemical potential not provided for GCMC insert of active residue: " // &
+            ! Rule 1: at least one of fugacity / chemical_potential must be provided
+            ! for every active residue when a move consumes the reservoir value
+            ! (GCMC insertion/deletion AND identity swap both use 
+            if (.not.(has_fugacity .or. has_chemical_potential) .and. &
+                (proba%insertion_deletion > 0 .or. proba%swap > 0)) then
+                call abort_run("Fugacity or chemical_potential missing for active residue: " // &
                             trim(residue_info%names(val_int)))
             end if
 
