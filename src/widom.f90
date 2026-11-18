@@ -87,7 +87,7 @@ contains
             statistic%weight(res_type) = statistic%weight(res_type) + weight
         end if
 
-        statistic%sample(res_type) = statistic%sample(res_type) + 1
+        statistic%n_widom(res_type) = statistic%n_widom(res_type) + 1
 
     end subroutine accumulate_widom_weight
 

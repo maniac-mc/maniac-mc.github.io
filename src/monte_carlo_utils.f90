@@ -595,11 +595,11 @@ contains
 
         ! Loop over all residue types
         do type_residue = 1, residue_info%number
-            if (statistic%sample(type_residue) > 0) then
+            if (statistic%n_widom(type_residue) > 0) then
 
                 ! Compute average Boltzmann factor from Widom sampling
                 ! <exp(-β ΔU)> = sum_weights / N_samples
-                avg_weight = statistic%weight(type_residue) / real(statistic%sample(type_residue), kind=real64)
+                avg_weight = statistic%weight(type_residue) / real(statistic%n_widom(type_residue), kind=real64)
 
                 ! Compute excess chemical potential (kcal/mol)
                 ! μ_ex = - k_B * T * ln(<exp(-β ΔU)>)

@@ -289,7 +289,7 @@ contains
                     ! Write the data line: block, excess mu, total mu, number of samples
                     write(line,'(I10,1X,F16.6,1X,F16.6,1X,I12)') nb_block, &
                         statistic%mu_ex(type_residue), statistic%mu_tot(type_residue), &
-                        statistic%sample(type_residue)
+                        statistic%n_widom(type_residue)
                     write(UNIT_WIDOM,'(A)') trim(line)
 
                     ! Close file

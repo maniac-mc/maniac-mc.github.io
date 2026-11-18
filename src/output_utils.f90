@@ -139,8 +139,8 @@ contains
 
         if (proba%widom > 0) then
             do type_residue = 1, residue_info%number
-                if (statistic%sample(type_residue) > 0) then
-                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", statistic%sample(type_residue)
+                if (statistic%n_widom(type_residue) > 0) then
+                    write(line,'(A,I3,A,I8)') "  Widom trials for residue ", type_residue, ": ", statistic%n_widom(type_residue)
                     call box_line(trim(line), BOX_WIDTH)
                     write(line,'(A,F12.5)') "    Excess chemical potential (kcal/mol): ", statistic%mu_ex(type_residue)
                     call box_line(trim(line), BOX_WIDTH)

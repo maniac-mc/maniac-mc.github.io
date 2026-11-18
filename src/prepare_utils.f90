@@ -92,12 +92,12 @@ contains
         ! Allocate widom
         if (proba%widom > 0) then
             allocate(statistic%weight(residue_info%number))
-            allocate(statistic%sample(residue_info%number))
+            allocate(statistic%n_widom(residue_info%number))
             allocate(statistic%mu_ex(residue_info%number))
             allocate(statistic%mu_tot(residue_info%number))
             ! Initialize to zero
             statistic%weight(:) = zero
-            statistic%sample(:) = zero
+            statistic%n_widom(:) = zero
         end if
 
         ! Allocate particle-number histogram (only meaningful when

@@ -170,7 +170,7 @@ module simulation_state
     ! Statistic accumulator
     !---------------------------------------------------------------------------
     type mc_stat_type
-        integer, dimension(:), allocatable :: sample        ! Indices or count of Widom trial samples
+        integer, dimension(:), allocatable :: n_widom       ! Indices or count of Widom trial samples
         real(real64), dimension(:), allocatable :: mu_ex    ! Excess chemical potential
         real(real64), dimension(:), allocatable :: mu_tot   ! Total chemical potential
         real(real64), dimension(:), allocatable :: weight   ! Accumulated Boltzmann weight sum for chemical potential
