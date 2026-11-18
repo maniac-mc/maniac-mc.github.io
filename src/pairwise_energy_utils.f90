@@ -67,8 +67,8 @@ contains
                         ! Read pair parameters
                         sigma = pair_coeff%sigma(res_i, res_j, atom_i, atom_j)           ! In Angstrom
                         epsilon = pair_coeff%epsilon(res_i, res_j, atom_i, atom_j)       ! In kcal/mol
-                        q_i = primary%atoms%charges(res_i, atom_i)                  ! In units of e
-                        q_j = primary%atoms%charges(res_j, atom_j)                  ! In units of e
+                        q_i = box%atoms%charges(res_i, atom_i)                  ! In units of e
+                        q_j = box%atoms%charges(res_j, atom_j)                  ! In units of e
 
                         ! Calculate the distance, accouting for periodic boundary conditions
                         r = minimum_image_distance(box, res_i, mol_i, atom_i, res_j, mol_j, atom_j)                      ! In Angstrom
@@ -155,6 +155,9 @@ contains
 
         ! Skip negligible charges and avoid division by zero
         if (abs(q_i) < tolerance .or. abs(q_j) < tolerance) return
+
+        ! Guard for  
+        if (r >= mc_input%real_space_cutoff) return
 
         ! Return large value if overlap
         if (r < tolerance) then
