@@ -1211,10 +1211,10 @@ contains
 
         ! Local variables
         integer :: i, j, k, cpt                 ! loop counters
-        integer :: detected_nb_max_molecule     ! track max molecules found
+        integer :: max_molecules_seen           ! track max molecules found
         character(len=200) :: formatted_msg     ! buffer for error/info messages
 
-        detected_nb_max_molecule = 0
+        max_molecules_seen = 0
 
         ! Initialize arrays inside box
         box%atoms%types = 0
@@ -1272,15 +1272,15 @@ contains
             end do
 
             ! Track maximum number of molecules detected among all types
-            if (box%num%residues(i) > detected_nb_max_molecule) detected_nb_max_molecule = box%num%residues(i)
+            if (box%num%residues(i) > max_molecules_seen) max_molecules_seen = box%num%residues(i)
 
         end do
 
         ! Global check: maximum allowed molecules
-        if (detected_nb_max_molecule > NB_MAX_MOLECULE) then
+        if (max_molecules_seen > NB_MAX_MOLECULE) then
             write(formatted_msg, '(A, I0)') "The number of molecules exceeds the maximum allowed = ", NB_MAX_MOLECULE
             call info_message(trim(formatted_msg))
-            write(formatted_msg, '(A, I0)') "Number of molecules found = ", detected_nb_max_molecule
+            write(formatted_msg, '(A, I0)') "Number of molecules found = ", max_molecules_seen
             call abort_run(trim(formatted_msg) // " Please increase 'NB_MAX_MOLECULE' in src/parameters.f90 and recompile.", 11)
         end if
 
