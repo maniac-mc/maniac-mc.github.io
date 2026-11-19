@@ -330,6 +330,9 @@ contains
 
     end function wrap_nearest
 
+    !-----------------------------------------------------------
+    ! Sort pair list by (p1,p2) for duplicate-pair detection
+    !-----------------------------------------------------------
     subroutine sort_pairs(n, p1, p2, eps, sig)
         integer, intent(in) :: n
         integer, intent(inout) :: p1(n), p2(n)

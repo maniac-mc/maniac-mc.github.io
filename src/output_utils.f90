@@ -186,6 +186,9 @@ contains
 
     end subroutine print_termination_message
 
+    !---------------------------------------------------------------------------
+    ! Print one status line: step, energies, step sizes, move counters
+    !---------------------------------------------------------------------------
     subroutine print_status()
 
         ! Local variables
@@ -354,6 +357,9 @@ contains
 
     end subroutine energy_report
 
+    !------------------------------------------------------------------------------
+    ! List unique atom-type pairs and their epsilon/sigma in the log
+    !------------------------------------------------------------------------------
     subroutine log_parameters(input_file_name, n_pairs, pair1, pair2, epsilons, sigmas)
 
         character(len=*), intent(in) :: input_file_name         ! Name of the parameter input file being processed
@@ -419,6 +425,9 @@ contains
         end do
     end subroutine log_parameters
 
+    !------------------------------------------------------------------------------
+    ! Log summary of a LAMMPS data file: counts, box, masses
+    !------------------------------------------------------------------------------
     subroutine LogData(data_file_name, box, is_reservoir)
 
         ! Input parameters
@@ -482,6 +491,9 @@ contains
 
     end subroutine LogData
 
+    !------------------------------------------------------------------------------
+    ! Log bonds/angles/dihedrals/impropers per residue (truncated)
+    !------------------------------------------------------------------------------
     subroutine LogConnectivity(box)
 
         ! Input
@@ -605,6 +617,9 @@ contains
 
     end subroutine LogConnectivity
 
+    !------------------------------------------------------------------------------
+    ! Print fatal error message and stop the run with exit_code
+    !------------------------------------------------------------------------------
     subroutine abort_run(error_msg, exit_code)
 
         ! Input parameters

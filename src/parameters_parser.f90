@@ -109,6 +109,9 @@ contains
 
     end subroutine read_parameters
 
+    !---------------------------------------------------------------
+    ! Fill missing cross pair_coeff via Lorentz-Berthelot mixing
+    !---------------------------------------------------------------
     subroutine apply_lorentz_berthelot()
 
         integer :: i, j, k, l               ! Loop indices for iterating over residues and atoms
