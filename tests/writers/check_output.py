@@ -32,7 +32,7 @@ NUM_RE = re.compile(r'^[-+]?[0-9.]')
 
 def parse_data_file(path):
     d = dict(header={}, bounds={}, tilt=None, masses={}, n_mass_lines=0,
-             atoms={}, n_atom_lines=0,
+             atoms={}, n_atom_lines=0, parse_errors=[],
              bonds=[], angles=[], dihedrals=[], impropers=[])
     section = None
     with open(path) as f:
@@ -59,6 +59,14 @@ def parse_data_file(path):
                 section = key if key in DATA_SECTIONS else None
                 continue
             p = line.split()
+            # expected column counts per section (atom_style full: id mol type q x y z)
+            min_cols = {'Masses': 2, 'Atoms': 7, 'Bonds': 4,
+                        'Angles': 5, 'Dihedrals': 6, 'Impropers': 6}
+            if section is not None and len(p) < min_cols[section]:
+                d['parse_errors'].append(
+                    f"{section} line has {len(p)} columns, expected at least "
+                    f"{min_cols[section]}: '{line}'")
+                continue
             if section == 'Masses':
                 d['n_mass_lines'] += 1
                 d['masses'][int(p[0])] = float(p[1])
@@ -154,12 +162,18 @@ def main():
     args = ap.parse_args()
 
     d = parse_data_file(args.output)
-    errs = check_structure(d)
+    errs = d.pop('parse_errors') + check_structure(d)
 
     if errs:
         for e in errs:
             print(f"FAIL {args.output}: {e}", file=sys.stderr)
         sys.exit(1)
+
+    h = d['header']
+    print(f"PASS {args.output}: LAMMPS-compatible, {h.get('atoms', '?')} atoms, "
+          f"{h.get('bonds', '?')} bonds, {h.get('angles', '?')} angles, "
+          f"{h.get('dihedrals', '?')} dihedrals, {h.get('impropers', '?')} impropers")
+
 
 if __name__ == '__main__':
     main()
