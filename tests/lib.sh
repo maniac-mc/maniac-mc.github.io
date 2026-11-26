@@ -45,6 +45,9 @@ MANIAC_INCLUDE_DIR="$MANIAC_REPO_ROOT/include"
 # CURRENT directory, links it against all maniac objects except main.o,
 # runs the resulting binary, and returns non-zero on the first failure
 # (compilation, linking or runtime).
+#
+# Test output is captured to <test>.log: shown only on failure, so passing
+# tests stay quiet even when the code under test logs a lot.
 compile_and_run_all_tests() {
     local pattern="${1:-test_*.f90}"
     local bin_dir="./build"
@@ -61,12 +64,13 @@ compile_and_run_all_tests() {
         return 1
     fi
 
-    local test_src test_name out_exe found=false
+    local test_src test_name out_exe log_file found=false
     for test_src in $pattern; do
         [[ -f "$test_src" ]] || continue
         found=true
         test_name="$(basename "$test_src" .f90)"
         out_exe="$bin_dir/$test_name"
+        log_file="$test_name.log"
 
         if ! gfortran -O2 -I"$MANIAC_INCLUDE_DIR" -I"$MANIAC_BUILD_DIR" -c "$test_src" -o "$test_name.o"; then
             echo "❌ [FAIL] $test_name (compilation error)"
@@ -77,11 +81,13 @@ compile_and_run_all_tests() {
             rm -f "$test_name.o"
             return 1
         fi
-        if "$out_exe"; then
+        if "$out_exe" > "$log_file" 2>&1; then
             echo "✅ [PASS] $test_name"
+            rm -f "$log_file"
         else
-            echo "❌ [FAIL] $test_name (runtime error)"
-            rm -f "$test_name.o"
+            echo "❌ [FAIL] $test_name (runtime error) - output:"
+            cat "$log_file"
+            rm -f "$log_file" "$test_name.o"
             return 1
         fi
         rm -f "$test_name.o"
