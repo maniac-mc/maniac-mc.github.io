@@ -169,11 +169,5 @@ def main():
             print(f"FAIL {args.output}: {e}", file=sys.stderr)
         sys.exit(1)
 
-    h = d['header']
-    print(f"PASS {args.output}: LAMMPS-compatible, {h.get('atoms', '?')} atoms, "
-          f"{h.get('bonds', '?')} bonds, {h.get('angles', '?')} angles, "
-          f"{h.get('dihedrals', '?')} dihedrals, {h.get('impropers', '?')} impropers")
-
-
 if __name__ == '__main__':
     main()
