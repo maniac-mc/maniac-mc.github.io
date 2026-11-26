@@ -24,62 +24,10 @@ jobs:
             make \
             makedepf90
 
-      - name: Run build.sh
+      - name: Build
         run: ./build.sh
 
-      # Install a pre-built LAMMPS binary usable for your writer tests
-      - name: Install LAMMPS
-        run: sudo apt-get update && sudo apt-get install -y lammps
-
-      # Run writer tests
-      - name: Run writer tests
-        working-directory: tests/writers
+      - name: Run all tests
         env:
           LMP: lmp
-        run: ./run-test.sh
-
-      # Run all reader tests
-      - name: Run all reader tests
-        run: |
-          for testdir in tests/readers/*; do
-            echo "Running reader test in $testdir"
-            (cd "$testdir" && ./run-test.sh)
-          done
-
-      # Run integration tests 1
-      - name: Run all integration tests
-        run: |
-          for testdir in tests/integration/energy/*; do
-            echo "Running test in $testdir"
-            (cd "$testdir" && ./run-test.sh)
-          done
-
-      # Run integration tests 2
-      - name: Run all integration tests
-        run: |
-          for testdir in tests/integration/energy-analytical/*; do
-            echo "Running test in $testdir"
-            (cd "$testdir" && ./run-test.sh)
-          done
-
-      # Run integration tests 3
-      - name: Run all integration tests
-        run: |
-          cd tests/integration/gcmc/
-          ./run-test.sh
-
-      # Run integration tests 4
-      - name: Run all integration tests
-        run: |
-          cd tests/integration/energy-drift/
-          ./run-test.sh
-
-      # Run unit tests
-      - name: Run all unit tests
-        working-directory: tests/units
-        run: ./run-test.sh
-
-      # Run CLI tests
-      - name: Run CLI tests
-        working-directory: tests/cli
-        run: ./run-test.sh
+        run: bash tests/run-all.sh
