@@ -105,8 +105,6 @@ def check_bonds(atoms, bonds, allowed_bonds):
 
         cpt_bond += 1
 
-    print(cpt_bond, "bonds found")
-
 def check_angles(atoms, angles, allowed_angles):
     """
     Stop immediately if any angle is inconsistent with allowed_angles.
@@ -133,8 +131,6 @@ def check_angles(atoms, angles, allowed_angles):
             
         cpt_angle += 1
 
-    print(cpt_angle, "angles found")
-
 def check_dihedrals(atoms, dihedrals, allowed_dihedrals):
     """
     Stop immediately if any dihedral is inconsistent with allowed_dihedrals.
@@ -160,8 +156,6 @@ def check_dihedrals(atoms, dihedrals, allowed_dihedrals):
                 )
             
         cpt_dihedral += 1
-
-    print(cpt_dihedral, "dihedrals found")
 
 def check_impropers(atoms, impropers, allowed_impropers):
     """
@@ -190,6 +184,3 @@ def check_impropers(atoms, impropers, allowed_impropers):
                 )
         
         cpt_improper += 1
-
-    print(cpt_improper, "impropers found")
-

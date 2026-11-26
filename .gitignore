@@ -30,3 +30,8 @@ dependencies.d
 # Documentation
 docs/build/*
 docs/source/xml/*
+
+# Test artifact
+tests/**/*.log
+tests/**/build/
+myoutput/
