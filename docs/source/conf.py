@@ -3,7 +3,7 @@
 project = 'MANIAC-MC'
 copyright = '2025, Simon Gravelle'
 author = 'Simon Gravelle'
-release = 'v0.4.0'
+release = 'v0.5.1'
 
 # -- General configuration ---------------------------------------------------
 extensions = [
