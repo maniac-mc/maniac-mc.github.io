@@ -5,9 +5,9 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Build and Run" href="build.html"><link rel="prev" title="MANIAC documentation" href="index.html">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
-        <title>Input Files - MANIAC-MC v0.4.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=acfd86a5" />
+    <!-- Generated with Sphinx 9.2.0 and Furo 2025.12.19 -->
+        <title>Input Files - MANIAC-MC v0.5.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -161,7 +161,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">MANIAC-MC v0.4.0 documentation</div></a>
+      <a href="index.html"><div class="brand">MANIAC-MC v0.5.1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -182,7 +182,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text">MANIAC-MC v0.4.0 documentation</span>
+  <span class="sidebar-brand-text">MANIAC-MC v0.5.1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -237,50 +237,55 @@
         <article role="main" id="furo-main-content">
           <section id="input-files">
 <h1>Input Files<a class="headerlink" href="#input-files" title="Link to this heading">¶</a></h1>
-<p>This page describes the structure and parameters of the input file
-used by the <strong>MANIAC</strong> Monte Carlo simulation program. Each line in the file
-specifies a parameter and its value. Lines starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> are comments
-and are ignored by the program.</p>
+<p>This page describes the structure and parameters of the <strong>input file</strong>
+passed to <strong>MANIAC</strong> with the <code class="docutils literal notranslate"><span class="pre">-i</span></code> command-line flag (see <a class="reference internal" href="build.html"><span class="doc">Build and Run</span></a> for
+the full command line). Each line specifies a parameter and its value.
+Lines starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> are comments, blank lines are ignored, and any
+unknown keyword outside a residue block makes the program abort with an
+error.</p>
+<p>All quantities use the following units: lengths in Å, energies in kcal/mol,
+temperatures in K, angles in radians.</p>
 <section id="minimal-example">
 <h2>Minimal Example<a class="headerlink" href="#minimal-example" title="Link to this heading">¶</a></h2>
-<p>Below is a minimal example for a system with two residue types: water molecules
-(the active species) and ZIF-8 (the rigid host framework).</p>
+<p>Below is a minimal example for water adsorption in a rigid ZIF-8 framework
+(the active species is water, the host framework is rigid).</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span># Input for maniac program
 
 # Generic parameters
 nb_block 200                     # Number of Monte Carlo blocks
 nb_step 1000                     # Number of Monte Carlo steps per block
 temperature 300                  # Simulation temperature (K)
+seed 8743                        # RNG seed (omit for a random seed)
 
 # Electrostatic interactions
-ewald_tolerance 1e-5             # Ewald convergence tolerance (smaller = more accurate, slower)
-real_space_cutoff 17             # Real-space cutoff distance for electrostatics (Å)
+ewald_tolerance 1e-5             # Ewald convergence tolerance
+real_space_cutoff 17             # Real-space cutoff for electrostatics (Å)
 
 # Monte Carlo moves
 translation_step 1               # Maximum translational displacement (Å)
 rotation_step_angle 0.685        # Maximum rotation angle (radians)
-recalibrate_moves true           # Automatically tune step sizes to keep acceptance ~optimal
+recalibrate_moves true           # Automatically tune step sizes for target acceptance
 
-translation_proba 0.4            # Probability of attempting a translation move
-rotation_proba 0.4               # Probability of attempting a rotation move
-insertion_deletion_proba 0.2     # Probability of attempting insertion or deletion of molecules
+translation_proba 0.4            # Relative weight of translation moves
+rotation_proba 0.4               # Relative weight of rotation moves
+insertion_deletion_proba 0.2     # Relative weight of insertion/deletion moves
 
 # Define residue composition and activity
 begin_residue
-name wat                       # Residue name: water
-state actif                    # &quot;actif&quot; = subject to MC moves
-fugacity 10000                 # Reservoir fugacity (driving force for adsorption)
-types 1 2 3                    # Atom type IDs for this residue
-names Ow Mw Hw                 # Atom names: oxygen, virtual site, hydrogens
-nb-atoms 4                     # Number of atoms in this residue
+  name wat                       # Residue name: water
+  state actif                    # &quot;actif&quot; = subject to MC moves
+  fugacity 0.5                   # Reservoir fugacity (activity) of water
+  types 1 2 3                    # Atom type IDs present in the residue
+  names Ow Mw Hw                 # Atom names: O, virtual site, H
+  nb-atoms 4                     # Atoms per molecule (TIP4P: Ow Mw Hw Hw)
 end_residue
 
 begin_residue
-name zif                       # Residue name: ZIF-8 framework
-state inactif                  # &quot;inactif&quot; = rigid, no MC moves applied
-types 4 5 6 7 8 9 10 11        # Atom type IDs for the framework
-names Zn C1 C2 H1 C3 H2 H3 N   # Atom names in ZIF-8 (Zn, carbons, hydrogens, nitrogen)
-nb-atoms 2208                  # Total number of atoms in the framework
+  name zif                       # Residue name: ZIF-8 framework
+  state inactif                  # &quot;inactif&quot; = rigid, no MC moves applied
+  types 4 5 6 7 8 9 10 11        # Atom type IDs of the framework
+  names Zn C1 C2 H1 C3 H2 H3 N
+  nb-atoms 2208                  # Total number of atoms in the framework
 end_residue
 </pre></div>
 </div>
@@ -288,115 +293,176 @@ end_residue
 <ul class="simple">
 <li><p>The first residue block defines a TIP4P water molecule (<code class="docutils literal notranslate"><span class="pre">wat</span></code>).</p></li>
 <li><p>It is marked as <strong>actif</strong>, meaning Monte Carlo moves (translation,
-rotation, insertion, deletion) will be attempted.</p></li>
-<li><p>A high fugacity (<code class="docutils literal notranslate"><span class="pre">10000</span> <span class="pre">atm</span></code>) is used to mimics a rapid adsorption.</p></li>
-<li><p>Atom types (1 2 3) and names (Ow Mw Hw) correspond to the oxygen (Ow),
-a virtual site (Mw) and hydrogen atoms (Hw),</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">nb-atoms</span> <span class="pre">4</span></code> specifies the number of atoms in a molecule.</p></li>
-<li><p>The second residue block defines the <strong>ZIF-8 framework</strong> (<code class="docutils literal notranslate"><span class="pre">zif</span></code>).</p></li>
-<li><p>It is marked as <strong>inactif</strong>, so it remains rigid and is not subject to Monte
-Carlo moves.</p></li>
-<li><p>Atom types and names (Zn C1 C2 H1 C3 H2 H3 N) represent the crystallographic
-composition of ZIF-8.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">nb-atoms</span> <span class="pre">2208</span></code> specifies the number of atoms in the framework.</p></li>
+rotation, insertion, deletion) will be attempted on it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fugacity</span></code> is the reservoir fugacity, used as a dimensionless activity:
+internally <code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">=</span> <span class="pre">ln(fugacity)</span> <span class="pre">/</span> <span class="pre">beta</span></code> (kcal/mol). No unit conversion is
+applied, so do not read the value as a pressure in atm or bar.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">types</span> <span class="pre">1</span> <span class="pre">2</span> <span class="pre">3</span></code> and <code class="docutils literal notranslate"><span class="pre">names</span> <span class="pre">Ow</span> <span class="pre">Mw</span> <span class="pre">Hw</span></code> list the <em>distinct</em> site types of the
+molecule (oxygen Ow, virtual site Mw, hydrogen Hw), while <code class="docutils literal notranslate"><span class="pre">nb-atoms</span> <span class="pre">4</span></code>
+counts all atoms including the repeated Hw site.</p></li>
+<li><p>The second residue block defines the <strong>ZIF-8 framework</strong> (<code class="docutils literal notranslate"><span class="pre">zif</span></code>). It is
+marked as <strong>inactif</strong>, so it remains rigid and is not subject to Monte
+Carlo moves. Its types/names describe the crystallographic composition,
+and <code class="docutils literal notranslate"><span class="pre">nb-atoms</span> <span class="pre">2208</span></code> is the total number of framework atoms.</p></li>
 </ul>
-<p>The probabilities for translation, rotation, big moves, and insertion/deletion
-(<cite>translation_proba</cite>, <cite>rotation_proba</cite>, <cite>big_move_proba</cite>,
-<cite>insertion_deletion_proba</cite>) do not need to sum to 1. When all probabilities are
-provided, <strong>MANIAC</strong> will automatically rescale them so that their total equals 1.
-This ensures that at each Monte Carlo step, one move is chosen according to the
-relative weights of the provided probabilities.</p>
 </section>
 <section id="simulation-control">
 <h2>Simulation Control<a class="headerlink" href="#simulation-control" title="Link to this heading">¶</a></h2>
-<section id="number-of-blocks">
-<h3>Number of blocks<a class="headerlink" href="#number-of-blocks" title="Link to this heading">¶</a></h3>
-<p><strong>nb_block</strong> (Integer, required)
-Number of Monte Carlo <strong>blocks</strong> to run.
-A block is a group of MC steps used for statistical averaging.</p>
-</section>
-<section id="number-of-steps-per-block">
-<h3>Number of steps per block<a class="headerlink" href="#number-of-steps-per-block" title="Link to this heading">¶</a></h3>
-<p><strong>nb_step</strong> (Integer, required)
-Number of Monte Carlo <strong>steps</strong> per block.</p>
-</section>
-<section id="simulation-temperature">
-<h3>Simulation temperature<a class="headerlink" href="#simulation-temperature" title="Link to this heading">¶</a></h3>
-<p><strong>temperature</strong> (Float, required, units: K)
-Target simulation temperature.</p>
-</section>
-<section id="random-seed">
-<h3>Random seed<a class="headerlink" href="#random-seed" title="Link to this heading">¶</a></h3>
-<p><strong>seed</strong> (Integer, optional, default: random)
-Initial seed for the random number generator. Using the same seed
-will reproduce identical simulation trajectories.
-If omitted, the seed is chosen randomly.</p>
-</section>
+<dl class="simple">
+<dt><strong>nb_block</strong> (integer, <em>required</em>)</dt><dd><p>Number of Monte Carlo <strong>blocks</strong> to run. A block is a group of MC steps
+used for statistical averaging (one line per block in <code class="docutils literal notranslate"><span class="pre">energy.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">moves.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">number_&lt;name&gt;.dat</span></code>).</p>
+</dd>
+<dt><strong>nb_step</strong> (integer, <em>required</em>)</dt><dd><p>Number of Monte Carlo <strong>steps</strong> per block. One move is attempted per step.</p>
+</dd>
+<dt><strong>temperature</strong> (float, <em>required</em>, K, must be &gt; 0)</dt><dd><p>Target simulation temperature.</p>
+</dd>
+<dt><strong>seed</strong> (integer, <em>optional</em>, default: random)</dt><dd><p>Initial seed of the random number generator. The same seed reproduces the
+same trajectory; if omitted, a random seed is drawn.</p>
+</dd>
+</dl>
 </section>
 <section id="electrostatics">
 <h2>Electrostatics<a class="headerlink" href="#electrostatics" title="Link to this heading">¶</a></h2>
-<section id="ewald-summation-tolerance">
-<h3>Ewald summation tolerance<a class="headerlink" href="#ewald-summation-tolerance" title="Link to this heading">¶</a></h3>
-<p><strong>ewald_tolerance</strong> (Float, optional, default: 1e-6)
-Convergence tolerance for Ewald summation of electrostatic interactions.
-Smaller values increase accuracy but increase cost.</p>
-</section>
-<section id="real-space-cutoff-distance">
-<h3>Real-space cutoff distance<a class="headerlink" href="#real-space-cutoff-distance" title="Link to this heading">¶</a></h3>
-<p><strong>real_space_cutoff</strong> (Float, optional, default: 10 Å)
-Cutoff distance in real space for electrostatics.</p>
-</section>
+<dl class="simple">
+<dt><strong>ewald_tolerance</strong> (float, <em>required</em>, must be &gt; 0)</dt><dd><p>Convergence tolerance of the Ewald summation for electrostatic
+interactions. Smaller values are more accurate but more expensive.</p>
+</dd>
+<dt><strong>real_space_cutoff</strong> (float, <em>required</em>, Å, must be &gt; 0)</dt><dd><p>Real-space cutoff distance for electrostatics (and for Lennard-Jones
+interactions).</p>
+</dd>
+</dl>
 </section>
 <section id="monte-carlo-moves">
 <h2>Monte Carlo Moves<a class="headerlink" href="#monte-carlo-moves" title="Link to this heading">¶</a></h2>
-<section id="maximum-translation-step">
-<h3>Maximum translation step<a class="headerlink" href="#maximum-translation-step" title="Link to this heading">¶</a></h3>
-<p><strong>translation_step</strong> (Float, required, units: Å)
-Maximum translational displacement allowed in a move.</p>
-</section>
-<section id="maximum-rotation-angle">
-<h3>Maximum rotation angle<a class="headerlink" href="#maximum-rotation-angle" title="Link to this heading">¶</a></h3>
-<p><strong>rotation_step_angle</strong> (Float, required, units: radians)
-Maximum rotation angle allowed in a move.</p>
-</section>
-<section id="recalibrate-moves-automatically">
-<h3>Recalibrate moves automatically<a class="headerlink" href="#recalibrate-moves-automatically" title="Link to this heading">¶</a></h3>
-<p><strong>recalibrate_moves</strong> (Boolean, optional, default: false)
-If true, automatically adjust step sizes to maintain acceptance ratios.</p>
-</section>
+<dl class="simple">
+<dt><strong>translation_step</strong> (float, <em>required</em>, Å)</dt><dd><p>Maximum translational displacement of a trial move.</p>
+</dd>
+<dt><strong>rotation_step_angle</strong> (float, <em>required</em>, radians)</dt><dd><p>Maximum rotation angle of a trial move.</p>
+</dd>
+<dt><strong>recalibrate_moves</strong> (boolean, <em>optional</em>, default: <code class="docutils literal notranslate"><span class="pre">false</span></code>)</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">true</span></code>, step sizes are automatically adjusted during the run to keep
+the acceptance ratio near its target.</p>
+</dd>
+<dt><strong>histogram_every</strong> (integer, <em>optional</em>, default: <code class="docutils literal notranslate"><span class="pre">nb_step</span></code>, must be &gt;= 1)</dt><dd><p>Sampling interval, in MC steps, of the particle-number histogram
+(<code class="docutils literal notranslate"><span class="pre">histogram_&lt;name&gt;.dat</span></code>). The default samples once per block.</p>
+</dd>
+</dl>
 <section id="move-probabilities">
 <h3>Move probabilities<a class="headerlink" href="#move-probabilities" title="Link to this heading">¶</a></h3>
+<p>The five move types are selected with relative weights that do <strong>not</strong> need
+to sum to 1: when all probabilities are provided, <strong>MANIAC</strong> automatically
+rescales them (with a warning) so that their total equals 1. This ensures
+that at each Monte Carlo step, one move is chosen according to the relative
+weights of the provided probabilities.</p>
 <ul class="simple">
-<li><p><strong>translation_proba</strong> (Float, optional, default: 0.0)
-Probability of attempting a translation move.</p></li>
-<li><p><strong>rotation_proba</strong> (Float, optional, default: 0.0)
-Probability of attempting a rotation move.</p></li>
-<li><p><strong>big_move_proba</strong> (Float, optional, default: 0.0)
-Probability of attempting a “big” displacement move.</p></li>
-<li><p><strong>insertion_deletion_proba</strong> (Float, optional, default: 0.0)
-Probability of attempting a molecule insertion or deletion.</p></li>
+<li><p><strong>translation_proba</strong> (float, <em>optional</em>, default: 0.0) — translation moves.</p></li>
+<li><p><strong>rotation_proba</strong> (float, <em>optional</em>, default: 0.0) — rotation moves.</p></li>
+<li><p><strong>insertion_deletion_proba</strong> (float, <em>optional</em>, default: 0.0) — insertion
+or deletion of a whole molecule (grand-canonical move).</p></li>
+<li><p><strong>swap_proba</strong> (float, <em>optional</em>, default: 0.0) — swap of a molecule with
+another species of the reservoir (semi-grand move).</p></li>
+<li><p><strong>widom_proba</strong> (float, <em>optional</em>, default: 0.0) — Widom test-particle
+insertions (used to measure the chemical potential).</p></li>
+</ul>
+<p>Rules enforced at parse time:</p>
+<ul class="simple">
+<li><p>At least one probability must be non-zero, otherwise the run aborts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">widom_proba</span></code> and <code class="docutils literal notranslate"><span class="pre">insertion_deletion_proba</span></code> cannot both be non-zero.</p></li>
 </ul>
 </section>
 </section>
 <section id="residue-definition">
 <h2>Residue Definition<a class="headerlink" href="#residue-definition" title="Link to this heading">¶</a></h2>
-<p>A residue block defines the composition and properties of each molecule type.
-Each block starts with <code class="docutils literal notranslate"><span class="pre">begin_residue</span></code> and ends with <code class="docutils literal notranslate"><span class="pre">end_residue</span></code>.</p>
+<p>A residue block defines one molecule type (or one rigid framework). Each
+block starts with <code class="docutils literal notranslate"><span class="pre">begin_residue</span></code> and ends with <code class="docutils literal notranslate"><span class="pre">end_residue</span></code>. After
+parsing, residues are sorted internally by their smallest atom type ID.</p>
 <p>Residue parameters:</p>
 <ul class="simple">
-<li><p><strong>name</strong> (String, required): Residue name (e.g., <code class="docutils literal notranslate"><span class="pre">CO2</span></code>, <code class="docutils literal notranslate"><span class="pre">H2O</span></code>, <code class="docutils literal notranslate"><span class="pre">MOF</span></code>).</p></li>
-<li><p><strong>state</strong> (String, required): <code class="docutils literal notranslate"><span class="pre">actif</span></code> (active, subject to MC moves) or <code class="docutils literal notranslate"><span class="pre">inactif</span></code> (rigid).</p></li>
-<li><p><strong>fugacity</strong> (Float, optional, units: bar): Chemical potential of the residue.</p></li>
-<li><p><strong>types</strong> (List of Integers, required): Atom type IDs for atoms in the residue.</p></li>
-<li><p><strong>names</strong> (List of Strings, required): Atom names corresponding to atom types.</p></li>
-<li><p><strong>nb-atoms</strong> (Integer, required): Number of atoms in one residue.</p></li>
+<li><p><strong>name</strong> (string) — residue name, used in output file names
+(<code class="docutils literal notranslate"><span class="pre">number_&lt;name&gt;.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">histogram_&lt;name&gt;.dat</span></code>).</p></li>
+<li><p><strong>state</strong> (string) — <code class="docutils literal notranslate"><span class="pre">actif</span></code> (subject to MC moves) or <code class="docutils literal notranslate"><span class="pre">inactif</span></code>
+(rigid; only wrapped at the periodic boundaries). Any other value aborts.</p></li>
+<li><p><strong>types</strong> (list of integers) — atom type IDs present in the residue. They
+must match the type IDs used for this residue in the LAMMPS data file
+(<code class="docutils literal notranslate"><span class="pre">-d</span></code>). Note this lists the <em>distinct</em> site types: for TIP4P water,
+<code class="docutils literal notranslate"><span class="pre">types</span> <span class="pre">1</span> <span class="pre">2</span> <span class="pre">3</span></code> covers Ow, Mw and Hw even though the molecule has 4 atoms.</p></li>
+<li><p><strong>names</strong> (list of strings) — atom names corresponding to <code class="docutils literal notranslate"><span class="pre">types</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">Ow</span> <span class="pre">Mw</span> <span class="pre">Hw</span></code>).</p></li>
+<li><p><strong>nb-atoms</strong> (integer) — total number of atoms in one molecule, including
+repeated sites (so <code class="docutils literal notranslate"><span class="pre">nb-atoms</span> <span class="pre">4</span></code> for TIP4P water with 3 listed types).</p></li>
+<li><p><strong>fugacity</strong> (float, must be &gt; 0) — reservoir fugacity (activity) of the
+residue. Internally the chemical potential is derived as
+<code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">=</span> <span class="pre">ln(fugacity)</span> <span class="pre">/</span> <span class="pre">beta</span></code> (kcal/mol).</p></li>
+<li><p><strong>chemical_potential</strong> (float, kcal/mol) — alternative to <code class="docutils literal notranslate"><span class="pre">fugacity</span></code>:
+specify the chemical potential directly.</p></li>
+</ul>
+<p>Rules for <code class="docutils literal notranslate"><span class="pre">fugacity</span></code> / <code class="docutils literal notranslate"><span class="pre">chemical_potential</span></code>:</p>
+<ul class="simple">
+<li><p>They are mutually exclusive for a given residue (specifying both aborts).</p></li>
+<li><p>For an <code class="docutils literal notranslate"><span class="pre">actif</span></code> residue, one of them is <em>required</em> whenever
+<code class="docutils literal notranslate"><span class="pre">insertion_deletion_proba</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">swap_proba</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> (the moves need a
+reservoir chemical potential). Pure NVT runs (translation/rotation only)
+do not need either.</p></li>
+</ul>
+</section>
+<section id="id1">
+<h2>Residue Definition<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>A residue block defines one molecule type (or one rigid framework). Each
+block starts with <code class="docutils literal notranslate"><span class="pre">begin_residue</span></code> and ends with <code class="docutils literal notranslate"><span class="pre">end_residue</span></code>. After
+parsing, residues are sorted internally by their smallest atom type ID.</p>
+<p>Residue parameters:</p>
+<ul class="simple">
+<li><p><strong>name</strong> (string) — residue name, used in output file names
+(<code class="docutils literal notranslate"><span class="pre">number_&lt;name&gt;.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">histogram_&lt;name&gt;.dat</span></code>).</p></li>
+<li><p><strong>state</strong> (string) — <code class="docutils literal notranslate"><span class="pre">actif</span></code> (subject to MC moves) or <code class="docutils literal notranslate"><span class="pre">inactif</span></code>
+(rigid; only wrapped at the periodic boundaries). Any other value aborts.</p></li>
+<li><p><strong>types</strong> (list of integers) — atom type IDs present in the residue. They
+must match the type IDs used for this residue in the LAMMPS data file
+(<code class="docutils literal notranslate"><span class="pre">-d</span></code>). Note this lists the <em>distinct</em> site types: for TIP4P water,
+<code class="docutils literal notranslate"><span class="pre">types</span> <span class="pre">1</span> <span class="pre">2</span> <span class="pre">3</span></code> covers Ow, Mw and Hw even though the molecule has 4 atoms.</p></li>
+<li><p><strong>names</strong> (list of strings) — atom names corresponding to <code class="docutils literal notranslate"><span class="pre">types</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">Ow</span> <span class="pre">Mw</span> <span class="pre">Hw</span></code>).</p></li>
+<li><p><strong>nb-atoms</strong> (integer) — total number of atoms in one molecule, including
+repeated sites (so <code class="docutils literal notranslate"><span class="pre">nb-atoms</span> <span class="pre">4</span></code> for TIP4P water with 3 listed types).</p></li>
+<li><p><strong>fugacity</strong> (float, must be &gt; 0) — reservoir fugacity (activity) of the
+residue. Internally the chemical potential is derived as
+<code class="docutils literal notranslate"><span class="pre">mu</span> <span class="pre">=</span> <span class="pre">ln(fugacity)</span> <span class="pre">/</span> <span class="pre">beta</span></code> (kcal/mol).</p></li>
+<li><p><strong>chemical_potential</strong> (float, kcal/mol) — alternative to <code class="docutils literal notranslate"><span class="pre">fugacity</span></code>:
+specify the chemical potential directly.</p></li>
+</ul>
+<p>Rules for <code class="docutils literal notranslate"><span class="pre">fugacity</span></code> / <code class="docutils literal notranslate"><span class="pre">chemical_potential</span></code>:</p>
+<ul class="simple">
+<li><p>They are mutually exclusive for a given residue (specifying both aborts).</p></li>
+<li><p>For an <code class="docutils literal notranslate"><span class="pre">actif</span></code> residue, one of them is <em>required</em> whenever
+<code class="docutils literal notranslate"><span class="pre">insertion_deletion_proba</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">swap_proba</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> (the moves need a
+reservoir chemical potential). Pure NVT runs (translation/rotation only)
+do not need either.</p></li>
+</ul>
+</section>
+<section id="files-and-outputs">
+<h2>Files and outputs<a class="headerlink" href="#files-and-outputs" title="Link to this heading">¶</a></h2>
+<p>The input file itself only holds the parameters above; the simulation files
+are given on the command line (see <a class="reference internal" href="build.html"><span class="doc">Build and Run</span></a>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-i</span></code> : this input file (<code class="docutils literal notranslate"><span class="pre">.maniac</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d</span></code> : LAMMPS data file of the simulation box (<code class="docutils literal notranslate"><span class="pre">topology.data</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-p</span></code> : LAMMPS parameter file (<code class="docutils literal notranslate"><span class="pre">parameters.inc</span></code>: masses, pair/bond/angle
+coefficients)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o</span></code> : output folder (created if missing); receives <code class="docutils literal notranslate"><span class="pre">log.maniac</span></code>,
+<code class="docutils literal notranslate"><span class="pre">outputs/topology.data</span></code>, <code class="docutils literal notranslate"><span class="pre">trajectory.lammpstrj</span></code>, <code class="docutils literal notranslate"><span class="pre">energy.dat</span></code>,
+<code class="docutils literal notranslate"><span class="pre">moves.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">number_&lt;name&gt;.dat</span></code>, <code class="docutils literal notranslate"><span class="pre">histogram_&lt;name&gt;.dat</span></code>, …</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-r</span></code> : optional LAMMPS data file of the molecule reservoir (required for
+swap moves)</p></li>
 </ul>
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>Parameter order is not strict.</p></li>
-<li><p>Each residue must be fully enclosed between <code class="docutils literal notranslate"><span class="pre">begin_residue</span></code> and <code class="docutils literal notranslate"><span class="pre">end_residue</span></code>.</p></li>
+<li><p>Parameter order is not strict, but each residue must be fully enclosed
+between <code class="docutils literal notranslate"><span class="pre">begin_residue</span></code> and <code class="docutils literal notranslate"><span class="pre">end_residue</span></code>.</p></li>
+<li><p>Values must be positive where physically required (<code class="docutils literal notranslate"><span class="pre">temperature</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ewald_tolerance</span></code>, <code class="docutils literal notranslate"><span class="pre">real_space_cutoff</span></code>, <code class="docutils literal notranslate"><span class="pre">fugacity</span></code>); violations abort
+with an explicit error message.</p></li>
 </ul>
 </section>
 </section>
@@ -458,26 +524,15 @@ Each block starts with <code class="docutils literal notranslate"><span class="p
             <ul>
 <li><a class="reference internal" href="#">Input Files</a><ul>
 <li><a class="reference internal" href="#minimal-example">Minimal Example</a></li>
-<li><a class="reference internal" href="#simulation-control">Simulation Control</a><ul>
-<li><a class="reference internal" href="#number-of-blocks">Number of blocks</a></li>
-<li><a class="reference internal" href="#number-of-steps-per-block">Number of steps per block</a></li>
-<li><a class="reference internal" href="#simulation-temperature">Simulation temperature</a></li>
-<li><a class="reference internal" href="#random-seed">Random seed</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#electrostatics">Electrostatics</a><ul>
-<li><a class="reference internal" href="#ewald-summation-tolerance">Ewald summation tolerance</a></li>
-<li><a class="reference internal" href="#real-space-cutoff-distance">Real-space cutoff distance</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#simulation-control">Simulation Control</a></li>
+<li><a class="reference internal" href="#electrostatics">Electrostatics</a></li>
 <li><a class="reference internal" href="#monte-carlo-moves">Monte Carlo Moves</a><ul>
-<li><a class="reference internal" href="#maximum-translation-step">Maximum translation step</a></li>
-<li><a class="reference internal" href="#maximum-rotation-angle">Maximum rotation angle</a></li>
-<li><a class="reference internal" href="#recalibrate-moves-automatically">Recalibrate moves automatically</a></li>
 <li><a class="reference internal" href="#move-probabilities">Move probabilities</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#residue-definition">Residue Definition</a></li>
+<li><a class="reference internal" href="#id1">Residue Definition</a></li>
+<li><a class="reference internal" href="#files-and-outputs">Files and outputs</a></li>
 <li><a class="reference internal" href="#notes">Notes</a></li>
 </ul>
 </li>
@@ -490,9 +545,9 @@ Each block starts with <code class="docutils literal notranslate"><span class="p
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=97b6c874"></script>
-    <script src="_static/doctools.js?v=9bcbadda"></script>
-    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+</div><script src="_static/documentation_options.js?v=421b0634"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>
